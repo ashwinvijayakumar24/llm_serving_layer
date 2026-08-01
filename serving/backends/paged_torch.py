@@ -178,6 +178,34 @@ class PagedTorchBackend:
 
     # -- write path ---------------------------------------------------------
 
+    def copy_block(self, src: int, dst: int) -> None:
+        """
+        Duplicate one physical block's KV, EVERY LAYER, for copy-on-write.
+
+        The radix cache owns block INDICES; this backend owns the TENSORS. So
+        when a sequence diverges inside a block it shares with another sequence,
+        the cache allocates a fresh block and calls this to make the new block a
+        true copy before anything writes into it.
+
+        ALL LAYERS, not just layer 0. A per-layer copy would leave layers 1..N-1
+        pointing at the sibling's KV: attention would read a mixture of two
+        sequences' history and produce fluent, wrong text with no error. The
+        same class of bug as a layer-0-only swap, and equally invisible.
+
+        Raising rather than silently sharing is the contract the cache relies on
+        (`RadixCache.ensure_writable` raises if this callable is absent), so a
+        misconfiguration fails loudly instead of corrupting attention.
+        """
+        if not (0 <= src < self.num_blocks and 0 <= dst < self.num_blocks):
+            raise IndexError(
+                f"copy_block({src} -> {dst}) outside [0, {self.num_blocks})"
+            )
+        if src == dst:
+            return
+        for layer in range(self.num_layers):
+            self.k_pool[layer][dst].copy_(self.k_pool[layer][src])
+            self.v_pool[layer][dst].copy_(self.v_pool[layer][src])
+
     def append_kv(
         self,
         layer_idx: int,
