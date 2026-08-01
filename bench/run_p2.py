@@ -98,7 +98,7 @@ async def calibrate(url: str, prompt_tokens: int, max_tokens: int, n: int) -> di
     if not specs:
         raise SystemExit("calibration produced no requests; check rate/duration")
 
-    ttfts, itls = [], []
+    ttfts, itls, tpots = [], [], []
     async with httpx.AsyncClient(timeout=cfg.request_timeout_s) as client:
         for i, spec in enumerate(specs):
             # t0 is set per request and the schedule is not honoured: each request
@@ -122,6 +122,8 @@ async def calibrate(url: str, prompt_tokens: int, max_tokens: int, n: int) -> di
                 raise SystemExit(f"calibration request {i} produced no first token: {res.error}")
             ttfts.append(res.ttft_ms)
             itls.extend(res.itls_ms or [])
+            if res.tpot_ms is not None:
+                tpots.append(res.tpot_ms)
 
     return {
         "n_requests": n,
@@ -130,6 +132,31 @@ async def calibrate(url: str, prompt_tokens: int, max_tokens: int, n: int) -> di
         "itl_ms_p50": statistics.median(itls) if itls else None,
         "itl_ms_mean": statistics.fmean(itls) if itls else None,
         "n_itl_samples": len(itls),
+        # TPOT = (last_token - first_token) / (n_tokens - 1), one value per
+        # request. THIS is what the ITL side of the SLO is anchored to, and the
+        # reason is measured, not stylistic.
+        #
+        # Client-observed ITL is BIMODAL: SSE chunks arrive in bursts, so the
+        # p50 collapses toward zero while the mean stays correct. Reproduced on
+        # CPU against a fake model doing a fixed 10 ms per token — p50 0.24 ms,
+        # p90 29 ms, mean 12.4 ms — and identical whether timestamps are taken
+        # at line-parse time or at network-read time, so it is the server's
+        # emission pattern rather than a client artefact.
+        #
+        # An SLO anchored on ITL p50 would therefore be ~0.2 ms and unmeetable
+        # by any real system. TPOT averages within a request and is immune to
+        # how the tokens were bunched on the wire, which is exactly why the
+        # methodology defines it separately from ITL (§2).
+        #
+        # The ITL DISTRIBUTION is still reported — burstiness is real and a user
+        # perceives it — it is simply not what the threshold is set from.
+        "tpot_ms_p50": statistics.median(tpots) if tpots else None,
+        "tpot_ms_mean": statistics.fmean(tpots) if tpots else None,
+        "n_tpot_samples": len(tpots),
+        "itl_note": (
+            "client-observed ITL is bursty/bimodal; the SLO is anchored on TPOT. "
+            "See the comment in bench/run_p2.py:calibrate."
+        ),
         "loop": "closed (deliberate: unloaded service time needs exactly one in flight)",
     }
 
@@ -146,14 +173,19 @@ def _sanity_check(cal: dict) -> None:
     problems = []
     if cal["ttft_ms_p50"] <= 0:
         problems.append(f"TTFT p50 is {cal['ttft_ms_p50']:.1f} ms — latency cannot be <= 0")
-    if cal["itl_ms_p50"] is None or cal["itl_ms_p50"] <= 0:
-        problems.append(f"ITL p50 is {cal['itl_ms_p50']} — must be > 0")
-    elif cal["itl_ms_p50"] < 0.5:
+    tp = cal.get("tpot_ms_p50")
+    if tp is None or tp <= 0:
+        problems.append(f"TPOT p50 is {tp} — must be > 0")
+    elif tp < 0.5:
         problems.append(
-            f"ITL p50 is {cal['itl_ms_p50']:.3f} ms. One decode step of a 1B model "
-            "cannot take under 0.5 ms; this indicates buffered reads rather than "
-            "per-token arrivals."
+            f"TPOT p50 is {tp:.3f} ms. One decode step of a 1B model cannot take "
+            "under 0.5 ms, and TPOT averages within a request so bursty arrival "
+            "cannot explain it. Something is not generating tokens."
         )
+    if cal["itl_ms_p50"] is not None and cal["itl_ms_p50"] < 0.5:
+        # Observed, reported, NOT fatal — this is the known burstiness, and it is
+        # why the threshold is anchored on TPOT instead.
+        cal["itl_bursty"] = True
     if cal["n_itl_samples"] < cal["n_requests"]:
         problems.append(
             f"only {cal['n_itl_samples']} ITL samples from {cal['n_requests']} requests"
@@ -168,11 +200,12 @@ def _sanity_check(cal: dict) -> None:
 def freeze_slo(cal: dict) -> dict:
     slo = {
         "ttft_ms": round(cal["ttft_ms_p50"] * SLO_TTFT_MULTIPLIER, 3),
-        "itl_p95_ms": round(cal["itl_ms_p50"] * SLO_ITL_MULTIPLIER, 3),
+        "itl_p95_ms": round(cal["tpot_ms_p50"] * SLO_ITL_MULTIPLIER, 3),
         "ttft_multiplier": SLO_TTFT_MULTIPLIER,
         "itl_multiplier": SLO_ITL_MULTIPLIER,
         "anchored_to": {"unloaded_ttft_p50_ms": cal["ttft_ms_p50"],
-                        "unloaded_itl_p50_ms": cal["itl_ms_p50"]},
+                        "unloaded_tpot_p50_ms": cal["tpot_ms_p50"],
+                        "unloaded_itl_p50_ms_bursty": cal["itl_ms_p50"]},
         "declared": "multipliers fixed in bench/run_p2.py before any loaded run",
     }
     return slo
@@ -241,7 +274,8 @@ async def main() -> int:
     print(f"  TTFT      < {slo['ttft_ms']} ms   "
           f"({SLO_TTFT_MULTIPLIER}x unloaded p50 {cal['ttft_ms_p50']:.1f})")
     print(f"  p95 ITL   < {slo['itl_p95_ms']} ms   "
-          f"({SLO_ITL_MULTIPLIER}x unloaded p50 {cal['itl_ms_p50']:.1f})")
+          f"({SLO_ITL_MULTIPLIER}x unloaded TPOT p50 {cal['tpot_ms_p50']:.1f}; "
+          f"raw ITL p50 {cal['itl_ms_p50']:.2f} is bursty and not used)")
 
     # ---- 3. sweep ----
     rates = [float(r) for r in args.rates.split(",")]
