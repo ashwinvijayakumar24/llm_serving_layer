@@ -105,7 +105,13 @@ This is the foundation risk. Building a batched, paged, preemptible scheduler on
 *Mitigation:* none. This is a hard gate; Phase 1 does not start without it.
 
 ### R6 — Radix cache returning wrong tokens
-**HIGH · Phase 4**
+**HIGH → CLOSED AT MATCHED GEMM SHAPE 2026-08-01 · Phase 4**
+
+> **The cache does not return wrong tokens.** Job `11611626`, H200: cache-on output is bit-identical to cache-off across all four sharing structures — including `adversarial`, which sweeps the divergence point across every offset within a block — at 38-48% block reuse. Gate exit code 0.
+>
+> The gate holds GEMM shapes constant by capping prefill at one block per step, because a cache hit otherwise changes the packed token count and with it cuBLAS kernel selection and fp16 reduction order. Batch size 1 does NOT achieve this (tried, failed identically): cache-off computes M=105 while cache-on computes M=41 for the uncached remainder. The shape difference is intrinsic to caching.
+>
+> **Still open:** bit-identical output under production chunk sizes and concurrent batching, which is blocked on R4 and is a property of `engine/components_gpu.py:linear`, not of this cache. The batched gate fails on the same three structures in the same job on the same code — one difference, opposite outcomes, which is what attributes the divergence.
 
 A prefix cache bug makes the system **faster and wrong** — the most dangerous possible combination, because every performance metric improves. The specific hazard is block-boundary truncation: reusing a block that matches only partially (`ARCHITECTURE.md:§9.1`, the divergence-mid-block case).
 

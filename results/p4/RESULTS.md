@@ -1,8 +1,70 @@
 # Phase 4 results — radix prefix cache
 
 **Date:** 2026-08-01 · **Job:** `11608501` · **H200** · **Engine `v0.2.1`**
-**Correctness claim: NOT EARNED.** See `FINDING_batch_shape_numerics.md`.
-**These measurements are about cache BEHAVIOUR, and do not resurrect that claim.**
+**Correctness: EARNED, at matched GEMM shape** (job `11611626`, section 0 below).
+**Under production batching it remains blocked** on the engine's shape-dependent
+numerics — `FINDING_batch_shape_numerics.md`. Both results are stated because
+they are both true and they say different things.
+
+---
+
+## 0. Correctness — EARNED at matched GEMM shape
+
+**Job `11611626`, H200.** Raw log: [`p4_gate_11611626.log`](p4_gate_11611626.log).
+
+```
+zero            identical output, block hit rate 0.000   (0 of 83 blocks)    PASSED
+system          identical output, block hit rate 0.476   (40 of 84)          PASSED
+conversational  identical output, block hit rate 0.465   (80 of 172)         PASSED
+adversarial     identical output, block hit rate 0.381   (32 of 84)          PASSED
+>>> uniform-chunk gate exit code: 0
+```
+
+Cache-on output is **bit-identical to cache-off** across all four sharing
+structures — including `adversarial`, which sweeps the divergence point across
+every offset within a block — while genuinely reusing 32–80 blocks. The `zero`
+control correctly reuses nothing.
+
+### Why this gate is stricter than the one it replaces, not weaker
+
+The batched gate compares two runs whose forward passes have **different
+shapes**, because a cache hit changes how many tokens are prefilled. The
+engine's `linear()` takes the packed token count as its `M` dimension, cuBLAS
+selects kernels and split-K by shape, and fp16 reduction order follows. So that
+gate cannot distinguish "the cache served wrong KV" from "the GEMM summed in a
+different order".
+
+**Batch size 1 does not fix this**, which was tried first and failed
+identically: cache-off computes `M=105` in one pass while cache-on computes
+`M=41` for the uncached remainder. The shape difference is **intrinsic to
+caching**, not to batching.
+
+Capping prefill at exactly one block per step does fix it. Cache-off prefills
+105 tokens as `16,16,16,16,16,16,9`; cache-on with 64 tokens cached prefills
+`16,16,9`. Every individual GEMM has the same `M` in both arms — the cache
+simply performs **fewer of them**. Block-granularity reuse is what makes this
+exact: the cached amount is always a multiple of the block size, so even the
+partial tail chunk aligns.
+
+Under that configuration reduction order cannot vary, so **any divergence would
+have to be the cache serving wrong KV.** There is none.
+
+### The confirming half
+
+The **batched** gate still fails on exactly `system`, `conversational` and
+`adversarial` in the same job, on the same code, in the same allocation. Two
+gates, one difference — whether GEMM shapes are held constant — and opposite
+outcomes. That is what attributes the divergence to the engine's numerics rather
+than to this component.
+
+### What is and is not claimed
+
+- **Claimed:** the radix cache returns correct KV. Verified at 38–48% block
+  reuse across four structures including the block-boundary stress case.
+- **Not claimed:** bit-identical output under production chunk sizes and
+  concurrent batching. That is blocked on shape-dependent fp16 reduction order
+  in `engine/components_gpu.py:linear`, is measured at max|Δlogit| 0.1745, and
+  is reported as blocked rather than quietly passed.
 
 ---
 
