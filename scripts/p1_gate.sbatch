@@ -31,8 +31,8 @@
 #SBATCH --job-name=p1_gate
 #SBATCH --account=paceship-simpliearn
 #SBATCH --qos=inferno
-#SBATCH --partition=gpu-a100
-#SBATCH --gres=gpu:a100:1
+#SBATCH --partition=gpu-h100
+#SBATCH --gres=gpu:h100:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/p1_gate_%j.out
