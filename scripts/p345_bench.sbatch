@@ -134,7 +134,7 @@ python3 -m bench.run_p5 \
     --router prefix_aware=http://127.0.0.1:9601/v1/chat/completions \
     --router least_outstanding=http://127.0.0.1:9602/v1/chat/completions \
     --router round_robin=http://127.0.0.1:9603/v1/chat/completions \
-    --loads 2,4,8,16 --scenarios zero,system,uniform,hot \
+    --loads 2,4,8,16 --scenarios zero_sharing,system_prompt_sharing,uniform_prefix,hot_prefix_skew \
     --duration 45 --warmup 15 --drain 10 \
     --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
     --results-dir results/p5 2>&1 || echo "P5 driver exited non-zero (invalid cells)"
