@@ -65,7 +65,9 @@ Batching changes numerics through reduction order, kernel selection, and attenti
 *Mitigation:* if exact bit-identity proves unachievable due to legitimate reduction-order effects, that is a *result to publish*, not a gate to loosen — quantify the divergence rate and the conditions, and say so.
 
 ### R5 — The GPU path has no correctness oracle at all
-**CRITICAL · Phase 0 · Inherited**
+**CRITICAL → RETIRED 2026-07-31 · Phase 0 · Inherited**
+
+> **Closed.** `tests/test_gpu_oracle.py` exists and passes on A100-PCIE-40GB (Slurm job `11596894`, engine `v0.2.0`): GPU fp16 greedy output matches the HF fp32 oracle for 16 tokens exactly on both fixture prompts, matches the CPU fp32 path of the same engine, and prefill logits agree to max|Δ| 0.0111 with 10/10 top-10 overlap. Every downstream gate (R3, R4, R6, R9) now has a known-good reference to bisect against.
 
 `tests/test_gpu_model.py:42-45` asserts only that outputs are finite, correctly shaped, and have an in-range argmax. **GPU fp16 tokens are never compared to HuggingFace or to the CPU reference path.** Every correctness claim in the engine (`tests/test_forward.py:113,137`, `tests/test_decode.py:30-48`) is about the **CPU fp32** path.
 
@@ -195,7 +197,7 @@ If one side of a comparison stops early on EOS and the other does not, throughpu
 | R25 | **Freeze date arrives mid-phase**, leaving a half-built feature that makes an earlier claim untrue | HIGH | This is phase-plan property 4. Cut order is pre-decided (`PHASE_PLAN.md:§6` freeze-line box): swap policy first, then FlashInfer. **Phase 2 has no safe cuts.** |
 | R26 | **Effort assumption wrong.** ~100h to the freeze line assumes ~30/week | HIGH | Recompute from the real number in week 1, not week 3. Every phase carries a cheaper alternative so cuts stay informed. |
 | R27 | **PACE queue wait** — `gpu-h200`/`gpu-l40s` showed allocated and drained nodes | MEDIUM | Two-QOS workflow; `embers` for iteration. Everything that can be developed CPU-side (router policy, allocator logic, radix trie, harness) is developed CPU-side. |
-| R28 | **SU exhaustion.** Absolute burn rate is a two-sample inference (~0.28 SU/A100-GPU-hr, assumes balance started at exactly 1000.00) | MEDIUM | Calibrate with one instrumented job before budgeting multi-GPU runs. Ratios from `TRESBillingWeights` are reliable; the absolute rate is not. Prefer `gpu-l40s` at 0.78× A100. |
+| R28 | ~~SU exhaustion~~ — **CLOSED 2026-07-31.** Burn rate MEASURED, not inferred: job `11596894` used 0.08 SU for 17:02 on one A100 = **0.282 SU/A100-GPU-hour**, confirming the earlier two-sample estimate. 999.85 SU remaining ≈ 3,500 A100-GPU-hours; an 8×L40S 8-hour run costs ~14 SU | CLOSED | Not a constraint on this project. Prefer `gpu-l40s` (0.78× rate) for scheduling/routing work regardless |
 | R29 | **Explainability gate fails** — a phase ships but can't be explained cold | MEDIUM | Then it does not go as a published claim, per PRD §G7. The gate is the point; failing it is the system working. |
 | R30 | **Scope creep into Tier 3/4** | MEDIUM | Tier 4 is explicitly where scope dies (PRD §5). K8s recommended against permanently. |
 | R31 | **vLLM comparison proves unfair and gets quietly dropped** | LOW | Position committed in advance (methodology §8): no throughput claim vs vLLM, ever. If even the shape comparison fails, say so in writing — that is a stronger answer than a table. |
