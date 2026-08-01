@@ -48,10 +48,14 @@ bench = [
 # Fast paged-attention path. Optional BY DESIGN: PagedTorchBackend is the
 # correctness oracle and the fallback, so the Phase 1 memory claim does not
 # depend on this installing (docs/RISK_REGISTER.md R18).
-# Version left unpinned until verified against installed source — the API and
-# tensor-layout contract are UNVERIFIED as of planning (ARCHITECTURE.md §11).
+# PINNED, and pinned to the version the source was actually read at: 0.6.16
+# (git 8da13a29). Every API detail in serving/backends/flashinfer_backend.py
+# carries a file:line citation into that tree — plan()/run() argument order, the
+# (K, V) tuple form of paged_kv_cache, and the bottom-right causal alignment in
+# prefill.cuh:1461. A floating version would silently invalidate those citations,
+# which is the same class of unverified-contract risk R9 exists to close.
 flashinfer = [
-    # "flashinfer-python",          # uncomment after verification
+    "flashinfer-python==0.6.16",
 ]
 
 [tool.setuptools.packages.find]
