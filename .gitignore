@@ -42,6 +42,7 @@ weights/
 # Slurm scratch output — the ARTIFACT goes in results/, the raw job log does not
 slurm-*.out
 *.log
+logs/
 
 # Editor
 .idea/

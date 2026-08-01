@@ -50,6 +50,12 @@ conda activate llm
 
 cd "${SLURM_SUBMIT_DIR}"
 export HF_HUB_OFFLINE=1
+
+# Weights live with the engine checkout on PACE. Pointing at them with an env
+# var keeps the submodule pristine — an earlier run symlinked them INTO
+# vendor/, which dirtied the working tree, and the provenance gate then refused
+# to mark the S1 measurement publishable. That refusal was correct.
+export LLM_WEIGHTS_PATH="${LLM_WEIGHTS_PATH:-$HOME/ps-simpliearn-0/llm_inference_engine/weights}"
 export PYTHONPATH="${SLURM_SUBMIT_DIR}:${SLURM_SUBMIT_DIR}/vendor/llm_inference_engine:${PYTHONPATH}"
 
 echo

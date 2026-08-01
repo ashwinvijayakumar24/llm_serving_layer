@@ -75,7 +75,11 @@ pytestmark = [
     pytest.mark.skipif(_CUDA_REASON is not None, reason=_CUDA_REASON or ""),
 ]
 
-WEIGHTS_PATH = "vendor/llm_inference_engine/weights"
+# Weights are large and gated, so they are not in the repo. Point at them with
+# LLM_WEIGHTS_PATH rather than symlinking into vendor/ — a symlink inside the
+# submodule makes the working tree dirty, and the provenance gate then refuses
+# to publish the run (correctly: "the measured code is not any commit").
+WEIGHTS_PATH = os.environ.get("LLM_WEIGHTS_PATH", "vendor/llm_inference_engine/weights")
 BLOCK_SIZE = 16
 
 # Prompts chosen so token counts straddle block boundaries once the chat
