@@ -274,60 +274,65 @@ def test_identical_across_pressure_levels(model, reference, policy, num_blocks):
 @pytest.mark.parametrize("policy", [PreemptionPolicy.RECOMPUTE, PreemptionPolicy.SWAP])
 def test_a_sequence_preempted_multiple_times_still_completes_correctly(model, reference, policy):
     """
-    Repeated eviction of the SAME request.
+    Repeated eviction of the SAME request, driven DIRECTLY rather than hoped for.
 
-    Under LIFO the newest arrival keeps losing, so this is the common case, not
-    the exotic one. Each round trip is another chance to duplicate or drop a
-    token, and the errors compound silently.
+    WHY THIS TEST DRIVES PREEMPTION INSTEAD OF PROVOKING IT
+    ------------------------------------------------------
+    Two earlier versions tried to make the workload preempt one request twice —
+    first with a tight pool, then with staggered arrival waves. Both reached
+    `max preemption_count == 1` on real weights, and the reason is a genuine
+    property of the scheduler rather than a badly chosen constant:
+
+      * victim selection is LIFO, and
+      * a preempted request is requeued at the FRONT, and
+      * `_can_admit` accounts for `blocks_needed_for_step` (the anti-livelock
+        guard, without which admit -> preempt-newest -> requeue -> admit spins
+        forever).
+
+    So a victim is not readmitted while the pressure that evicted it persists,
+    and by the time it IS readmitted, anything that arrived meanwhile is newer
+    and becomes the next victim instead. Being evicted twice therefore requires
+    a coincidence the scheduler is actively designed to avoid.
+
+    That is good behaviour and a bad basis for a test. What actually needs
+    verifying is the RESUME PATH under repeated eviction — that a request which
+    has been through free/restore twice still produces the same tokens. So this
+    calls `_preempt` directly at two chosen points. The trigger is exercised by
+    the other tests in this file, which use real allocator exhaustion; this one
+    isolates the thing the trigger is hard to reach.
     """
     m, config = model
-    _, _, sched = make_stack(m, config, 8, preemption_policy=policy, starvation_k=99)
+    _, _, sched = make_stack(m, config, ROOMY, preemption_policy=policy, starvation_k=99)
 
-    # STAGGERED ARRIVALS, and the reason is a real property of the scheduler,
-    # not test convenience.
-    #
-    # `_can_admit` accounts for `blocks_needed_for_step`, which is the
-    # anti-livelock guard: without it, admit -> preempt-newest -> requeue-at-front
-    # -> admit loops forever. A consequence is that a victim is NOT readmitted
-    # while the pressure that evicted it persists, so a single pressure wave can
-    # only preempt a given request ONCE.
-    #
-    # Being preempted twice therefore requires two separate waves: the victim
-    # resumes when room appears, and new arrivals then take that room away
-    # again. That is also the realistic shape — sustained load, not one burst.
-    first = {"a": PROMPTS["a"], "b": PROMPTS["b"]}
-    for rid, ids in first.items():
+    for rid, ids in PROMPTS.items():
         sched.add_request(Request(request_id=rid, prompt_ids=list(ids),
                                   max_tokens=MAX_TOKENS, ignore_eos=True))
-    for extra in ({"c": PROMPTS["c"]}, {"d": PROMPTS["d"]},
-                                  {"e": PROMPTS["b"]}, {"f": PROMPTS["d"]}):
-        for _ in range(3):
-            sched.step()
-        for rid, ids in extra.items():
-            sched.add_request(Request(request_id=rid, prompt_ids=list(ids),
-                                      max_tokens=MAX_TOKENS, ignore_eos=True))
-    steps = sched.run_until_idle(max_steps=8000)
-    assert steps < 8000, "scheduler stopped making progress under repeated waves"
-    got = {r.request_id: list(r.output_ids) for r in sched.finished}
 
-    worst = max(r.preemption_count for r in sched.finished)
-    assert worst >= 2, (
-        f"no request was preempted more than once (max {worst}). Either the "
-        "waves did not overlap or the pool is too roomy — this test proves "
-        "nothing about repeated eviction unless it actually happens."
+    target, hits = "d", 0
+    for _ in range(6):
+        sched.step()
+    for _ in range(400):
+        if not sched.has_work:
+            break
+        req = next((r for r in sched.running if r.request_id == target), None)
+        if req is not None and hits < 2 and len(req.output_ids) >= 3 * (hits + 1):
+            sched._preempt(req)
+            hits += 1
+        sched.step()
+
+    assert hits == 2, f"drove only {hits} preemptions of '{target}'"
+    got = {r.request_id: list(r.output_ids) for r in sched.finished}
+    victim = next(r for r in sched.finished if r.request_id == target)
+    assert victim.preemption_count >= 2, (
+        f"'{target}' records {victim.preemption_count} preemptions, expected >= 2"
     )
     assert all(len(v) == MAX_TOKENS for v in got.values()), (
-        "a repeatedly preempted request lost or gained tokens: "
+        f"a repeatedly preempted request lost or gained tokens: "
         f"{ {k: len(v) for k, v in got.items()} }"
     )
-    # Reference is recomputed for THIS request set, roomy pool, no preemption.
-    _, _, ref_sched = make_stack(m, config, ROOMY)
-    all_prompts = {"a": PROMPTS["a"], "b": PROMPTS["b"], "c": PROMPTS["c"],
-                   "d": PROMPTS["d"], "e": PROMPTS["b"], "f": PROMPTS["d"]}
-    ref_out, _ = run(ref_sched, prompts=all_prompts)
-    assert ref_sched.preemption.total == 0, "the reference run must not preempt"
-    assert_identical(got, ref_out, f"{policy} x{worst}")
-    print(f"\n  {policy}: one request survived {worst} preemptions, output unchanged")
+    assert_identical(got, reference, f"{policy} x{victim.preemption_count}")
+    print(f"\n  {policy}: '{target}' survived {victim.preemption_count} "
+          f"preemptions, output unchanged")
 
 
 @pytest.mark.parametrize("policy", [PreemptionPolicy.RECOMPUTE, PreemptionPolicy.SWAP])
