@@ -31,6 +31,7 @@ import os
 import pytest
 import torch
 
+
 def _cuda_status() -> str | None:
     """Return None if CUDA is usable, else a reason string."""
     if not torch.cuda.is_available():
