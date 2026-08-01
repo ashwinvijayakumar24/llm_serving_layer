@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# TWO DELIBERATE NON-ENTRIES. Both are mistakes the engine repo made.
+#
+#   results/   is NOT ignored. The engine ignores bench/results/ and *.csv,
+#              so `git ls-files` returns zero result files and every A100
+#              number it publishes exists only as prose (CLAIMS_AUDIT.md:6).
+#              Every number this repo publishes must resolve to a committed
+#              artifact. Do not add results/ here.
+#
+#   *.md       is NOT ignored. The engine's .gitignore:25-26 is `*.md` +
+#              `!README.md`, so every doc it writes is silently untracked and
+#              a reader following a pointer finds nothing.
+# ---------------------------------------------------------------------------
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+
+# Testing / tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Model weights — large, gated, never committed
+weights/
+*.safetensors
+*.gguf
+
+# Local environment
+.env
+.DS_Store
+*.swp
+
+# Slurm scratch output — the ARTIFACT goes in results/, the raw job log does not
+slurm-*.out
+*.log
+
+# Editor
+.idea/
+.vscode/

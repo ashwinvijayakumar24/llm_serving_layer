@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "llm-serving-layer"
+version         = "0.0.0"
+description     = "Paged KV, continuous batching, radix prefix caching, and prefix-aware routing over llm_inference_engine"
+readme          = "README.md"
+requires-python = ">=3.11"          # matches the engine's floor
+license         = { text = "MIT" }
+
+dependencies = [
+    # --- the engine ---------------------------------------------------------
+    # Consumed as a git submodule at vendor/llm_inference_engine, installed
+    # editable, and PINNED TO A TAG. Rationale (SERVING_INTERFACE.md:234):
+    # the engine's compiled kernel .so lands in a gitignored build/ dir, which
+    # is trivial to locate at a known relative path under a submodule and
+    # genuinely awkward for an installed package. A submodule also pins an
+    # exact commit, which is what keeps this repo's benchmarks reproducible.
+    #
+    #   git submodule add <engine-url> vendor/llm_inference_engine
+    #   cd vendor/llm_inference_engine && git checkout v0.1.0
+    #   pip install -e vendor/llm_inference_engine
+    #
+    # NOT listed as a resolvable dependency here on purpose: it is not on
+    # PyPI, and a silent fallback to some other package named similarly would
+    # be worse than an explicit setup step.
+
+    "torch>=2.2,<3",                # upper bound the engine still lacks
+    "numpy>=1.26",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "httpx>=0.27",                  # SSE-parsing benchmark client
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+bench = [
+    "pandas>=2.2",                  # artifact analysis only, never hot path
+    "matplotlib>=3.8",              # goodput-vs-offered-load curves
+]
+# Fast paged-attention path. Optional BY DESIGN: PagedTorchBackend is the
+# correctness oracle and the fallback, so the Phase 1 memory claim does not
+# depend on this installing (docs/RISK_REGISTER.md R18).
+# Version left unpinned until verified against installed source — the API and
+# tensor-layout contract are UNVERIFIED as of planning (ARCHITECTURE.md §11).
+flashinfer = [
+    # "flashinfer-python",          # uncomment after verification
+]
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["serving*", "bench*"]    # bench IS packaged — the engine's isn't,
+                                    # which is why its harness can't be reused
+                                    # from an installed context
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: long-running; skip with -m 'not slow'",
+    "gpu: requires CUDA; skipped in CI",
+    "engine: requires the engine submodule and model weights",
+]
+
+[tool.ruff]
+line-length    = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

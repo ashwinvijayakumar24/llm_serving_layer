@@ -1,0 +1,3 @@
+[submodule "vendor/llm_inference_engine"]
+	path = vendor/llm_inference_engine
+	url = https://github.com/ashwinvijayakumar24/llm_inference_engine.git

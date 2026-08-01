@@ -1,0 +1,59 @@
+name: CI
+
+# CPU-only by design. Every GPU gate (batch invariance, preemption equality,
+# cache on/off equality, backend differential) runs on PACE, not here — but the
+# pure-logic components are deliberately built to be testable without a GPU:
+# block allocator, radix trie, routing policy, workload generation, and the
+# artifact schema. That is also why the router can be developed against mock
+# CPU replicas while the PACE queue is busy (docs/RISK_REGISTER.md R21).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      # Submodule NOT checked out: the engine needs gated model weights, and
+      # the CPU-testable components have no engine dependency by construction.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install (CPU torch — no CUDA wheels in CI)
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -e ".[dev]"
+
+      - name: Run CPU test subset
+        run: pytest -m "not gpu and not slow and not engine" -v
+
+  artifact-schema:
+    # Guards docs/RISK_REGISTER.md R12/R13/R16: every published number must
+    # carry allocation id, node, QOS, seed, git SHA, engine tag, and a
+    # (quantity, unit, source) triple per metric. Retrofitting provenance onto
+    # results already collected is not possible, so it is enforced from Phase 0.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - name: Validate committed artifacts
+        run: pytest -m "not gpu" tests/ -k "artifact_schema" -v
