@@ -75,6 +75,12 @@ markers = [
 [tool.ruff]
 line-length    = 100
 target-version = "py311"
+# vendor/ is a pinned checkout of another repo with its own style; linting it
+# here would report 100+ findings this project must not fix (the submodule is
+# pinned to a TAG, and edits would dirty it — which the provenance gate then
+# rejects, see results/p1/RESULTS.md §3). CI never sees it: actions/checkout
+# does not fetch submodules by default.
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

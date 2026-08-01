@@ -57,7 +57,11 @@ A preemption bug produces *plausible text*. Output stays fluent, no metric degra
 *Mitigation:* per-request token accounting — count tokens emitted vs tokens expected, assert on every retire. Recompute and swap tested independently; a bug in one must not be masked by the other being the default.
 
 ### R4 — Batched output diverging from single-sequence output
-**CRITICAL · Phase 2**
+**CRITICAL → DETECTION LIVE AND PASSING 2026-08-01 · Phase 2**
+
+> The gate exists and passes on H100 (job `11598894`, 9 tests): mixed prompt lengths, batch sizes 2/3/4, a chunked prefill sharing a batch with decodes, staggered mid-flight arrival, cancellation isolation, and a leak check. This was the first thing in the project to run `n_seqs > 1` on real weights — Phase 1 was batch-1 throughout. Bit-identity held; the mitigation clause (publish the divergence rate instead of loosening the gate) was not needed.
+>
+> The risk does not retire — it reappears whenever batching or attention changes — but the gate that catches it now runs on every GPU job.
 
 Batching changes numerics through reduction order, kernel selection, and attention masking. Divergence may appear only for *specific batch compositions* — a long sequence next to short ones, or a prefill chunk mixed with decodes. Every existing correctness test in the engine is batch-1 (`tests/test_forward.py`, `tests/test_decode.py`), so nothing catches it.
 
@@ -104,14 +108,29 @@ Refcount bug → a block still referenced by a running sequence is freed and rea
 *Detection:* bit-identical gate at ≥3 sequence lengths **chosen to straddle block boundaries** — this is why those lengths are in Phase 1's DoD explicitly rather than left to chance.
 
 ### R9 — FlashInfer layout mismatch
-**HIGH → PARTIALLY RETIRED 2026-07-31 · Phase 1**
+**HIGH → RETIRED 2026-08-01 · Phase 1**
 
-**Verified against `flashinfer-python==0.6.16` source.** The mismatch was real and is now known: FlashInfer addresses pages with a **CSR triple** (`kv_indptr` / `kv_indices` / `kv_last_page_len`), not a padded `block_tables` matrix, and appends via `batch_indices` + `positions` rather than a flat `slot_mapping`. The block layout and `page_size=16` choice were correct. `BatchMeta` is corrected (`ARCHITECTURE.md:§2.3.1`). Residual risk is narrower: `run()` return shape/dtype and `plan()`/`run()` recomputation constraints remain unverified and need a live GPU in Phase 1. Also note `1 <= kv_last_page_len <= page_size` — an exact multiple of `page_size` reports `page_size`, not `0`.
-
-FlashInfer's exact API and tensor-layout contract is **unverified** — not installed, not read (`ARCHITECTURE.md:§11`). A layout misunderstanding (NHD vs HND, block table dtype, causality convention) produces wrong attention output that is still numerically plausible.
-
-*Detection:* `PagedTorchBackend` is written **first** and serves as the differential oracle — FlashInfer output must match it bit-for-bit on greedy tokens. This is the primary justification for building two implementations.
-*Mitigation:* verify against installed source in P0/P1, not P2. A mismatch costs an adapter, not a redesign, because the protocol was designed to sit above it.
+> **Closed.** `FlashInferBackend` matches `PagedTorchBackend` across 28 differential
+> tests on H100 (job `11598894`): pure decode at batch 1/2/5, mixed prefill+decode,
+> page-boundary sweep 1/15/16/17/31/32/33, fragmented non-contiguous pages, multi-
+> sequence isolation, GQA 8→{1,2,4,8}, and end-to-end greedy token equality. Since
+> `PagedTorchBackend` equals the contiguous engine path (job `11598444`) and that
+> equals the fp32 HF oracle (job `11596894`), the chain closes.
+>
+> Three contract facts were read out of the 0.6.16 **kernels**, not the docstrings,
+> which do not state them: `causal=True` is **bottom-right aligned**
+> (`prefill.cuh:1461`), matching the protocol exactly; `plan()` stores the page
+> tables on the wrapper while `run()` takes none, so **a missing `plan()` silently
+> attends over the previous step's CSR**; and `run()` returns
+> `(tokens, n_heads, head_dim)`.
+>
+> **Stated limit:** the differential is **token-exact, not bit-exact.**
+> `PagedTorchBackend` casts `probs` to fp16 before the PV matmul (mirroring
+> `components_gpu.py:205`) while FlashInfer uses a fused fp32 online softmax and
+> never materialises `probs` — they cannot agree bit-for-bit by construction.
+> Tensors are compared at `atol=4e-3, rtol=1e-2`; **tokens are compared exactly**,
+> which is the claim the system makes. Defensible because every R9 failure mode is
+> an O(1) error, not an O(1e-3) one.
 
 ### R10 — Unchecked CUDA errors
 **HIGH · Phase 6 (checking), Phase 0 (awareness) · Inherited**
