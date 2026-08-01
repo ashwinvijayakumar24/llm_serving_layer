@@ -212,6 +212,7 @@ def main():
 
     print("\nsnapshot:", {k: v for k, v in rc.snapshot().items() if k != "definitions"})
     chunk_shape_selftest(model, config, groups)
+    batch_shape_selftest(model, config, groups)
 
 
 def chunk_shape_selftest(model, config, groups):
@@ -242,6 +243,45 @@ def chunk_shape_selftest(model, config, groups):
         npos = int((d.max(dim=0).values > 0).sum())
         print(f"  prompt_len={len(prompt)} budget={budget}: max|d| vs budget=256 "
               f"is {d.max():.4g}, differing positions {npos}/{n}", flush=True)
+
+
+def batch_shape_selftest(model, config, groups):
+    """
+    WHICH SHAPE IS THE KV SENSITIVE TO — the batch's, or the sequence's?
+
+    Same prompt, same chunking (one chunk, whole prompt), cache off both times.
+    The only difference is how many OTHER tokens share the forward pass, i.e.
+    the M of every `linear()`. A nonzero difference means the packed batch width
+    alone changes the KV, which is a statement about the engine and about the
+    batch-invariance gate, not about the prefix cache. Zero means the
+    sensitivity is per-sequence — `q_len` and `kv_len` inside `attend` — which
+    is the axis prefix reuse necessarily moves.
+    """
+    print("\n===== batch-shape self-test (cache OFF both runs) =====", flush=True)
+    prompts = [list(next(iter(g.values()))) for g in groups[:4]]
+    target = prompts[0]
+
+    _, _, s1, r1 = make_stack(model, config, cache=False,
+                              max_batch_size=1, max_prefill_tokens=4096)
+    s1.add_request(Request(request_id="solo", prompt_ids=list(target),
+                           max_tokens=1, ignore_eos=True))
+    s1.run_until_idle()
+    solo = r1.kv[0]
+
+    _, _, s2, r2 = make_stack(model, config, cache=False,
+                              max_batch_size=8, max_prefill_tokens=4096)
+    for i, p in enumerate(prompts):
+        s2.add_request(Request(request_id=f"r{i}", prompt_ids=list(p),
+                               max_tokens=1, ignore_eos=True))
+    s2.run_until_idle()
+    grouped = r2.kv[0]
+
+    n = min(solo.shape[1], grouped.shape[1])
+    d = (solo[:, :n] - grouped[:, :n]).abs()
+    print(f"  target prompt_len={len(target)}, batched with "
+          f"{sum(len(p) for p in prompts[1:])} other tokens in the same forward: "
+          f"max|d|={d.max():.4g}, differing positions "
+          f"{int((d.max(dim=0).values > 0).sum())}/{n}", flush=True)
 
 
 if __name__ == "__main__":

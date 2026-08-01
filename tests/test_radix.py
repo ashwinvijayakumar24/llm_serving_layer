@@ -41,7 +41,12 @@ from bench.workloads.generator import LengthSpec, WorkloadConfig, generate
 from serving.cache.radix import RadixCache, attach_prefix
 from serving.memory.allocator import AllocationError, BlockAllocator
 from serving.memory.block_table import SequenceBlocks
-from serving.scheduler.scheduler import Request, Scheduler, SchedulerConfig
+from serving.scheduler.scheduler import (
+    Request,
+    RequestState,
+    Scheduler,
+    SchedulerConfig,
+)
 
 BLOCK = 16
 VOCAB = 4096          # far below the EOS ids (128001+), so EOS can never fire
@@ -88,28 +93,58 @@ class KVSim:
     # -- the model contract -------------------------------------------------
 
     def forward_varlen(self, tokens: torch.Tensor, meta: Any, backend: Any) -> torch.Tensor:
+        """
+        WHAT GETS STORED IN A SLOT, AND WHY IT IS NOT THE TOKEN ID
+        ----------------------------------------------------------
+        An earlier version of this sim wrote the token id into the slot. That is
+        strictly weaker than a real K vector in two ways that matter to a prefix
+        cache, and job 11602081 found the second one on real weights while all 71
+        tests here passed:
+
+          * a real K is ROPE'd, so it depends on the token's ABSOLUTE position;
+          * a real K at position p is a function of the whole causal PREFIX
+            `tokens[0..p]`, not of `tokens[p]` alone.
+
+        A block reused at the wrong offset, or under a different prefix, holds
+        the same token ids and would have gone undetected. So a slot now holds a
+        rolling hash of (previous position's value, this token, this absolute
+        position) — the same three dependencies a transformer's K has, and the
+        cheapest thing that makes "cache-on equals cache-off" a claim about KV
+        PROVENANCE rather than about token ids.
+
+        The history is gathered through the CSR page table before anything is
+        written, so a sequence that cannot see its own prefix (an unwritten or
+        wrongly-attached block) raises here rather than hashing a sentinel.
+        """
         self.forwards += 1
         slot = meta.slot_mapping.tolist()
         ids = tokens.tolist()
-        for j, s in enumerate(slot):
-            self.kv[s] = ids[j]
-
+        pos = meta.positions.tolist()
+        cu = meta.cu_query_lens.tolist()
         indptr = meta.kv_indptr.tolist()
         indices = meta.kv_indices.tolist()
         kv_lens = meta.kv_lens.tolist()
+        q_lens = meta.query_lens.tolist()
 
         logits = torch.full((len(kv_lens), VOCAB), -1e4, dtype=torch.float32)
         for i, klen in enumerate(kv_lens):
             pages = indices[indptr[i] : indptr[i + 1]]
-            vals = self._gather(pages, klen)
-            self.reads += len(vals)
-            if SENTINEL in vals:
+            resident = klen - q_lens[i]
+            hist = self._gather(pages, resident)
+            self.reads += klen
+            if SENTINEL in hist:
                 raise AssertionError(
-                    f"sequence {i} attended over position {vals.index(SENTINEL)} of "
+                    f"sequence {i} attended over position {hist.index(SENTINEL)} of "
                     f"{klen}, whose KV slot was never written. A reused block does not "
                     "hold the KV the page table claims — this is R6/R7 with a fake "
                     "model instead of fluent text."
                 )
+            prev = hist[-1] if hist else 0
+            vals = list(hist)
+            for j in range(cu[i], cu[i + 1]):
+                prev = (prev * 1_000_003 + (pos[j] + 1) * 7919 + (ids[j] + 1)) % 1_000_000_007
+                self.kv[slot[j]] = prev
+                vals.append(prev)
             # Position-weighted so a REORDERED prefix is as detectable as a
             # wrong one. A plain sum would let two blocks swap places silently.
             h = 0
@@ -958,6 +993,84 @@ def test_cached_prefix_survives_a_request_that_used_it():
     assert all(alloc.refcount(b) == 1 for b in resident)
     r = rc.match(common + toks(252, 32))
     assert r.depth == 4
+    alloc.check_invariants()
+
+
+def _resumed_under_recompute(max_tokens=40, steps_before=20, **cfg):
+    """A request preempted under RECOMPUTE mid-generation, then run to the end."""
+    alloc, sim, rc, s = make(cache=True, max_batch_size=2, max_prefill_tokens=64, **cfg)
+    prompt = toks(1234, 64)
+    req = Request(request_id="a", prompt_ids=list(prompt), max_tokens=max_tokens,
+                  ignore_eos=True)
+    s.add_request(req)
+    for _ in range(steps_before):
+        s.step()
+    assert req.state is RequestState.DECODE and len(req.output_ids) >= 16, (
+        "the rig must reach decode before preempting, or nothing is resumed"
+    )
+    s._preempt_recompute(req)
+    assert req.resume_tokens is not None, "RECOMPUTE must set resume_tokens"
+    s.run_until_idle()
+    assert req.state is RequestState.FINISHED
+    return alloc, rc, req, list(prompt)
+
+
+def test_a_recompute_resumed_request_publishes_the_tokens_its_kv_actually_holds():
+    """
+    R6 THROUGH R3'S DOOR — the case the GPU gate could not see and this file
+    could not either, until the sim learned that K depends on the prefix.
+
+    After a RECOMPUTE preemption, `prefill_ids` is `prompt + generated-so-far`
+    while `output_ids` STILL HOLDS those same generated tokens: `_preempt_recompute`
+    deliberately never rewrites the client's output. Publishing
+    `prefill_ids + output_ids[:-1]` therefore writes `t1..tk` into the token
+    stream twice, and every block past the resume point is filed in the trie
+    under tokens its KV was not computed from.
+
+    Nothing raises. The block is real and its KV is real; only the KEY is a lie,
+    so the next request that walks that path is handed KV for a different token
+    sequence. The assertion is structural because that is where the damage is:
+    with exactly one request in the system, EVERY node in the trie must lie on
+    that request's own token stream, at its own offset.
+    """
+    alloc, rc, req, prompt = _resumed_under_recompute()
+
+    true_ids = prompt + list(req.output_ids)
+    for node in sorted(rc._nodes, key=lambda n: n.depth):
+        d = node.depth
+        expected = tuple(true_ids[(d - 1) * BLOCK : d * BLOCK])
+        assert node.key == expected, (
+            f"trie node at depth {d} (block {node.block_id}) is keyed by "
+            f"{node.key} but its KV covers positions "
+            f"{(d - 1) * BLOCK}..{d * BLOCK - 1} of the sequence, which are "
+            f"{expected}. A later prompt matching this key would attend over KV "
+            "computed from different tokens — R6, published by the resume path."
+        )
+    alloc.check_invariants()
+    rc.check_invariants()
+
+
+def test_a_resumed_request_is_still_reusable_by_its_own_continuation():
+    """
+    The same bug seen from the benefit side, so the fix cannot be a no-op.
+
+    A conversation whose earlier turn was preempted must still be reusable: the
+    next turn's prompt is `prompt + everything generated`, which is exactly the
+    stream the resumed request's KV holds. Publishing a duplicated stream makes
+    that walk fall off the trie at the resume point, so the deep blocks are
+    unreachable and the reuse the cache exists for silently disappears.
+    """
+    alloc, rc, req, prompt = _resumed_under_recompute()
+
+    history = prompt + list(req.output_ids)
+    deepest = max(n.depth for n in rc._nodes)
+    assert deepest > 4, "nothing past the prompt was published; the rig is too short"
+
+    res = rc.match(history[: deepest * BLOCK] + toks(99, 8))
+    assert res.depth == deepest, (
+        f"a continuation of the resumed request matched only {res.depth} blocks of "
+        f"{deepest}. Its own history stopped being findable at the resume point."
+    )
     alloc.check_invariants()
 
 

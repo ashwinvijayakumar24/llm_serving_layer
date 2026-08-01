@@ -1130,17 +1130,30 @@ class Scheduler:
         tail slots were never written, and a later reader would attend over
         uninitialised memory with no symptom.
 
-            during prefill   prefill_ids[:prefill_pos]
-            during decode    prefill_ids + output_ids[:-1]
+        THE ONLY TOKEN STREAM THAT IS ALWAYS RIGHT IS `prompt_ids + output_ids`.
+        Logical position p of this sequence holds the p'th token of that stream,
+        for every request, on every path — because that IS the sequence. So the
+        published ids are that stream truncated to `blocks.num_tokens`, the block
+        table's own account of how many positions it holds. The two cannot
+        disagree, and `insert` keeps only whole blocks, dropping the ragged tail.
 
-        The `[:-1]` is the subtle one. `output_ids[-1]` was sampled from the
-        step that just ran; it becomes an INPUT on the next step, and only then
-        is its KV written. Including it would over-claim by exactly one token,
-        which at the wrong prompt length is one whole block.
+        WHY NOT `prefill_ids + output_ids[:-1]`, WHICH IS WHAT THIS USED TO SAY
+        ----------------------------------------------------------------------
+        For a request that was never preempted the two agree exactly, which is
+        why the CPU suite and every unpreempted GPU gate passed. They come apart
+        the moment RECOMPUTE resumes a request: `prefill_ids` is then
+        `prompt + generated-so-far`, and `output_ids` STILL HOLDS THOSE SAME
+        GENERATED TOKENS (deliberately — `_preempt_recompute` never rewrites the
+        client's output). Concatenating the two republishes `t1..tk` a second
+        time, so every block past the resume point is filed in the trie under
+        tokens that are not the tokens its KV was computed from. Nothing raises:
+        the block is real, its KV is real, and the *key* is a lie. The next
+        request whose prompt happens to walk that path is handed KV for a
+        different token sequence — R6 exactly, arriving through R3's door.
 
-        The result is then clamped to `blocks.num_tokens`, the block table's own
-        account of what it holds, so the two can never disagree — and `insert`
-        itself keeps only whole blocks, dropping any ragged tail.
+        The truncation to `num_tokens` also subsumes the old `[:-1]`.
+        `output_ids[-1]` was sampled by the step that just ran and does not
+        become an input until the next one, so no block table ever counts it.
         """
         cache = self.prefix_cache
         if cache is None or not cache.enabled:
@@ -1148,13 +1161,13 @@ class Scheduler:
         if req.blocks is None or req.blocks.is_freed or not req.blocks.block_ids:
             return
 
-        ids = list(req.prefill_ids[: req.prefill_pos])
-        if req.prefill_done and req.output_ids:
-            ids.extend(req.output_ids[:-1])
-        n = min(len(ids), req.blocks.num_tokens)
+        n = req.blocks.num_tokens
         if n < cache.block_size:
             return
-        cache.insert(ids[:n], req.blocks.block_ids)
+        ids = (list(req.prompt_ids) + list(req.output_ids))[:n]
+        if len(ids) < cache.block_size:
+            return
+        cache.insert(ids, req.blocks.block_ids)
 
     def _retire(self, req: Request) -> None:
         """
