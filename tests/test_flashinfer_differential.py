@@ -352,9 +352,21 @@ def _allocator(fragment=False):
 
     alloc = BlockAllocator(num_blocks=NUM_BLOCKS, block_size=BLOCK_SIZE)
     if fragment:
-        holders = _new_sequences(alloc, 48, first_id=900)
+        # THE POOL MUST BE EXHAUSTED BEFORE FREEING, or this does not fragment.
+        #
+        # BlockAllocator uses a FIFO free list (deliberately — LIFO hands back a
+        # just-freed block and makes use-after-free invisible). FIFO means freed
+        # blocks go to the BACK of the queue, so a later allocation is served
+        # from the still-untouched front and never sees the holes at all. An
+        # earlier version of this helper allocated 48 of NUM_BLOCKS and freed
+        # alternates; sequences under test then received [48, 49, 50] —
+        # contiguous and sorted, i.e. no fragmentation whatsoever.
+        #
+        # Allocating EVERY block first means the holes are the only thing left.
+        holders = _new_sequences(alloc, NUM_BLOCKS, first_id=900)
         for h in holders:
             h.append(BLOCK_SIZE)
+        assert alloc.num_free == 0, "pool must be exhausted for freeing to create holes"
         for h in holders[::2]:
             h.free()
         return alloc, holders[1::2]

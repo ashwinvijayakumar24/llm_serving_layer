@@ -276,13 +276,36 @@ def test_fragmented_pool_gives_identical_output(model):
     from serving.engine_iface.runner import greedy_device, paged_generate
     from serving.memory.block_table import SequenceBlocks
 
-    allocator, backend = make_backend(m, config)
-    # Carve holes: allocate a run of single-block sequences, free every other one.
-    holders = [SequenceBlocks(allocator, seq_id=100 + i) for i in range(32)]
+    num_blocks = 512
+    allocator, backend = make_backend(m, config, num_blocks=num_blocks)
+
+    # THE POOL MUST BE EXHAUSTED BEFORE FREEING, or this does not fragment.
+    #
+    # BlockAllocator uses a FIFO free list (LIFO would hand back a just-freed
+    # block and make use-after-free invisible). FIFO puts freed blocks at the
+    # BACK, so a later allocation is served from the untouched front and never
+    # sees the holes. The first version of this test allocated 32 of 512 blocks
+    # and freed alternates — the sequence under test then got a contiguous run
+    # of fresh blocks and the test verified nothing at all. It passed anyway.
+    #
+    # Caught by the FlashInfer differential, whose equivalent helper ASSERTED
+    # its own precondition and failed loudly: "page ids [48, 49, 50] are
+    # contiguous and sorted". Hence the assertion below — a test that cannot
+    # detect its own setup failing is not a test.
+    holders = [SequenceBlocks(allocator, seq_id=100 + i) for i in range(num_blocks)]
     for h in holders:
         h.append(BLOCK_SIZE)
+    assert allocator.num_free == 0, "pool must be exhausted for freeing to create holes"
     for h in holders[::2]:
         h.free()
+
+    probe = SequenceBlocks(allocator, seq_id=999)
+    probe.append(BLOCK_SIZE * 3)
+    ids = probe.block_ids
+    assert len(ids) >= 3 and any(b - a != 1 for a, b in zip(ids, ids[1:], strict=False)), (
+        f"pool was not actually fragmented; block ids {ids} are contiguous"
+    )
+    probe.free()
 
     fragmented = list(
         paged_generate(m, backend, allocator, prompt, greedy_device, n, seq_id=1)
