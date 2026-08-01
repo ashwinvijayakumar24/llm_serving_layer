@@ -21,7 +21,7 @@
 #SBATCH --qos=inferno
 #SBATCH --partition=gpu-l40s
 #SBATCH --gres=gpu:l40s:1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --time=02:00:00
 #SBATCH --output=logs/all_gates_l40s_%j.out
 #SBATCH --error=logs/all_gates_l40s_%j.out
