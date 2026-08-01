@@ -402,6 +402,13 @@ class LoadGenConfig:
     output_mean_tokens: int = 128
     output_sigma: float = 1.0
     output_max_tokens: int = 2048
+    ignore_eos: bool = True
+    """
+    Generate exactly max_tokens. DEFAULT TRUE FOR BENCHMARKS, and the default is
+    the point: a reproducible workload cannot let the model decide how much work
+    each request is. Set False only to measure a natural-length workload, and
+    then say so in the artifact.
+    """
 
     name: str = "loadgen_open_loop"
     extra_config: dict[str, Any] = field(default_factory=dict)
@@ -781,6 +788,14 @@ async def stream_one(
         "max_tokens": spec.max_tokens,
         "stream": True,
         "temperature": 0.0,
+        # Output length must be CONTROLLED, not model-determined (methodology
+        # §4). Without this the model emits EOS whenever it likes and each
+        # request represents a different amount of work — job 11599377 asked for
+        # 64 tokens and averaged 12, so it was measuring prefill and calling the
+        # result decode throughput. Worse, a scheduling change that alters which
+        # token is sampled also alters the workload, and the comparison stops
+        # being about scheduling at all.
+        "ignore_eos": cfg.ignore_eos,
     }
 
     if inflight is not None:

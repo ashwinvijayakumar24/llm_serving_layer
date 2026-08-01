@@ -82,6 +82,22 @@ class Request:
     prompt_ids: list[int]
     max_tokens: int = 64
     arrival_time: float = 0.0
+    ignore_eos: bool = False
+    """
+    Run to `max_tokens` regardless of EOS. BENCHMARK CONTROL, never a serving
+    default.
+
+    docs/BENCHMARK_METHODOLOGY.md §4 requires output length to be CONTROLLED
+    rather than model-determined, or the workload is not reproducible across
+    configurations — a scheduling change that alters which token is sampled also
+    alters how much work each request represents, and the comparison stops being
+    about scheduling.
+
+    This is not hypothetical. Job 11599377 asked for 64 tokens and got a mean of
+    12 (max 55): the model emitted EOS early, so the benchmark was mostly
+    measuring prefill, and any decode-throughput reading from it described a
+    workload nobody chose.
+    """
 
     state: RequestState = RequestState.WAITING
     blocks: SequenceBlocks | None = None
@@ -393,7 +409,8 @@ class Scheduler:
         if req.on_token:
             req.on_token(token_id)
 
-        if token_id in EOS_IDS or len(req.output_ids) >= req.max_tokens:
+        hit_eos = token_id in EOS_IDS and not req.ignore_eos
+        if hit_eos or len(req.output_ids) >= req.max_tokens:
             req.state = RequestState.FINISHED
 
     # -- retirement ---------------------------------------------------------

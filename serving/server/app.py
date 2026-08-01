@@ -172,6 +172,15 @@ class ChatCompletionRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
     model: str | None = None
     max_tokens: int = Field(default=128, ge=1)
+    ignore_eos: bool = Field(
+        default=False,
+        description=(
+            "Generate exactly max_tokens, ignoring EOS. A BENCHMARK control, not a "
+            "serving feature: methodology §4 requires output length to be controlled "
+            "rather than model-determined, or a scheduling change silently changes "
+            "how much work each request represents."
+        ),
+    )
     stream: bool = False
     temperature: float = 0.0
     top_p: float = 1.0
@@ -623,6 +632,7 @@ def create_app(
             request_id=request_id,
             prompt_ids=prompt_ids,
             max_tokens=min(body.max_tokens, cfg.max_tokens_cap),
+            ignore_eos=body.ignore_eos,
             arrival_time=time.perf_counter(),
             on_token=stream.on_token,
             on_finish=stream.on_finish,

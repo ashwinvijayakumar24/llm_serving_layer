@@ -42,6 +42,7 @@ from bench.loadgen import (
     LoadGenConfig,
     analyze,
     build_schedule,
+    percentile,
     render,
     run_load,
     stream_one,
@@ -105,7 +106,17 @@ async def calibrate(url: str, prompt_tokens: int, max_tokens: int, n: int) -> di
             # construction, so there is no drift to guard against, and the number
             # this produces is service time with an empty queue — which is the
             # only thing the SLO should be anchored to.
-            t0 = asyncio.get_running_loop().time()
+            # t0 is the run's ZERO POINT, and stream_one measures latency from
+            # `t0 + spec.intended_send_time`. build_schedule spreads intended
+            # times across the schedule, so passing a fresh "now" as t0 places
+            # every intended dispatch in the FUTURE and yields NEGATIVE latency.
+            # That is what job 11599377 did: TTFT p50 came out at -402 ms, the
+            # derived SLO became "TTFT < -4023 ms", no request could satisfy it,
+            # and goodput was 0.00 at every rate.
+            #
+            # Anchoring t0 so that `t0 + intended == now` makes intended == actual,
+            # which is precisely the property claimed for calibration.
+            t0 = asyncio.get_running_loop().time() - spec.intended_send_time
             res = await stream_one(client, spec, cfg, t0)
             if res.ttft_ms is None:
                 raise SystemExit(f"calibration request {i} produced no first token: {res.error}")
@@ -121,6 +132,37 @@ async def calibrate(url: str, prompt_tokens: int, max_tokens: int, n: int) -> di
         "n_itl_samples": len(itls),
         "loop": "closed (deliberate: unloaded service time needs exactly one in flight)",
     }
+
+
+def _sanity_check(cal: dict) -> None:
+    """
+    Refuse to derive an SLO from an impossible measurement.
+
+    Job 11599377 propagated a negative TTFT into a negative SLO, produced
+    goodput 0.00 at all seven rates, and reported success. Nothing in the chain
+    asked whether the input was physically possible. These bounds are loose on
+    purpose — they exist to catch nonsense, not to encode expectations.
+    """
+    problems = []
+    if cal["ttft_ms_p50"] <= 0:
+        problems.append(f"TTFT p50 is {cal['ttft_ms_p50']:.1f} ms — latency cannot be <= 0")
+    if cal["itl_ms_p50"] is None or cal["itl_ms_p50"] <= 0:
+        problems.append(f"ITL p50 is {cal['itl_ms_p50']} — must be > 0")
+    elif cal["itl_ms_p50"] < 0.5:
+        problems.append(
+            f"ITL p50 is {cal['itl_ms_p50']:.3f} ms. One decode step of a 1B model "
+            "cannot take under 0.5 ms; this indicates buffered reads rather than "
+            "per-token arrivals."
+        )
+    if cal["n_itl_samples"] < cal["n_requests"]:
+        problems.append(
+            f"only {cal['n_itl_samples']} ITL samples from {cal['n_requests']} requests"
+        )
+    if problems:
+        raise SystemExit(
+            "FATAL: calibration is not physically plausible; refusing to derive an "
+            "SLO from it.\n  " + "\n  ".join(problems)
+        )
 
 
 def freeze_slo(cal: dict) -> dict:
@@ -193,6 +235,7 @@ async def main() -> int:
         print(f"  {k:20} {v}")
 
     # ---- 2. freeze ----
+    _sanity_check(cal)
     slo = freeze_slo(cal)
     print("\n### SLO — FROZEN. Multipliers were fixed in source before any loaded run.\n")
     print(f"  TTFT      < {slo['ttft_ms']} ms   "
@@ -227,12 +270,23 @@ async def main() -> int:
         print(render(a))
 
         path = art.write(args.results_dir)
-        s = art.scalars
+        # Percentiles are computed HERE from the raw samples, not read from
+        # scalars. The artifact deliberately stores samples rather than
+        # pre-computed percentiles (R15) — an earlier version of this table did
+        # `scalars.get('ttft_ms_p50', 0)`, silently got the default, and printed
+        # 0.0 in every row of a seven-rate sweep.
+        s = dict(art.scalars)
+        tt = art.samples.get("ttft_ms", [])
+        s["ttft_p50"] = percentile(tt, 50) if tt else float("nan")
+        s["ttft_p99"] = percentile(tt, 99) if tt else float("nan")
+        dr = art.samples.get("dispatch_drift_ms", [])
+        s["drift_p99"] = percentile(dr, 99) if dr else float("nan")
+        s["n_ttft"] = len(tt)
         rows.append((rate, s, verdict.valid, path))
         print(f"  rate {rate:6.1f}  goodput {s.get('goodput_rps', 0):7.2f}  "
               f"tok/s {s.get('output_tok_s', 0):8.1f}  "
-              f"ttft_p50 {s.get('ttft_ms_p50', 0):7.1f}  ttft_p99 {s.get('ttft_ms_p99', 0):8.1f}  "
-              f"{'OK' if verdict.valid else 'INVALID'}")
+              f"ttft_p50 {s['ttft_p50']:7.1f}  ttft_p99 {s['ttft_p99']:8.1f}  "
+              f"n={s['n_ttft']:4d}  {'OK' if verdict.valid else 'INVALID'}")
 
     # ---- 4. report ----
     print("\n### GOODPUT vs OFFERED LOAD\n")
@@ -241,8 +295,8 @@ async def main() -> int:
     print(hdr)
     for rate, s, valid, _ in rows:
         print(f"{rate:9.1f} {s.get('goodput_rps',0):9.2f} {100*s.get('slo_attainment',0):8.1f} "
-              f"{s.get('output_tok_s',0):9.1f} {s.get('ttft_ms_p50',0):9.1f} "
-              f"{s.get('ttft_ms_p99',0):10.1f} {s.get('dispatch_drift_ms_p99',0):10.2f}"
+              f"{s.get('output_tok_s',0):9.1f} {s['ttft_p50']:9.1f} "
+              f"{s['ttft_p99']:10.1f} {s['drift_p99']:10.2f}"
               + ("" if valid else "   <-- INVALID"))
 
     print("\nThe KNEE is the result — the offered load at which goodput stops tracking")
