@@ -164,59 +164,81 @@ none were run.
 
 ---
 
-## 3b. The crossover sweep — the prediction was FALSIFIED
+## 3b. The crossover sweep — INVALID, and the cause is diagnosed
 
 **Job `11611626`.** Raw log: [`p4_crossover_11611626.log`](p4_crossover_11611626.log).
 
-The methodology predicted (§10, case 4 by analogy) that the cache's benefit
-**grows with prompt length**, because the saving is prefill work avoided and
-prefill cost scales with prompt size. So the ~150-token negative result should
-have flipped positive at longer prompts.
+### What the run appeared to show
 
-It did not. Measured on the `zero` control, which is the cleanest signal because
-there is nothing to reuse and the number is pure overhead:
+| prompt_mean | cache-on minus cache-off, TTFT p50 | evictions |
+|---|---|---|
+| 150 | +0.6 ms | 0 |
+| 512 | −0.4 ms | 0 |
+| 1024 | +416.2 ms | 11,673 |
+| 2048 | +907.3 ms | 8,072 |
 
-| prompt_mean | cache-on minus cache-off, TTFT p50 | p99 | evictions |
-|---|---|---|---|
-| 150 | **+0.6 ms** | −0.1 ms | 0 |
-| 512 | **−0.4 ms** | +1.0 ms | 0 |
-| 1024 | **+416.2 ms** | +969.4 ms | 11,673 |
-| 2048 | **+907.3 ms** | +1567.7 ms | 8,072 |
+Read naively this falsifies the prediction that the cache's benefit grows with
+prompt length, and says the cache becomes catastrophically expensive at long
+prompts.
 
-**The overhead grows with prompt length faster than the saving does.** The
-mechanism is visible in the eviction column: at 150 and 512 tokens the trie fits
-and nothing is evicted; at 1024 tokens a request occupies ~64 blocks and at 2048
-tokens ~128, so the pool churns — 11,673 evictions in a 45 s window — and every
-request pays for a trie that is being continuously demolished and rebuilt.
+### Why that reading is wrong
 
-The zero-sharing hit rate corroborates it: 0.034 at 150 tokens, but **0.153 at
-1024 and 0.089 at 2048**, where it should be near zero. Those are blocks matching
-by accident against a churning trie, not genuine reuse.
+**All 36 cells ran against ONE long-lived server.** The cache holds a reference
+to every block it caches, so cached blocks are never returned to the pool as
+requests retire — that is the whole point of a cache. Across four prompt lengths
+and nine cells each, the cache steadily filled the 40,000-block pool.
 
-### Where the cache does help
+Reproduced offline against the real `RadixCache` and `BlockAllocator`, simulating
+the job's exact cell structure:
 
-Deep conversational sharing, and only there:
+```
+after the  150-token cells:  cached  7,290   free 32,710   evictions      0
+after the  512-token cells:  cached 33,210   free  6,790   evictions      0
+after the 1024-token cells:  cached 39,936   free     64   evictions 45,114
+```
 
-| prompt_mean | structure | share | hit rate | Δ TTFT p50 |
-|---|---|---|---|---|
-| 150 | conversational | 1.00 | 0.794 | **−20.4 ms** |
-| 150 | conversational | 0.50 | 0.712 | **−14.8 ms** |
-| 2048 | conversational | 1.00 | 0.498 | **−20.6 ms** |
-| 1024 | conversational | 1.00 | 0.618 | +33.1 ms |
+The pool saturates during the 512-token cells. From the 1024-token cells onward
+**every request evicts before it can allocate**, and that eviction cost is what
+the +416 ms and +907 ms measure.
 
-At short prompts with heavy multi-turn reuse the cache pays — about 20 ms at
-TTFT p50, on a 60 ms baseline. Everywhere else it costs. **Every one of these
-cells failed the steady-state check**, so they are indicative and cannot back a
-published number.
+Confirming arithmetic from the run itself: at 1024 tokens the pool holds
+40000/64 = **625 requests' worth of blocks** while the workload offered roughly
+**90 requests**. Eviction could not legitimately have fired at all. It fired
+11,673 times. That number was the tell.
 
-### Why a falsified prediction is worth keeping
+**So the cells are not independent, and the later ones are contaminated by
+earlier ones.** This is an experimental-design failure — the same one a
+cross-allocation comparison would be — and the measurement is INVALID
+irrespective of the steady-state checks that also failed.
 
-It was written down before the measurement and it was wrong in a specific,
-diagnosable way: the analysis accounted for the *saving* scaling with prompt
-length and not for the *bookkeeping* scaling with blocks-per-request. That is a
-better artifact than a prediction that quietly came true, and it is the honest
-answer to "did the cache make it faster?" — **no, except under deep
-conversational reuse, and here is the cost curve.**
+### What survives
+
+Only the **150-token and 512-token** cells, which ran with an unsaturated cache
+and **zero evictions**:
+
+| prompt_mean | Δ TTFT p50 | Δ TTFT p99 |
+|---|---|---|
+| 150 | +0.6 ms | −0.1 ms |
+| 512 | −0.4 ms | +1.0 ms |
+
+**At these lengths the cache is approximately free and approximately useless** on
+this hardware — within a millisecond either way on a 60–80 ms TTFT. That is
+consistent with the earlier 150-token run and is the honest summary of what has
+been measured.
+
+Deep conversational reuse showed −14.8 ms and −20.4 ms at 150 tokens, which is a
+real direction but sits in cells that failed the steady-state check.
+
+### What a valid measurement requires
+
+A **fresh server per cell**, or an explicit cache clear between cells, or a
+bounded `max_cached_blocks` so the trie cannot consume the whole pool. The first
+is cleanest and costs only startup time. Not run — recorded as the next step
+rather than approximated.
+
+**The prediction is therefore UNTESTED at long prompts, not falsified.** An
+earlier revision of this document claimed it had been falsified; that claim was
+wrong and is corrected here rather than silently edited.
 
 ---
 
