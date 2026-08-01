@@ -281,16 +281,52 @@ def test_a_sequence_preempted_multiple_times_still_completes_correctly(model, re
     token, and the errors compound silently.
     """
     m, config = model
-    _, _, sched = make_stack(m, config, 6, preemption_policy=policy, starvation_k=99)
-    got, _ = run(sched)
+    _, _, sched = make_stack(m, config, 8, preemption_policy=policy, starvation_k=99)
+
+    # STAGGERED ARRIVALS, and the reason is a real property of the scheduler,
+    # not test convenience.
+    #
+    # `_can_admit` accounts for `blocks_needed_for_step`, which is the
+    # anti-livelock guard: without it, admit -> preempt-newest -> requeue-at-front
+    # -> admit loops forever. A consequence is that a victim is NOT readmitted
+    # while the pressure that evicted it persists, so a single pressure wave can
+    # only preempt a given request ONCE.
+    #
+    # Being preempted twice therefore requires two separate waves: the victim
+    # resumes when room appears, and new arrivals then take that room away
+    # again. That is also the realistic shape — sustained load, not one burst.
+    first = {"a": PROMPTS["a"], "b": PROMPTS["b"]}
+    for rid, ids in first.items():
+        sched.add_request(Request(request_id=rid, prompt_ids=list(ids),
+                                  max_tokens=MAX_TOKENS, ignore_eos=True))
+    for extra in ({"c": PROMPTS["c"]}, {"d": PROMPTS["d"]},
+                                  {"e": PROMPTS["b"]}, {"f": PROMPTS["d"]}):
+        for _ in range(3):
+            sched.step()
+        for rid, ids in extra.items():
+            sched.add_request(Request(request_id=rid, prompt_ids=list(ids),
+                                      max_tokens=MAX_TOKENS, ignore_eos=True))
+    steps = sched.run_until_idle(max_steps=8000)
+    assert steps < 8000, "scheduler stopped making progress under repeated waves"
+    got = {r.request_id: list(r.output_ids) for r in sched.finished}
 
     worst = max(r.preemption_count for r in sched.finished)
-    assert worst >= 2, f"no request was preempted more than once (max {worst})"
+    assert worst >= 2, (
+        f"no request was preempted more than once (max {worst}). Either the "
+        "waves did not overlap or the pool is too roomy — this test proves "
+        "nothing about repeated eviction unless it actually happens."
+    )
     assert all(len(v) == MAX_TOKENS for v in got.values()), (
         "a repeatedly preempted request lost or gained tokens: "
         f"{ {k: len(v) for k, v in got.items()} }"
     )
-    assert_identical(got, reference, f"{policy} x{worst}")
+    # Reference is recomputed for THIS request set, roomy pool, no preemption.
+    _, _, ref_sched = make_stack(m, config, ROOMY)
+    all_prompts = {"a": PROMPTS["a"], "b": PROMPTS["b"], "c": PROMPTS["c"],
+                   "d": PROMPTS["d"], "e": PROMPTS["b"], "f": PROMPTS["d"]}
+    ref_out, _ = run(ref_sched, prompts=all_prompts)
+    assert ref_sched.preemption.total == 0, "the reference run must not preempt"
+    assert_identical(got, ref_out, f"{policy} x{worst}")
     print(f"\n  {policy}: one request survived {worst} preemptions, output unchanged")
 
 
@@ -327,7 +363,21 @@ def test_preemption_during_a_chunked_prefill(model, policy):
             return inner(req)
 
         s._preempt = spy
-        for rid, ids, mt in workload:
+        # ORDER MATTERS, and the original order could not work. The long prompt
+        # was added LAST so LIFO would select it — but under pressure a request
+        # that has not been ADMITTED is never preempted, it just queues. It has
+        # to be admitted and mid-prefill BEFORE the pressure arrives.
+        #
+        # So: admit the chunky prompt first, step until it is partway through
+        # its prefill (max_prefill_tokens=16 against a 96-token prompt, so a few
+        # steps), then add the hogs. Now it is the resident sequence that the
+        # new pressure evicts, still mid-prefill.
+        rid, ids, mt = workload[-1]
+        s.add_request(Request(request_id=rid, prompt_ids=list(ids),
+                              max_tokens=mt, ignore_eos=True))
+        for _ in range(3):
+            s.step()
+        for rid, ids, mt in workload[:-1]:
             s.add_request(Request(request_id=rid, prompt_ids=list(ids),
                                   max_tokens=mt, ignore_eos=True))
         steps = s.run_until_idle(max_steps=4000)
@@ -337,7 +387,7 @@ def test_preemption_during_a_chunked_prefill(model, policy):
     ref, expected, _ = go(ROOMY)
     assert ref.preemption.total == 0
 
-    sched, got, mid = go(12, preemption_policy=policy)
+    sched, got, mid = go(7, preemption_policy=policy)
     assert sched.preemption.total > 0, "no pressure arose during the chunked prefill"
     assert any(mid), (
         "no victim was mid-prefill; this degenerated into the decode-phase case "

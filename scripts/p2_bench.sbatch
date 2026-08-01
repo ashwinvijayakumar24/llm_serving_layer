@@ -17,8 +17,8 @@
 #SBATCH --job-name=p2_bench
 #SBATCH --account=paceship-simpliearn
 #SBATCH --qos=inferno
-#SBATCH --partition=gpu-h100
-#SBATCH --gres=gpu:h100:1
+#SBATCH --partition=gpu-h200
+#SBATCH --gres=gpu:h200:1
 # PACE enforces a max 8:1 CPU:GPU ratio on gpu-h100; 16 with one GPU is rejected
 # at submission with 'Invalid generic resource (gres) specification'.
 #SBATCH --cpus-per-task=8
