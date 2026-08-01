@@ -141,7 +141,13 @@ Two fields carry the whole paged design:
 
 **Note the `kv_last_page_len` invariant:** FlashInfer documents `1 <= kv_last_page_len <= page_size`, so a sequence whose length is an exact multiple of `page_size` reports `page_size`, **not** `0`. That off-by-one is precisely the class of bug R8's block-straddle test exists to catch, and it must be asserted at batch assembly.
 
-⚠️ Still unverified: exact `run()` return shape and dtype handling, and whether the `plan()`/`run()` split imposes constraints on how often batch composition may change. Resolve during Phase 1 against a live GPU, not from source reading.
+✅ **Resolved 2026-08-01 by reading the 0.6.16 kernels** (not the docstrings, which do not say):
+
+- **`run()` returns `q.shape[:-1] + (head_dim,)` in `q.dtype`** — i.e. `(tokens, n_heads, head_dim)`, matching the protocol.
+- **`causal=True` is BOTTOM-RIGHT aligned.** `prefill.cuh:1461` masks iff `kv_idx + qo_len > kv_len + q_idx`, i.e. keeps `kv_idx <= kv_len - qo_len + q_idx`; corroborated at `scheduler.cuh:954` (`kv_len_init = kv_len - qo_len; // right aligned`). That is exactly the protocol's `[0, kv_len - q_len + j]` and exactly `PagedTorchBackend`'s `triu(diagonal=kv_len-q_len+1)`. SDPA's top-left `is_causal` would have been wrong — the same trap `PagedTorchBackend` avoided by not using SDPA.
+- **`plan()` stores state; `run()` does not take it.** `plan()` writes the page tables onto the wrapper (`decode.py:1467-1470`, `prefill.py:2355-2365`) along with `sm_scale` and `causal`; `run(q, paged_kv_cache)` receives no CSR at all. **A missing `plan()` therefore attends over the PREVIOUS step's page table — silently.** Rule: plan once per forward pass, run once per layer. Planning per layer merely wastes a host CSR copy; skipping a plan corrupts output with no error.
+
+⚠️ **The differential is token-exact, not bit-exact, and that is a deliberate documented limit.** `PagedTorchBackend` casts `probs` to fp16 before the PV matmul (mirroring `components_gpu.py:205`); FlashInfer runs a fused fp32 online softmax and never materialises `probs`. The two cannot agree bit-for-bit by construction. Tensors are therefore compared at `atol=4e-3, rtol=1e-2` (~4× the fp16 rounding floor) plus a mean-abs-error guard, while **output tokens are compared exactly** — which is the claim the system actually makes. This is defensible because every R9 failure mode (wrong layout, wrong causal alignment, stale page table, wrong GQA mapping) is an O(1) error, not an O(1e-3) one; nothing hides in that gap.
 
 ### 2.4 The `AttentionBackend` protocol
 
