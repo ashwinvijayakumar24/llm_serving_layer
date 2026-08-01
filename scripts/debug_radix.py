@@ -181,7 +181,8 @@ def main():
               f"n_differing_pos={len(nz)}/{n} first={nz[0] if nz else '-'} "
               f"first_layerpair={(per_lay > 0).nonzero().flatten().tolist()[:1]}", flush=True)
         if not same:
-            div = next(i for i, (x, y) in enumerate(zip(exp[rid], got[rid], strict=False)) if x != y)
+            div = next(i for i, (x, y) in enumerate(
+                zip(exp[rid], got[rid], strict=False)) if x != y)
             print(f"     output diverges at token {div}")
             print(f"     off: {exp[rid]}")
             print(f"     on : {got[rid]}")
