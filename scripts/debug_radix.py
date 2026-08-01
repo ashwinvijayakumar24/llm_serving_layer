@@ -182,6 +182,23 @@ def main():
                   f"{[round(float(x), 5) for x in per_lay.tolist()]}")
             print(f"     trace off: {rec_off.trace[inv_off[rid]][:3]}")
             print(f"     trace on : {rec_on.trace[inv_on[rid]][:3]}")
+            cached_tokens = cb * BLOCK_SIZE
+            npref = min(cached_tokens, n)
+            if npref:
+                print(f"     max|d| over the REUSED prefix [0,{npref}): "
+                      f"{d[:, :npref].max():.5g}")
+            if n > npref:
+                print(f"     max|d| over the recomputed region [{npref},{n}): "
+                      f"{d[:, npref:].max():.5g}")
+            prompt = next(g[rid] for g in groups if rid in g)
+            print("     SAME PROMPT, CACHE OFF, different prefill splits:")
+            for budget in (1 << 20, cached_tokens or 64, 32, 16):
+                _, _, s2, _ = make_stack(model, config, cache=False,
+                                         max_batch_size=1, max_prefill_tokens=budget)
+                s2.add_request(Request(request_id="x", prompt_ids=list(prompt),
+                                       max_tokens=8, ignore_eos=True))
+                s2.run_until_idle()
+                print(f"       budget={budget:>7}: {s2.finished[0].output_ids}")
 
     print("\nsnapshot:", {k: v for k, v in rc.snapshot().items() if k != "definitions"})
     chunk_shape_selftest(model, config, groups)

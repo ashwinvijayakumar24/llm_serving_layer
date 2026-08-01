@@ -31,8 +31,14 @@ python3 -m pip install -q "flashinfer-python==0.6.16" 2>&1 | tail -1 || true
 
 if [ "${RADIX_DIAGNOSE:-0}" = "1" ]; then
     echo; echo "############ R6 DIAGNOSTIC ############"
-    python3 scripts/debug_radix.py system 2>&1 || echo ">>> diagnostic errored"
-    python3 scripts/debug_radix.py conversational 2>&1 || echo ">>> diagnostic errored"
+    for s in ${RADIX_STRUCTURES:-system conversational adversarial}; do
+        python3 scripts/debug_radix.py "$s" 2>&1 || echo ">>> diagnostic errored on $s"
+    done
+fi
+
+if [ "${RADIX_SKIP_GATE:-0}" = "1" ]; then
+    echo "=== done ==="
+    exit 0
 fi
 
 echo; echo "############ CPU suite ############"
