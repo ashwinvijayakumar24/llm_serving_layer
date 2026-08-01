@@ -107,8 +107,33 @@ stop_all
 echo; echo "################ P5: PREFIX-AWARE ROUTING ################"
 for i in 1 2 3 4; do start_one $((9500+i)) "p5_replica$i" SERVING_KV_BLOCKS=4000; done
 REPLICAS="http://127.0.0.1:9501,http://127.0.0.1:9502,http://127.0.0.1:9503,http://127.0.0.1:9504"
+
+# ONE ROUTER PROCESS PER POLICY, all pointing at the SAME four replicas. The
+# driver requires least_outstanding (B5) and refuses to run without it, because
+# B5 is the only baseline that isolates cache awareness: it is load-aware and
+# cache-blind, so the gap between it and prefix_aware is the claim. Beating
+# round_robin (B4) is table stakes and proves only load balancing.
+start_router () {   # $1=port $2=policy
+    ROUTER_POLICY=$2 ROUTER_REPLICAS="$REPLICAS" \
+    python3 -m uvicorn scripts._router_entry:app --factory \
+        --host 127.0.0.1 --port "$1" --log-level warning \
+        > "logs/router_${2}_${SLURM_JOB_ID}.log" 2>&1 &
+    PIDS+=($!)
+    for i in $(seq 1 60); do
+        curl -sf "http://127.0.0.1:$1/health" >/dev/null 2>&1 && { echo "  router up: $2 :$1 (${i}s)"; return 0; }
+        sleep 1
+    done
+    echo "FATAL: router $2 did not become healthy"; tail -20 "logs/router_${2}_${SLURM_JOB_ID}.log"; return 1
+}
+start_router 9601 prefix_aware
+start_router 9602 least_outstanding
+start_router 9603 round_robin
+
 python3 -m bench.run_p5 \
     --replicas "$REPLICAS" \
+    --router prefix_aware=http://127.0.0.1:9601/v1/chat/completions \
+    --router least_outstanding=http://127.0.0.1:9602/v1/chat/completions \
+    --router round_robin=http://127.0.0.1:9603/v1/chat/completions \
     --loads 2,4,8,16 --scenarios zero,system,uniform,hot \
     --duration 45 --warmup 15 --drain 10 \
     --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
