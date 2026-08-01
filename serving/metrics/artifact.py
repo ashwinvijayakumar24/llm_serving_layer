@@ -49,7 +49,7 @@ import platform
 import socket
 import subprocess
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -157,7 +157,8 @@ for _spec in [
         "total can be inflated arbitrarily by lengthening prompts.",
     ),
     MetricSpec(
-        "goodput_rps", "goodput under SLO", "requests/s", "client aggregate over steady-state window",
+        "goodput_rps", "goodput under SLO", "requests/s",
+        "client aggregate over steady-state window",
         "Requests/sec that MET the SLO. The headline metric — raw throughput is "
         "gameable in both directions.",
     ),
@@ -167,7 +168,8 @@ for _spec in [
         "classic error.",
     ),
     MetricSpec(
-        "cache_hit_rate", "prefix cache hit rate", "ratio", "server instrumentation, block granularity",
+        "cache_hit_rate", "prefix cache hit rate", "ratio",
+        "server instrumentation, block granularity",
         "blocks_reused / blocks_required_at_prefill. Meaningless without the "
         "workload's prefix-sharing structure attached.",
     ),
@@ -236,7 +238,7 @@ class Provenance:
     seed: int | None = None
 
     @classmethod
-    def capture(cls, repo_root: str | Path = ".", seed: int | None = None) -> "Provenance":
+    def capture(cls, repo_root: str | Path = ".", seed: int | None = None) -> Provenance:
         """Collect provenance from the environment. Absent fields stay None."""
         repo_root = str(repo_root)
 
@@ -273,7 +275,7 @@ class Provenance:
             engine_tag = _run(["git", "describe", "--tags", "--exact-match"], cwd=engine_dir)
 
         return cls(
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             hostname=socket.gethostname(),
             platform=platform.platform(),
             slurm_job_id=os.environ.get("SLURM_JOB_ID"),

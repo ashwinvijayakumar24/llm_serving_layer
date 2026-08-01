@@ -102,14 +102,19 @@ class BatchMeta:
     # Paged KV addressing — CSR form, NOT a padded matrix. See §2.3.1.
     kv_indptr:     Tensor  # (n_seqs + 1,)  int32  offsets into kv_indices, per sequence
     kv_indices:    Tensor  # (total_pages,) int32  flat physical page ids, concatenated
-    kv_last_page:  Tensor  # (n_seqs,)      int32  occupancy of each seq's last page, 1..page_size
+    kv_last_page_len: Tensor # (n_seqs,)    int32  occupancy of each seq's last page, 1..page_size
     # Write addressing
     batch_indices: Tensor  # (tokens,)      int32  which sequence each new token belongs to
-    slot_mapping:  Tensor  # (tokens,)      int32  flat physical KV slot per new token
+    slot_mapping:  Tensor | None  # (tokens,) int32  flat physical KV slot per new token
                            #                       (PagedTorchBackend path; see §2.3.1)
     last_token_ix: Tensor  # (n_seqs,)      int32  index into tokens axis of each seq's
                            #                       last token — where logits are needed
+    page_size:     int = 16
+    is_prefill:    bool = False
 ```
+
+*This sketch is kept in sync with the authoritative definition in
+`engine/attention_backend.py`; on any disagreement the code wins.*
 
 Two fields carry the whole paged design:
 
