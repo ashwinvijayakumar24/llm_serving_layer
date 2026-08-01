@@ -9,15 +9,15 @@
 # these phases change scheduling and memory behaviour, not decode speed, so
 # re-anchoring per phase would move the goalposts between comparisons.
 #
-#SBATCH --job-name=p5_bench
+#SBATCH --job-name=p5_4gpu
 #SBATCH --account=paceship-simpliearn
 #SBATCH --qos=inferno
 #SBATCH --partition=gpu-h200
-#SBATCH --gres=gpu:h200:1
-#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:h200:4
+#SBATCH --cpus-per-task=32
 #SBATCH --time=02:30:00
-#SBATCH --output=logs/p5_bench_%j.out
-#SBATCH --error=logs/p5_bench_%j.out
+#SBATCH --output=logs/p5_4gpu_%j.out
+#SBATCH --error=logs/p5_4gpu_%j.out
 
 set -e
 mkdir -p logs results/p5
@@ -70,7 +70,20 @@ U () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
 # one.
 # ---------------------------------------------------------------------------
 echo; echo "################ P5: PREFIX-AWARE ROUTING ################"
-for i in 1 2 3 4; do start_one $((9500+i)) "p5_replica$i" SERVING_KV_BLOCKS=4000; done
+# ONE REPLICA PER PHYSICAL GPU. The single-GPU version of this experiment was
+# inconclusive and the reason was the setup, not the router: four replicas
+# sharing one H200 contend for SMs, so the fleet saturated at ~50-70% SLO
+# attainment by load 2 and collapsed to 0% by load 4. Nearly every cell failed
+# the steady-state check because the system sat above the knee, and no matched
+# policy pair was valid at the same load — so no routing comparison could be
+# drawn at all.
+#
+# CUDA_VISIBLE_DEVICES gives each process exactly one GPU, which it then sees as
+# cuda:0. Now "4 replicas" means four dedicated H200s and the absolute numbers
+# are a real four-GPU result rather than a contention artefact.
+for i in 1 2 3 4; do
+    start_one $((9500+i)) "p5_replica$i" CUDA_VISIBLE_DEVICES=$((i-1))
+done
 REPLICAS="http://127.0.0.1:9501,http://127.0.0.1:9502,http://127.0.0.1:9503,http://127.0.0.1:9504"
 
 # ONE ROUTER PROCESS PER POLICY, all pointing at the SAME four replicas. The
@@ -99,7 +112,7 @@ python3 -m bench.run_p5 \
     --router prefix_aware=http://127.0.0.1:9601/v1/chat/completions \
     --router least_outstanding=http://127.0.0.1:9602/v1/chat/completions \
     --router round_robin=http://127.0.0.1:9603/v1/chat/completions \
-    --loads 2,4,8,16 --scenarios zero_sharing,system_prompt_sharing,uniform_prefix,hot_prefix_skew \
+    --loads 4,8,16,32,48 --scenarios zero_sharing,system_prompt_sharing,uniform_prefix,hot_prefix_skew \
     --duration 45 --warmup 15 --drain 10 \
     --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
     --results-dir results/p5 2>&1 || echo "P5 driver exited non-zero (invalid cells)"
