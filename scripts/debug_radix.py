@@ -64,19 +64,28 @@ class Recorder:
         return out
 
     def _record(self, meta, backend, seq_ids):
+        # EVERY layer, K and V. Layer 0's K is a function of (token, position)
+        # alone — the embedding is the only input — so a layer-0 fingerprint is
+        # blind to exactly the thing this diagnostic is looking for. Depth is
+        # where context enters.
         bs = meta.page_size
         indptr = meta.kv_indptr.tolist()
         indices = meta.kv_indices.tolist()
         kv_lens = meta.kv_lens.tolist()
         q_lens = meta.query_lens.tolist()
-        k_flat = backend.k_pool[0].view(-1, backend.n_kv_heads, backend.head_dim)
+        nl = backend.num_layers
         for i, klen in enumerate(kv_lens):
             pages = indices[indptr[i] : indptr[i + 1]]
             slots = [pages[p // bs] * bs + (p % bs) for p in range(klen)]
-            idx = torch.tensor(slots, dtype=torch.long, device=k_flat.device)
-            fp = k_flat[idx].float().sum(dim=(1, 2)).cpu().tolist()
+            idx = torch.tensor(slots, dtype=torch.long, device=backend.device)
+            rows = []
+            for lay in range(nl):
+                for pool in (backend.k_pool[lay], backend.v_pool[lay]):
+                    flat = pool.view(-1, backend.n_kv_heads, backend.head_dim)
+                    rows.append(flat[idx].float().sum(dim=(1, 2)))
+            fp = torch.stack(rows)                      # (2*layers, klen)
             sid = seq_ids[i]
-            self.kv[sid] = fp
+            self.kv[sid] = fp.cpu()
             self.trace.setdefault(sid, []).append((q_lens[i], klen, list(pages)))
 
 
@@ -150,15 +159,17 @@ def main():
     for rid in sorted(exp):
         same = got[rid] == exp[rid]
         a, b = rec_off.kv[inv_off[rid]], rec_on.kv[inv_on[rid]]
-        n = min(len(a), len(b))
-        diffs = [abs(a[p] - b[p]) for p in range(n)]
-        worst = max(diffs) if diffs else 0.0
-        nz = [p for p in range(n) if diffs[p] > 0]
+        n = min(a.shape[1], b.shape[1])
+        d = (a[:, :n] - b[:, :n]).abs()
+        per_pos = d.max(dim=0).values
+        per_lay = d.max(dim=1).values
+        nz = (per_pos > 0).nonzero().flatten().tolist()
         pl, pp, cb, blk = adm_on[rid]
         tag = "OK " if same else "DIV"
         print(f"{tag} {rid}: prompt={pl} prefill_pos_on={pp} cached_blocks={cb} "
-              f"kv_len off={len(a)} on={len(b)} | KV max|d|={worst:.4g} "
-              f"n_differing={len(nz)}/{n} first={nz[0] if nz else '-'}", flush=True)
+              f"kv_len off={a.shape[1]} on={b.shape[1]} | KV max|d|={d.max():.4g} "
+              f"n_differing_pos={len(nz)}/{n} first={nz[0] if nz else '-'} "
+              f"first_layerpair={(per_lay > 0).nonzero().flatten().tolist()[:1]}", flush=True)
         if not same:
             div = next(i for i, (x, y) in enumerate(zip(exp[rid], got[rid])) if x != y)
             print(f"     output diverges at token {div}")
@@ -166,13 +177,9 @@ def main():
             print(f"     on : {got[rid]}")
             print(f"     admit off: {adm_off[rid]}")
             print(f"     admit on : {(pl, pp, cb, blk)}")
-            big = [p for p in range(n) if diffs[p] > 0.5]
-            print(f"     positions with |d|>0.5: {big[:20]} "
-                  f"(blocks {sorted({p // BLOCK_SIZE for p in big})[:20]})")
-            if nz:
-                p = nz[0]
-                print(f"     first differing position {p} (block {p // BLOCK_SIZE}): "
-                      f"off={a[p]:.6f} on={b[p]:.6f} |d|={diffs[p]:.3g}")
+            print(f"     first 40 differing positions: {nz[:40]}")
+            print(f"     per-layerpair max|d|: "
+                  f"{[round(float(x), 5) for x in per_lay.tolist()]}")
             print(f"     trace off: {rec_off.trace[inv_off[rid]][:3]}")
             print(f"     trace on : {rec_on.trace[inv_on[rid]][:3]}")
 
@@ -203,11 +210,11 @@ def chunk_shape_selftest(model, config, groups):
         fps[budget] = rec.kv[0]
     base = fps[256]
     for budget, fp in fps.items():
-        n = min(len(base), len(fp))
-        d = [abs(base[p] - fp[p]) for p in range(n)]
+        n = min(base.shape[1], fp.shape[1])
+        d = (base[:, :n] - fp[:, :n]).abs()
+        npos = int((d.max(dim=0).values > 0).sum())
         print(f"  prompt_len={len(prompt)} budget={budget}: max|d| vs budget=256 "
-              f"is {max(d):.4g}, differing positions {sum(1 for x in d if x > 0)}/{n}",
-              flush=True)
+              f"is {d.max():.4g}, differing positions {npos}/{n}", flush=True)
 
 
 if __name__ == "__main__":
