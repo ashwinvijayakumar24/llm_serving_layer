@@ -655,6 +655,78 @@ def test_admin_endpoints_drive_fault_injection():
     assert run(post(app, "/admin/replicas/r1/undrain")).json()["status"] == "healthy"
 
 
+def test_router_stream_is_parseable_by_the_real_loadgen_client():
+    """
+    Feed the ROUTER's actual SSE output to `bench.loadgen.stream_one` — the real
+    parser, imported, not reimplemented. If the harness cannot read the router,
+    every routing number this project publishes is zero.
+    """
+    import time as _time
+
+    from bench.loadgen import LoadGenConfig, Outcome, Phase, RequestSpec, stream_one
+
+    app, _, _, _ = make_router(n=2, tokens=5)
+    cfg = LoadGenConfig(url="http://router/v1/chat/completions", request_timeout_s=30)
+    spec = RequestSpec(request_id=0, intended_send_time=0.0, prompt="hello " * 60,
+                       max_tokens=5, phase=Phase.STEADY)
+
+    async def go():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://router") as c:
+            return await stream_one(c, spec, cfg, t0=_time.perf_counter())
+
+    res = run(go())
+    assert res.outcome == Outcome.COMPLETED, res.error
+    assert res.output_tokens == 5
+    assert res.finish_reason == "stop"
+
+
+def test_a_midstream_failure_is_never_scored_as_completed_by_the_harness():
+    """
+    The accounting consequence of `_terminate_with_error`, asserted against the
+    real scorer rather than against a comment.
+
+    A terminal chunk plus `[DONE]` on the error path would make a mid-stream
+    failure indistinguishable from a success at the protocol level, and the
+    harness would count it toward goodput — a failure silently improving the
+    headline metric. It must land in a non-completed outcome, which is the
+    truth about what the client received.
+    """
+    import time as _time
+
+    from bench.loadgen import LoadGenConfig, Outcome, Phase, RequestSpec, stream_one
+
+    app, _, _, _ = make_router(n=2, tokens=6, die_after_content=2)
+    cfg = LoadGenConfig(url="http://router/v1/chat/completions", request_timeout_s=30)
+    spec = RequestSpec(request_id=0, intended_send_time=0.0, prompt="hello " * 60,
+                       max_tokens=6, phase=Phase.STEADY)
+
+    async def go():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://router") as c:
+            return await stream_one(c, spec, cfg, t0=_time.perf_counter())
+
+    res = run(go())
+    assert res.outcome != Outcome.COMPLETED
+    assert res.outcome == Outcome.INCOMPLETE
+    assert res.output_tokens == 2          # exactly what was delivered, counted honestly
+
+
+def test_build_default_router_wires_urls_and_refuses_unknown_policies():
+    from serving.router.app import build_default_router
+
+    app = build_default_router(["http://a:8000", "http://b:8000"], "least_outstanding")
+    assert [t.replica_id for t in
+            [r.target for r in app.state.pool.replicas.values()]] == ["r0", "r1"]
+    assert app.state.policy.name == "least_outstanding"
+
+    blended = build_default_router(["http://a:8000"], "prefix_aware", blend=0.4)
+    assert blended.state.policy.config.blend == 0.4
+
+    with pytest.raises(KeyError):
+        build_default_router(["http://a:8000"], "prefix-aware")
+
+
 def test_events_are_recorded_for_every_transition():
     """S7 is 'fault injection with FULL request accounting' — this is the trail."""
     app, _, mocks, _ = make_router(n=2)
