@@ -45,11 +45,18 @@ SLO_TTFT=434
 SLO_ITL=27.8
 
 echo; echo "################ P4 GATE: cache correctness at batch=1 ################"
+# `|| true` deliberately: a FAILING gate must not abort the script under `set -e`
+# and take the crossover sweep with it, which is what killed job 11610459. The
+# exit status is captured explicitly instead — `echo "$?"` on the next line would
+# report the echo's own status, not pytest's.
+set +e
 python3 -m pytest tests/test_radix_gpu.py -v -s -k "uniform_chunk_shape" 2>&1
-echo ">>> batch-1 gate exit: $?"
+GATE_RC=$?
+set -e
+echo ">>> uniform-chunk gate exit code: ${GATE_RC}"
 
 echo; echo "################ P4 GATE: full batched (expected to fail, engine numerics) ################"
-python3 -m pytest tests/test_radix_gpu.py -q -k "identical_with_cache_on_and_off" 2>&1 | tail -6 || true
+set +e; python3 -m pytest tests/test_radix_gpu.py -q -k "identical_with_cache_on_and_off" 2>&1 | tail -6; set -e
 
 PIDS=()
 start_one () {
