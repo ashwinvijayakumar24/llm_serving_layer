@@ -197,47 +197,53 @@ def workload(structure, **kw):
 @pytest.mark.parametrize(
     "structure", ["zero", "system", "conversational", "adversarial"]
 )
-def test_cache_correctness_at_matched_batch_shape(model, structure):
+def test_cache_correctness_at_uniform_chunk_shape(model, structure):
     """
-    THE CACHE'S OWN CORRECTNESS GATE — batch size 1, so batch shape is IDENTICAL
-    between the cache-on and cache-off arms.
+    THE CACHE'S OWN CORRECTNESS GATE — one block per prefill step, so every
+    forward pass computes an IDENTICALLY SHAPED GEMM in both arms.
 
-    WHY THIS EXISTS SEPARATELY FROM THE TEST BELOW
-    ----------------------------------------------
-    The full-batch gate below fails, and NOT because of the cache. The engine's
-    `linear()` takes the packed batch token count as its `M` dimension, and
-    cuBLAS selects different kernels and split-K by shape, so fp16 reduction
-    order — and therefore the logits — depend on how many OTHER requests share
-    the forward pass. Measured at max|dlogit| 0.1745 with the cache entirely out
-    of the loop; see results/p4/FINDING_batch_shape_numerics.md.
+    WHY NOT JUST BATCH SIZE 1
+    -------------------------
+    Batch 1 was tried first and failed identically. It does not equalise shapes,
+    because a cache HIT changes how many tokens the request prefills: cache-off
+    computes M=105 in one pass, cache-on computes M=41 for the uncached
+    remainder. The engine's `linear()` takes that as its `M` dimension, cuBLAS
+    selects kernels and split-K by shape, and fp16 reduction order follows. The
+    shape difference is INTRINSIC TO CACHING, not to batching.
 
-    A cache HIT changes what gets computed in a step, so it changes batch shape,
-    so it trips that pre-existing property. Attributing the resulting divergence
-    to the cache would be wrong.
+    Capping prefill at exactly one block per step fixes that. Cache-off prefills
+    105 tokens as 16,16,16,16,16,16,9; cache-on with 64 tokens cached prefills
+    16,16,9. Every individual GEMM has the same M in both arms — the cache
+    simply performs FEWER of them. Block-granularity reuse is what makes this
+    exact: the cached amount is always a multiple of the block size, so even the
+    partial tail chunk aligns.
 
-    At batch size 1 the confound disappears: every step contains exactly one
-    sequence, both arms compute identically-shaped GEMMs, and any difference in
-    output IS the cache's fault. That makes this a real gate rather than a
-    weakened one — it is strictly more sensitive to cache bugs than the batched
-    version, because nothing else can move the logits.
+    That is what isolates the cache. Any divergence here cannot be reduction
+    order, because the reductions are identically shaped; it can only be the
+    cache serving wrong KV. Independently confirmed during the Phase 4
+    investigation, where forcing one-block chunks drove drift to exactly 0 at
+    every position of every request.
 
-    What it does NOT cover: cache correctness under concurrent batching. That
-    remains blocked on the engine's numerics and is reported as such.
+    WHAT THIS DOES NOT COVER: correctness under production chunk sizes and
+    concurrent batching, where shapes necessarily differ. That remains blocked
+    on the engine's numerics (results/p4/FINDING_batch_shape_numerics.md) and is
+    reported as blocked rather than quietly passed.
     """
     m, config = model
     wl = workload(structure)
     groups = [{r.request_id: list(r.token_ids)} for r in wl.requests]
 
+    # ONE BLOCK PER PREFILL STEP in both arms. This is the whole mechanism.
     expected, got, rc, _ = compare(m, config, groups, max_tokens=8,
-                                   max_batch_size=1, max_prefill_tokens=128)
-    assert_identical(expected, got, f"{structure} @ batch=1")
+                                   max_batch_size=1, max_prefill_tokens=BLOCK_SIZE)
+    assert_identical(expected, got, f"{structure} @ uniform {BLOCK_SIZE}-token chunks")
 
     snap = rc.snapshot()
     assert snap["blocks_reused"] > 0 or structure == "zero", (
         f"{structure}: no blocks were reused, so this run proves nothing about the cache"
     )
     print(
-        f"\n  {structure} @ batch=1: identical output, block hit rate "
+        f"\n  {structure} @ uniform chunks: identical output, block hit rate "
         f"{snap['block_hit_rate']:.3f} "
         f"(reused {snap['blocks_reused']} of {snap['blocks_required']})"
     )

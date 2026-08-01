@@ -45,7 +45,7 @@ SLO_TTFT=434
 SLO_ITL=27.8
 
 echo; echo "################ P4 GATE: cache correctness at batch=1 ################"
-python3 -m pytest tests/test_radix_gpu.py -v -s -k "matched_batch_shape" 2>&1
+python3 -m pytest tests/test_radix_gpu.py -v -s -k "uniform_chunk_shape" 2>&1
 echo ">>> batch-1 gate exit: $?"
 
 echo; echo "################ P4 GATE: full batched (expected to fail, engine numerics) ################"
