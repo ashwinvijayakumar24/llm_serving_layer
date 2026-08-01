@@ -1,0 +1,140 @@
+{
+  "allocation_id": "11608159@atl1-1-03-020-11-0",
+  "blockers": [
+    "Working tree is dirty \u2014 the measured code is not any commit."
+  ],
+  "calibration": {
+    "itl_bursty": true,
+    "itl_ms_mean": 9.40600531039275,
+    "itl_ms_p50": 0.07946859113872051,
+    "itl_note": "client-observed ITL is bursty/bimodal; the SLO is anchored on TPOT. See the comment in bench/run_p2.py:calibrate.",
+    "loop": "closed (deliberate: unloaded service time needs exactly one in flight)",
+    "n_itl_samples": 546,
+    "n_requests": 10,
+    "n_tpot_samples": 10,
+    "tpot_ms_mean": 9.409981109991627,
+    "tpot_ms_p50": 9.433416115051067,
+    "ttft_ms_mean": 132.95068223960698,
+    "ttft_ms_p50": 40.457385359331994
+  },
+  "publishable": false,
+  "rows": [
+    {
+      "rate": 1.0,
+      "scalars": {
+        "completed_rps": 0.9833333333333333,
+        "drift_p99": 1.97043442709223,
+        "goodput_rps": 0.8,
+        "n_ttft": 118,
+        "offered_load_rps": 1.0,
+        "output_tok_s": 32.391666666666666,
+        "slo_attainment": 0.8135593220338984,
+        "ttft_p50": 58.936433312506864,
+        "ttft_p99": 529.6815662434979
+      },
+      "valid": false
+    },
+    {
+      "rate": 2.0,
+      "scalars": {
+        "completed_rps": 2.0,
+        "drift_p99": 2.0320901978371344,
+        "goodput_rps": 1.1416666666666666,
+        "n_ttft": 240,
+        "offered_load_rps": 2.0,
+        "output_tok_s": 68.45833333333333,
+        "slo_attainment": 0.5708333333333333,
+        "ttft_p50": 116.26508828483395,
+        "ttft_p99": 612.2330158496015
+      },
+      "valid": false
+    },
+    {
+      "rate": 3.0,
+      "scalars": {
+        "completed_rps": 3.025,
+        "drift_p99": 1.9097955045943125,
+        "goodput_rps": 1.2666666666666666,
+        "n_ttft": 363,
+        "offered_load_rps": 3.0,
+        "output_tok_s": 102.94166666666666,
+        "slo_attainment": 0.418732782369146,
+        "ttft_p50": 192.16168217367624,
+        "ttft_p99": 620.2170980548148
+      },
+      "valid": true
+    },
+    {
+      "rate": 4.0,
+      "scalars": {
+        "completed_rps": 3.8,
+        "drift_p99": 1.991601808774419,
+        "goodput_rps": 0.95,
+        "n_ttft": 456,
+        "offered_load_rps": 4.0,
+        "output_tok_s": 131.29166666666666,
+        "slo_attainment": 0.25,
+        "ttft_p50": 220.35929089299344,
+        "ttft_p99": 626.3520594654456
+      },
+      "valid": false
+    },
+    {
+      "rate": 6.0,
+      "scalars": {
+        "completed_rps": 5.708333333333333,
+        "drift_p99": 1.9620837234355413,
+        "goodput_rps": 0.4583333333333333,
+        "n_ttft": 685,
+        "offered_load_rps": 6.0,
+        "output_tok_s": 195.175,
+        "slo_attainment": 0.08029197080291971,
+        "ttft_p50": 306.9374687874529,
+        "ttft_p99": 651.2907167650189
+      },
+      "valid": false
+    },
+    {
+      "rate": 8.0,
+      "scalars": {
+        "completed_rps": 7.75,
+        "drift_p99": 1.7587599547560473,
+        "goodput_rps": 0.14166666666666666,
+        "n_ttft": 930,
+        "offered_load_rps": 8.0,
+        "output_tok_s": 264.425,
+        "slo_attainment": 0.01827956989247312,
+        "ttft_p50": 344.6539997375488,
+        "ttft_p99": 679.3325873826949
+      },
+      "valid": true
+    },
+    {
+      "rate": 12.0,
+      "scalars": {
+        "completed_rps": 11.575,
+        "drift_p99": 1.5647544665239348,
+        "goodput_rps": 0.025,
+        "n_ttft": 1389,
+        "offered_load_rps": 12.0,
+        "output_tok_s": 394.53333333333336,
+        "slo_attainment": 0.0021598272138228943,
+        "ttft_p50": 416.68535241481663,
+        "ttft_p99": 800.9662579066917
+      },
+      "valid": true
+    }
+  ],
+  "slo": {
+    "anchored_to": {
+      "unloaded_itl_p50_ms_bursty": 0.07946859113872051,
+      "unloaded_tpot_p50_ms": 9.433416115051067,
+      "unloaded_ttft_p50_ms": 40.457385359331994
+    },
+    "declared": "multipliers fixed in bench/run_p2.py before any loaded run",
+    "itl_multiplier": 3.0,
+    "itl_p95_ms": 28.3,
+    "ttft_ms": 404.574,
+    "ttft_multiplier": 10.0
+  }
+}

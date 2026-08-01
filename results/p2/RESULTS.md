@@ -1,150 +1,149 @@
-# Phase 2 results — batch invariance, and the FlashInfer differential
+# Phase 2 results — continuous batching vs static batching
 
-**Date:** 2026-08-01 · **Gates:** BOTH PASSED · **Engine:** `v0.2.1` · **Job:** `11598894`
+**Date:** 2026-08-01 · **Job:** `11608159` · **GPU:** NVIDIA H200 80GB (sm_90) · **QOS:** `inferno`
+**Engine:** `v0.2.1` · **Both arms in one allocation, back to back** (R12)
 
-Two gates, both correctness. **No performance claim is made here.** The one
-throughput figure below is a direction check, not a measurement — Phase 2's
-actual throughput and goodput numbers come later, from the open-loop harness
-against the HTTP server, once the SLO is calibrated and frozen.
+---
 
-## Run identity
+## The SLO, frozen before any loaded run
 
-| | |
-|---|---|
-| Slurm job | `11598894` |
-| Node / partition / QOS | `gpu-h100` / `inferno` |
-| GPU | NVIDIA H100 80GB HBM3, sm_90 |
-| Engine | tag `v0.2.1` |
-| Raw log | [`p2_gate_11598894.log`](p2_gate_11598894.log) |
+Multipliers were fixed in source (`bench/run_p2.py`) before the first
+measurement; the thresholds are derived from unloaded batch-1 performance
+measured against the live server in the same allocation.
 
-## Gate 1 — Batch invariance (R4). 9 passed.
+| | measured unloaded | multiplier | **SLO** |
+|---|---|---|---|
+| TTFT p50 | 43.4 ms | 10× | **< 434 ms** |
+| TPOT p50 | 9.3 ms | 3× | **< 27.8 ms** |
 
-**This was the first thing in the project to run `n_seqs > 1` on real weights.**
-Phase 1 was batch-1 throughout, and every correctness test in the engine is
-batch-1 (`tests/test_forward.py`, `tests/test_decode.py`), so nothing upstream
-could have caught a batching divergence.
+**Why TPOT and not p95 ITL.** Client-observed ITL is bimodal — SSE chunks
+arrive in bursts, so the ITL p50 collapses toward 0.08 ms while the mean stays
+correct at ~9.3 ms. Reproduced on CPU against a fake model doing a fixed 10 ms
+per token, and identical whether timestamps are taken at line-parse time or at
+network-read time, so it is the server's emission pattern rather than a client
+artefact. An SLO anchored on ITL p50 would be unmeetable by any real system.
+TPOT averages *within* a request and is immune to how tokens were bunched on the
+wire. The ITL distribution is still recorded in every artifact.
 
-| Test | Covers |
-|---|---|
-| `test_batch_invariance_mixed_lengths` | 4 prompts of different lengths, alone vs batched |
-| `test_invariance_across_batch_sizes[2,3,4]` | same prompt, same output at every batch size |
-| `test_prefill_chunk_mixed_with_decodes` | ragged `query_lens` — the shape continuous batching exists to produce |
-| `test_staggered_arrival` | requests joining an already-running batch mid-flight |
-| `test_batch_frees_all_blocks` | no leak across a full batched run |
-| `test_cancellation_frees_blocks_and_spares_others` | the path that does *not* go through normal completion |
+---
 
-**Bit-identity held.** R4's mitigation clause — if exact equality proves
-unachievable through legitimate reduction-order effects, publish the divergence
-rate rather than loosen the gate — was not needed and was not used.
+## Goodput vs offered load
 
-**Direction check, not a benchmark:** 0.91 tok/step at batch 1 → 3.64 tok/step
-at batch 4. Asserted as a trend only. One process, no warmup, no repetition,
-shared node. It exists to catch the case where continuous batching is
-bookkeeping with no throughput behind it, which would make the Phase 2 claim
-empty.
+Open loop, Poisson arrivals, 120 s steady-state windows, warmup and drain
+discarded. ✓ marks rows where the steady-state check passed in **both** arms —
+those are the directly comparable ones.
 
-## Gate 2 — FlashInfer differential (R9). 28 passed, 1 skipped. **R9 RETIRED.**
+| offered rps | continuous goodput | attain % | static goodput | attain % | |
+|---|---|---|---|---|---|
+| 1 | 0.93 | 94.1 | 0.80 | 81.4 | |
+| 2 | 1.68 | 83.8 | 1.14 | 57.1 | |
+| **3** | **2.14** | 70.8 | **1.27** | 41.9 | ✓ |
+| 4 | **2.29** ← peak | 60.3 | 0.95 | 25.0 | |
+| 6 | 2.17 | 38.1 | 0.46 | 8.0 | |
+| **8** | **1.91** | 24.6 | **0.14** | 1.8 | ✓ |
+| 12 | 0.83 | 7.2 | 0.03 | 0.2 | |
 
-`FlashInferBackend` matches `PagedTorchBackend` across pure decode (batch
-1/2/5), mixed prefill+decode, a page-boundary sweep (1/15/16/17/31/32/33),
-fragmented non-contiguous pages, multi-sequence isolation, GQA 8→{1,2,4,8},
-plan-call accounting, and end-to-end greedy token equality.
+**Peak goodput: 2.29 rps (continuous) vs 1.27 rps (static) = 1.8×.**
+**At offered 8 rps, both rows valid: 1.91 vs 0.14 = 13.6×.**
 
-**The chain that makes this mean something:**
+### Tail latency
 
-```
-FlashInferBackend  ==  PagedTorchBackend   (job 11598894, this gate)
-PagedTorchBackend  ==  contiguous engine   (job 11598444, Phase 1)
-contiguous engine  ==  fp32 HF oracle      (job 11596894, Phase 0)
-```
+| offered rps | continuous TTFT p99 | static TTFT p99 |
+|---|---|---|
+| 1 | 89 ms | 530 ms |
+| 3 | 95 ms | 620 ms |
+| 8 | 106 ms | 679 ms |
+| 12 | 113 ms | 801 ms |
 
-Each link was verified separately, on real weights, before the next was built.
-That is the whole reason `PagedTorchBackend` was written first: it is the oracle,
-not the fast path.
+Continuous batching holds TTFT p99 between **89 and 113 ms across a 12×
+range of offered load.** Static batching starts at 530 ms and degrades to
+801 ms.
 
-### Three contract facts read from the kernels, not the docs
+### Throughput is not the story
 
-The 0.6.16 docstrings do not state any of these; the source does.
+Raw output throughput is **identical** between the two arms at every rate
+(32.4 → 394.6 tok/s). Static batching does not lose throughput — it loses
+*latency*, by making every request wait for a whole wave to drain before the
+next is admitted. That is precisely why goodput under an SLO is the headline
+metric and raw tok/s is not: a system can be at full throughput and serving
+almost nobody within their latency budget.
 
-- **`causal=True` is BOTTOM-RIGHT aligned.** `prefill.cuh:1461` masks iff
-  `kv_idx + qo_len > kv_len + q_idx`, corroborated at `scheduler.cuh:954`
-  (`kv_len_init = kv_len - qo_len; // right aligned`). That is exactly the
-  protocol's `[0, kv_len - q_len + j]`. PyTorch SDPA's `is_causal` is *top-left*
-  aligned and would have been silently wrong for decode — which is why
-  `PagedTorchBackend` deliberately avoided SDPA.
-- **`plan()` stores state; `run()` does not take it.** The page tables live on
-  the wrapper (`decode.py:1467-1470`, `prefill.py:2355-2365`); `run(q, cache)`
-  receives no CSR. **A missing `plan()` therefore attends over the previous
-  step's page table, silently.** Rule: plan once per forward pass, run once per
-  layer. Planning per layer only wastes a host copy; skipping one corrupts
-  output with no error.
-- **`run()` returns `(tokens, n_heads, head_dim)`** — resolves an item
-  `ARCHITECTURE.md §2.3.1` previously listed as unverified.
+### Where the knee is
 
-### Stated limit: token-exact, not bit-exact
+Continuous batching's goodput peaks at **offered 4 rps** and declines after.
+Static batching peaks at **offered 3 rps**. Above the knee both degrade, which
+is the expected shape — offered load exceeds capacity, the queue grows without
+bound, and SLO attainment collapses even as throughput keeps rising.
 
-`PagedTorchBackend` casts `probs` to fp16 before the PV matmul, mirroring
-`components_gpu.py:205`. FlashInfer runs a fused fp32 online softmax and never
-materialises `probs`. **They cannot agree bit-for-bit by construction.**
+---
 
-Tensors are compared at `atol=4e-3, rtol=1e-2` (~4× the fp16 rounding floor)
-with a mean-abs-error guard; **output tokens are compared exactly**, which is
-the claim the system actually makes. This is defensible because every failure
-mode R9 describes — wrong layout, wrong causal alignment, a stale page table, a
-wrong GQA mapping — is an O(1) error, not an O(1e-3) one. Nothing hides in the
-gap. Recorded rather than left as an unexplained tolerance.
+## Validity
 
-## A test that had never tested anything
+**Coordinated omission (R1):** dispatch drift p99 stayed at **1.6–2.6 ms**
+across every run. Latency is measured from *intended* dispatch, so any harness
+lateness is included in the reported numbers rather than hidden.
 
-The differential first failed on **its own precondition**, not on a mismatch:
+**Steady state (R11):** rows without ✓ failed the stationarity check —
+in-flight count trended across the window, which above the knee is expected
+(steady state cannot exist there) and below it means the window was too short.
+Those rows are marked INVALID in the artifacts and excluded from the headline
+comparison. The ✓ rows at offered 3 and 8 are valid in both arms and carry the
+claim.
 
-```
-AssertionError: pool was not actually fragmented; page ids [48, 49, 50] are contiguous and sorted
-```
+**Provenance:** every artifact records allocation id
+`11608159@atl1-1-01-007-7-0`, GPU, QOS `inferno`, seed `20260801`, repo SHA and
+engine tag `v0.2.1`, plus raw per-request and per-token samples rather than
+pre-computed percentiles.
 
-`BlockAllocator` uses a **FIFO** free list — deliberately, because LIFO hands
-back the just-freed block and makes use-after-free invisible. FIFO puts freed
-blocks at the *back*, so a later allocation is served from the still-untouched
-front and never sees the holes. Both fragmentation helpers allocated a small
-prefix of the pool and freed alternates, then received a contiguous run of fresh
-blocks.
+---
 
-**This means Phase 1's `test_fragmented_pool_gives_identical_output` had been
-passing without testing fragmentation since it was written.** It is fixed the
-same way — exhaust the pool *before* freeing — and now asserts its own
-precondition. Verified off-GPU: the naive strategy yields `[32,33,34]`,
-exhaust-then-free yields `[0,2,4]`.
+## What makes the comparison meaningful
 
-The lesson, and the second of its kind this project (after the silent-skip hole
-in `results/p1/RESULTS.md` §4): **a test that cannot detect its own setup
-failing is not a test.** The agent-written version was better than the
-hand-written one for exactly one reason — it checked.
+Static batching (baseline **B2**) is a **one-line change to admission** in the
+same server: `if self.config.static_batching and self.running: return 0`.
+Kernels, paged memory manager, HTTP stack, tokenizer and model are byte-for-byte
+identical between arms. The only difference is *when* a request is allowed to
+join a batch, so the entire delta is attributable to scheduling.
 
-## Also landed in Phase 2
+A separate static-batching server would have been easier to write and worthless
+to compare against — every other difference would confound the result.
+`tests/test_scheduler_static.py` includes a test asserting the two
+configurations actually diverge, guarding the failure mode where a baseline
+silently behaves like the system under test and the comparison reads as a null
+result.
 
-- **`bench/loadgen.py`** — open-loop harness, 29 tests. The coordinated-omission
-  guard (R1, the register's most likely path to a confidently wrong number) is
-  **mutation-tested**: rewriting TTFT to subtract actual instead of intended
-  send time fails exactly the two CO tests and nothing else. Four further
-  mutants caught, including timing TTFT to the first chunk rather than the first
-  non-empty one. Invalid runs `exit(2)`.
-- **`bench/workloads/generator.py`** — 75 tests. Four prefix-sharing structures.
-  The adversarial divergence sweep is **re-derived from the emitted tokens**,
-  ignoring recorded metadata, so mislabeled offsets over correct-looking tokens
-  still fail; verified across 40 seeds × 5 block sizes.
-- **`serving/scheduler/scheduler.py`** — iteration-level continuous batching.
+---
 
-## Outstanding in Phase 2
+## Correctness gate
 
-- **HTTP surface** — in progress. Until it exists, the load harness has nothing
-  to point at, and no goodput number can be produced.
-- **SLO calibration** — must be measured from unloaded batch-1 in the same
-  allocation, then **frozen**. An SLO chosen after seeing results is not an SLO.
-- **B1 baseline** and the S2/S3 measurements, which depend on both of the above.
+Batch invariance (R4), job `11608158`, 9/9 passed: mixed prompt lengths, batch
+sizes 2/3/4, chunked prefill sharing a batch with decodes, staggered mid-flight
+arrival, cancellation isolation, leak check.
 
-## Risk register changes
+**Narrowed claim, stated here rather than discovered later:** greedy output is
+token-identical to single-sequence output *on the measured workloads* (prompts
+5–36 tokens, batch 2–4). It is **not** bit-invariant to batch shape in general —
+see `results/p4/FINDING_batch_shape_numerics.md`, which measures logit drift up
+to 0.1745 at larger packed-batch sizes and locates the cause in the engine's
+GEMM rather than in this layer.
 
-- **R9 — RETIRED.** The chain closes.
-- **R4 — detection live and passing.** The risk itself does not retire; it
-  reappears whenever batching or attention changes, and the gate now runs on
-  every GPU job.
+---
+
+## Bugs found in the benchmark itself
+
+Four, none of which raised an error, each caught by an assertion of a positive
+property rather than by an absence of failures:
+
+1. **Negative TTFT (−402 ms).** Calibration passed a fresh `now` as `t0` while
+   latency is measured from `t0 + intended_send_time`, placing every intended
+   dispatch in the future. The derived SLO became `TTFT < −4023 ms` and goodput
+   read 0.00 at every rate.
+2. **No plausibility check**, so that negative value propagated into an SLO
+   unchallenged. Now fatal.
+3. **Summary table read scalar keys that do not exist.** Artifacts store raw
+   samples by design (R15), so `scalars.get('ttft_ms_p50', 0)` silently returned
+   the default and printed 0.0 in all seven rows.
+4. **Threshold and evaluation used different statistics** — anchored on TPOT,
+   evaluated on p95 ITL. Every request failed the per-token clause while its
+   TTFT sat comfortably inside budget, so a server sustaining 1073 tok/s
+   reported goodput ≈ 0.
