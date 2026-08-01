@@ -85,7 +85,9 @@ A prefix cache bug makes the system **faster and wrong** — the most dangerous 
 *Mitigation:* the adversarial near-miss workload from methodology §4 exists specifically for this, with divergence points swept across all offsets within a block.
 
 ### R7 — Eviction freeing a live block
-**HIGH · Phase 4**
+**HIGH · Phase 4 · partial detection live since Phase 1**
+
+> The allocator half is built and exercised: `check_invariants()` (O(num_blocks), catches a block that is both referenced and on the free list), double-free raises rather than being tolerated, and the leak test confirms the free list returns to its initial count. 125 allocator tests, mutation-tested to confirm they bite. The EVICTION half arrives with the radix cache in Phase 4 and is still open.
 
 Refcount bug → a block still referenced by a running sequence is freed and reallocated. The victim sequence's attention silently reads another sequence's KV. Output stays fluent. Cross-request contamination, no error.
 
@@ -93,7 +95,9 @@ Refcount bug → a block still referenced by a running sequence is freed and rea
 *Mitigation:* leaf-first eviction with an invariant check that no evicted node has live descendants.
 
 ### R8 — `slot_mapping` off-by-one at block boundaries
-**HIGH · Phase 1**
+**HIGH → DETECTION CONFIRMED 2026-08-01 · Phase 1**
+
+> Detection is live and passing. The block-straddle sweep runs at prompt lengths 1/15/16/17/31/32/33/47/48 plus a fragmented-pool test, on real weights (job `11598444`, H100). Exact multiples of `block_size` correctly report `kv_last_page_len == block_size`, not 0. The risk itself does not retire — it reappears every time addressing changes — but the gate that would catch it exists.
 
 `slot = block_tables[seq][pos // block_size] * block_size + (pos % block_size)`. An error here writes KV to the wrong physical slot. At batch 1 with short prompts it may never cross a boundary and never show.
 
