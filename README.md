@@ -1,10 +1,57 @@
 # llm_serving_layer
 
-Concurrent serving over [`llm_inference_engine`](../llm_inference_engine) — paged block KV cache, continuous batching, preemption under memory pressure, radix prefix caching, and prefix-aware routing across GPU replicas.
+A from-scratch LLM serving system — paged KV cache, continuous batching, preemption under memory pressure, radix prefix caching, and prefix-aware routing across GPU replicas — built over [`llm_inference_engine`](https://github.com/ashwinvijayakumar24/llm_inference_engine), a single-request Llama 3.2 1B implementation.
 
-> **Status: planning complete, implementation not started.** Everything below the Design section describes what will be built. No number appears in this README until it resolves to a committed artifact in `results/`.
+Benchmarked on NVIDIA A100 40GB and H100 80GB (Georgia Tech PACE Phoenix). Every number below resolves to a committed artifact in [`results/`](results/) carrying its Slurm allocation id, GPU, seed, git SHA, and pinned engine tag.
 
-The engine is a correct, benchmarked, **single-request** Llama 3.2 1B implementation. It is batch-1 by construction — no batch dimension in the tensors, the KV cache, the causal mask, or the CUDA kernel — and its HTTP server serializes concurrent requests. This repo is everything that has to exist between "a model that runs" and "a system that serves."
+---
+
+## Why this exists
+
+The engine underneath is correct and fast for **one request at a time**, and structurally incapable of anything else:
+
+- **Batch 1 by construction** — no batch dimension in the tensors, the KV cache, the causal mask, or the CUDA kernel (`BENCHMARKS.md:248` states this as a known gap).
+- **Its HTTP server serializes** — a blocking synchronous generator inside an `async def` (`engine/server.py:69`), so request 2's TTFT contains request 1's entire decode.
+- **Memory sized for the worst case** — a fresh `max_seq=2048` KV cache per request, dropped on return (`engine/scheduler.py:26-27`). A 30-token request reserves 2048 slots × 16 layers.
+
+Everything between "a model that runs" and "a system that serves" is this repo.
+
+---
+
+## Results
+
+> **Read the tables, not the headline numbers.** Several results here are functions of workload, and a single row is a choice of operating point rather than a measurement. Where that is true it is said explicitly.
+
+### Concurrent-sequence capacity — paged vs contiguous (S1)
+
+Measured by driving the real allocator to admission failure. Baseline reserves `max_seq=2048` per request, as the engine does.
+
+| realized mean length | paged | contiguous | ratio |
+|---|---|---|---|
+| 32 | 29,618 | 571 | **51.9×** |
+| 128 | 8,615 | 571 | 15.1× |
+| 258 | 4,406 | 571 | 7.7× |
+| 505 | 2,280 | 571 | 4.0× |
+| 1,420 | 820 | 571 | **1.4×** |
+
+The ratio is approximately `max_seq / realized_padded_length`. **It is not a property of the allocator alone**, and it falls to ~1× when sequences genuinely use all 2048 slots. The defensible single statement names its distribution: *7.7× at realized mean 258 tokens (p90 524)*.
+
+*Artifacts: [`results/p1/`](results/p1/) · job `11598444`, H100, engine `v0.2.1`.*
+
+### Correctness chain
+
+Every layer is verified against the one below it, on real weights, before the next is built:
+
+```
+FlashInferBackend  ==  PagedTorchBackend     28 differential tests   job 11598894
+PagedTorchBackend  ==  contiguous engine     16 tests                job 11598444
+contiguous engine  ==  fp32 HuggingFace      6 tests                 job 11596894
+batched output     ==  single-sequence       9 tests                 job 11598894
+```
+
+Before this project, the engine had **no model-level correctness test for its GPU path at all** — `tests/test_gpu_model.py:42-45` asserted only that logits were finite, correctly shaped, and had an in-range argmax. Correctness was measured on the CPU fp32 path; performance on the GPU fp16 path. Closing that gap was Phase 0.
+
+*Further results — continuous batching goodput, preemption, cache hit rate, routing — in [`results/`](results/) and summarised in [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md).*
 
 ---
 
@@ -12,116 +59,99 @@ The engine is a correct, benchmarked, **single-request** Llama 3.2 1B implementa
 
 | Document | What it settles |
 |---|---|
-| [`docs/PRD.md`](docs/PRD.md) | Problem, goals, non-goals, success criteria, feature tiers, PACE hardware envelope |
-| [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Open-loop load generation, goodput under SLO, baselines, **where prefix-aware routing is predicted to lose** |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component decomposition, the engine↔serving interface, state ownership, concurrency, failure domains, sequence walkthroughs |
-| [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md) | Dependency-ordered phases, per-phase DoD + benchmark + published claim, cut order |
-| [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) | 39 risks ordered by **detectability** — the silent invalidators are the dangerous ones |
+| [`docs/PRD.md`](docs/PRD.md) | Goals, non-goals, success criteria, hardware envelope |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, the engine↔serving interface, state ownership, concurrency, failure domains, sequence walkthroughs |
+| [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Open-loop load generation, goodput under SLO, baselines, **and where prefix-aware routing is predicted to lose** |
+| [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) | 41 risks ordered by **detectability**, because a silent wrong number is worse than a crash |
+| [`docs/ADR.md`](docs/ADR.md) | 24 decision records with alternatives and revisit triggers |
+| [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) | How it was built, including what went wrong |
+| [`docs/LEARNING_MAP.md`](docs/LEARNING_MAP.md) | Concepts, canonical papers, review questions per phase |
 
-### Citation conventions
+Three decisions worth arguing with:
 
-Design docs cite `file:line` into the engine so every claim is checkable. Two caveats:
+**Batched decode and paged KV are one change, not two.** With a flattened variable-length token layout, every position-independent operation — all linears, both norms, the MLP, the embedding gather — is *literally unchanged*, and RoPE is already batch-ready because positions arrive as a tensor. Only attention, the cache write, the causal mask, and the last-token gather differ.
 
-- **Line numbers are valid against engine tag `v0.1.0` (`6ff40a1`)** and will drift as the engine changes. The submodule pin is what keeps them meaningful.
-- **Some cited engine documents are intentionally not public.** `.gitignore:41-50` in the engine excludes `CLAIMS_AUDIT.md`, `SERVING_INTERFACE.md`, `docs/PACE_RUNBOOK.md`, `docs/PRD.md` and others — they contain account specifics and internal audit notes. Citations to those files **will not resolve in a submodule checkout**. They are recorded for the author's traceability, not as public evidence. Every load-bearing claim in these docs is additionally supported by a citation into tracked source (`engine/*.py`, `kernels/*`, `README.md`, `BENCHMARKS.md`, `docs/BUILD_LOG.md`) or by a direct reading of the code.
+**The custom CUDA kernel is not in the paged path.** The engine's nanobind ABI takes no stride, block-table, or block-size arguments, so a paged cache cannot be described across it. The kernel remains the single-replica contiguous reference path. This project **integrates** FlashInfer's paged kernels behind a pluggable backend and **wrote** a PyTorch reference implementation as the correctness oracle — never the other way around.
 
-Three load-bearing decisions, stated up front because they are the ones worth arguing with:
+**The router holds hints; the replica holds truth.** All router state is advisory. A stale hint costs cache locality, never correctness — which is why there is no consensus layer, no shared cache, and no distributed transaction anywhere in the design.
 
-**The batched forward pass and the paged KV cache are the same change.** With a flattened variable-length token layout, every position-independent op — all linears, both norms, the MLP, the embedding lookup — is untouched, and RoPE is already batch-ready because positions are a passed tensor. Only attention, the cache write, the causal mask, and the last-token gather change. See `ARCHITECTURE.md` §2.5.
+---
 
-**The custom CUDA kernel is not in the paged path.** The engine's nanobind ABI takes no stride, block-table, or block-size arguments, so a paged cache is inexpressible across it. The kernel stays the engine's single-replica contiguous reference path. This project writes a PyTorch paged-attention reference as the correctness oracle and integrates FlashInfer as the fast path — **never claiming authorship of a paged kernel.**
+## Architecture
 
-**The router holds hints; the replica holds truth.** Router state is advisory. A stale hint costs cache locality, never correctness — which is why there is no consensus layer, no shared cache, and no distributed transaction anywhere in the design.
+```
+                    ┌──────────────────────────────────────────┐
+   clients ────────▶│  ROUTER          prefix-aware selection  │
+   (OpenAI API)     │                  health · drain · failover│
+                    └───────┬──────────┬──────────┬────────────┘
+              ┌─────────────▼──┐  ┌────▼───────┐  ┌▼─────────────┐
+              │ REPLICA 0      │  │ REPLICA 1  │  │ REPLICA N-1  │
+              │ 1 GPU          │  │ 1 GPU      │  │ 1 GPU        │
+              └────────────────┘  └────────────┘  └──────────────┘
+
+   inside a replica
+   ┌──────────────────────────────────────────────────────────┐
+   │ HTTP ingress (FastAPI, async) · SSE · cancellation        │
+   │ ADMISSION CONTROL   queue depth · memory headroom · shed  │
+   │ SCHEDULER           continuous batching · preemption      │
+   │ RADIX PREFIX CACHE  │  BLOCK ALLOCATOR  free list · COW   │
+   │ ATTENTION BACKEND   PagedTorch (oracle) | FlashInfer      │
+   │ ENGINE              LlamaModelGPU (pinned dependency)     │
+   └──────────────────────────────────────────────────────────┘
+```
+
+```
+serving/
+  memory/      block allocator, block tables, KV pool sizing
+  cache/       radix prefix trie, refcounting, LRU, copy-on-write
+  scheduler/   continuous batching, admission, preemption
+  backends/    PagedTorchBackend (authored) | FlashInferBackend (integrated)
+  engine_iface/  BatchMeta assembly, varlen batching
+  server/      replica HTTP surface
+  router/      routing policies, health, drain, failover
+  metrics/     artifact schema with provenance, Prometheus, CUDA guard
+bench/         open-loop load generator, workloads, per-phase drivers
+results/       COMMITTED artifacts — every published number resolves here
+```
+
+---
+
+## Benchmark methodology
+
+The parts that decide whether a number means anything:
+
+- **Open loop.** A closed-loop harness cannot create a queue deeper than its client count, so it hides the saturation knee — and the knee is the result.
+- **Latency measured from *intended* dispatch**, never actual send. Otherwise a saturated system reports excellent p99 and nothing errors. The guard is mutation-tested: rewriting it to use actual send time fails exactly the two coordinated-omission tests and nothing else.
+- **Goodput under a declared SLO** is the headline; raw throughput is gameable in both directions. SLO thresholds are anchored to measured unloaded performance by multipliers fixed in source *before* any loaded run.
+- **Artifacts store raw samples**, not pre-computed percentiles, so percentiles can be pooled correctly at analysis time.
+- **Every A/B runs back-to-back in one Slurm allocation.** The engine's own throughput moved ~79 → ~60 tok/s across nodes for identical code; a cross-allocation delta measures node assignment. The tooling *refuses* to compare across allocations rather than warning.
+- **Losing cases are published.** The workloads where prefix-aware routing should lose were predicted in writing before measurement.
 
 ---
 
 ## Setup
 
-Pins the engine at **`v0.1.0`** (commit `6ff40a1`).
-
 ```bash
-git init
-git submodule add https://github.com/ashwinvijayakumar24/llm_inference_engine.git vendor/llm_inference_engine
-cd vendor/llm_inference_engine && git checkout v0.1.0 && cd -
-
+git clone --recurse-submodules https://github.com/ashwinvijayakumar24/llm_serving_layer.git
+cd llm_serving_layer
 python -m venv .venv && source .venv/bin/activate
 pip install -e vendor/llm_inference_engine
 pip install -e ".[dev,bench]"
+
+pytest -m "not gpu"          # CPU suite — no GPU or weights needed
 ```
 
-The submodule (rather than a plain editable install) is deliberate: the engine's compiled kernel `.so` lands in a gitignored `build/` directory, which sits at a known relative path under a submodule and is genuinely awkward to locate in an installed package. A submodule also pins an exact commit, which is what keeps benchmarks reproducible.
+The engine is a submodule pinned to a tag. Model weights are gated and live outside the repo; point at them with `LLM_WEIGHTS_PATH`.
 
-### On PACE
-
-```bash
-module load cuda/12.9.1
-module load anaconda3          # BEFORE conda activate, every session
-conda activate llm
-
-# Development / correctness — FREE, preemptible, 8h cap
-salloc --partition=gpu-l40s --gres=gpu:l40s:2 \
-       --account=paceship-simpliearn --qos=embers --time=4:00:00
-
-# Published benchmarks — charged, up to 32 GPUs, 3-day limit
-salloc --partition=gpu-l40s --gres=gpu:l40s:8 \
-       --account=paceship-simpliearn --qos=inferno --time=8:00:00
-```
-
-**No published number may come from an `embers` run** — it is preemptible, and preemption truncates a measurement window into something that looks like a completed short run.
+Running on Slurm: see [`scripts/`](scripts/).
 
 ---
 
-## Layout
+## Testing
 
-```
-serving/
-  engine_iface/   BatchMeta construction, varlen batch assembly
-  memory/         block allocator, block tables, watermark policy
-  cache/          radix prefix trie, refcounting, LRU, copy-on-write
-  scheduler/      admission, continuous batching, preemption
-  backends/       PagedTorchBackend (authored) | FlashInferBackend (integrated)
-  server/         replica HTTP surface, SSE, cancellation
-  router/         prefix-aware routing, health, drain, failover
-  metrics/        metric definitions with (quantity, unit, source)
-bench/
-  workloads/      arrival process, length + prefix-sharing distributions
-  baselines/      B1..B6
-results/          COMMITTED artifacts — deliberately not gitignored
-vendor/           engine submodule, pinned to a tag
-```
+CPU tests run without a GPU, weights, or network — the allocator, radix trie, routing policy, batch assembly, workload generation, and metric schema are all pure logic by design, so cluster queue time never blocks development.
 
----
-
-## Benchmarking
-
-Read `docs/BENCHMARK_METHODOLOGY.md` before running anything. The short version:
-
-- **Open loop.** A closed-loop harness cannot create a queue deeper than its client count, so it hides the saturation knee entirely — and the knee is the result.
-- **Goodput under a declared SLO is the headline**, reported as a curve against offered load, not as a point. Raw throughput is gameable in both directions.
-- **Latency is measured from intended dispatch time**, never actual send time. Otherwise a saturated system reports excellent p99 and nothing errors.
-- **Every A/B runs back-to-back in one Slurm allocation.** The engine's own throughput moved ~79 → ~60 tok/s across nodes for identical code.
-- **Losing results are published**, including the workload classes where prefix-aware routing is expected to lose — predicted in writing before measurement.
-
----
-
-## Correctness
-
-Every gate exists because a specific failure mode is **silent** — it produces plausible output, degrades no metric, and raises nothing.
-
-| Gate | Catches |
-|---|---|
-| GPU model oracle | The engine has no model-level GPU correctness test at all; everything else compares against this |
-| Batch invariance | Batched output diverging from single-sequence output |
-| Preemption equality | Preemption dropping or duplicating tokens under load |
-| Cache on/off equality | A prefix cache that is faster *and* wrong |
-| Allocator leak | Blocks never returned; free list must return to its initial count exactly |
-| Backend differential | FlashInfer layout misunderstanding |
-
----
-
-## Relationship to the engine
-
-The engine keeps its scope: model internals, the custom CUDA decode kernel, quantization, and a single-request reference server. This repo owns the production serving surface. Engine changes made for this project are **additive** — `prefill()` and `decode_step()` keep byte-identical behavior, so the engine's existing benchmarks and correctness claims are unaffected and its test suite doubles as the regression gate.
+Every GPU gate uses `REQUIRE_GPU=1`, which turns an unusable GPU into a **hard failure rather than a skip**. This is not defensive styling: an early run landed on a V100 under a CUDA-13 build, skipped all 16 gate tests, and exited 0 — a skipped gate and a passing gate are indistinguishable in a job log.
 
 ## License
 
