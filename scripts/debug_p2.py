@@ -1,9 +1,12 @@
 """One request through the real stack, printing every layer. Diagnostic only."""
-import asyncio, json, os, sys
+import asyncio
+import json
+
 
 async def main():
-    from serving.server.app import build_default_app
     import httpx
+
+    from serving.server.app import build_default_app
     app = build_default_app(max_batch_size=8, max_prefill_tokens=256)
 
     sched = None

@@ -208,7 +208,58 @@ class HFChatTokenizer:
         self._tok = tokenizer
 
     def encode_chat(self, messages: list[dict[str, str]]) -> list[int]:
-        return list(self._tok.apply_chat_template(messages, add_generation_prompt=True))
+        """
+        Chat messages -> token ids, with the return type CHECKED rather than assumed.
+
+        `apply_chat_template` does not have a stable return type across
+        transformers versions: depending on version and defaults it returns
+        `list[int]`, a nested `list[list[int]]` for a batch, a `BatchEncoding`,
+        or — on transformers 5.x — a plain STRING.
+
+        The string case is why this method is not a one-liner. `list("<|begin_of…")`
+        is a list of single CHARACTERS, which is a perfectly valid Python list
+        that flows all the way down to `torch.tensor(...)` before dying with
+        `ValueError: too many dimensions 'str'` from inside the scheduler step —
+        an error naming neither the tokenizer nor the chat template. It cost a
+        GPU job to localise (job 11599044: every request returned a well-formed,
+        empty SSE stream and HTTP 200).
+
+        `engine/server.py:55` does `list(apply_chat_template(...))` too, so the
+        engine's reference server has the same latent bug on this transformers
+        version. Not fixed there: that path is out of scope here, but it is worth
+        knowing before trusting it.
+        """
+        out = self._tok.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=True
+        )
+
+        # BatchEncoding / dict
+        if hasattr(out, "get") and not isinstance(out, list | str):
+            out = out.get("input_ids", out)
+        # Tensors
+        if hasattr(out, "tolist"):
+            out = out.tolist()
+        # Batched: [[ids]] -> [ids]
+        if isinstance(out, list) and out and isinstance(out[0], list):
+            out = out[0]
+
+        if isinstance(out, str):
+            raise TypeError(
+                "apply_chat_template returned a string despite tokenize=True "
+                f"(transformers version issue). Got: {out[:80]!r}. "
+                "Tokenize explicitly instead of iterating the string — "
+                "list(str) yields characters and fails much later, inside the "
+                "scheduler, as 'too many dimensions str'."
+            )
+        ids = list(out)
+        if not ids or not all(isinstance(i, int) for i in ids):
+            bad = next((type(i).__name__ for i in ids if not isinstance(i, int)), "empty")
+            raise TypeError(
+                f"encode_chat must produce a non-empty list[int]; got {len(ids)} "
+                f"items containing {bad}. Anything else reaches torch.tensor() and "
+                "dies with an error that names neither the tokenizer nor this call."
+            )
+        return ids
 
     def decode(self, token_ids: Sequence[int]) -> str:
         return self._tok.decode(list(token_ids), skip_special_tokens=True)

@@ -162,6 +162,30 @@ async def main() -> int:
     print(f"publishable  {ok}" + ("" if ok else f"  blockers={blockers}"))
     print("=" * 78)
 
+    # ---- 0. refuse to benchmark an unhealthy server ----
+    #
+    # Job 11599044 collected a full sweep against a server whose scheduler loop
+    # was dead: every streaming request returned HTTP 200 with a well-formed,
+    # EMPTY SSE body. /health said "unhealthy" the whole time and nothing looked.
+    # A benchmark that cannot tell a broken server from a fast one is worse than
+    # no benchmark, so this check is fatal rather than advisory.
+    health_url = args.url.rsplit("/v1/", 1)[0] + "/health"
+    async with httpx.AsyncClient(timeout=30.0) as hc:
+        try:
+            h = (await hc.get(health_url)).json()
+        except Exception as exc:
+            raise SystemExit(f"FATAL: cannot reach {health_url}: {exc}") from exc
+    loop_info = h.get("loop", {})
+    if h.get("status") != "ok" or not loop_info.get("healthy", True):
+        raise SystemExit(
+            f"FATAL: server is not healthy; refusing to benchmark it.\n"
+            f"  status:     {h.get('status')}\n"
+            f"  loop:       running={loop_info.get('running')} healthy={loop_info.get('healthy')}\n"
+            f"  last_error: {loop_info.get('last_error')}\n"
+            f"  scheduler:  {h.get('scheduler')}"
+        )
+    print(f"\nhealth OK — loop running, {loop_info.get('steps_total', 0)} steps so far")
+
     # ---- 1. calibrate ----
     print("\n### CALIBRATION — unloaded batch-1, closed loop (deliberate)\n")
     cal = await calibrate(args.url, args.prompt_tokens, args.max_tokens, args.calibration_requests)
