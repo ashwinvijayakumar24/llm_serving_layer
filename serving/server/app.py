@@ -108,6 +108,7 @@ import asyncio
 import contextlib
 import itertools
 import json
+import os
 import time
 import uuid
 from collections.abc import AsyncGenerator, Sequence
@@ -892,7 +893,7 @@ def _process_memory() -> dict[str, float]:
 
 
 def build_default_app(
-    weights_path: str = "weights",
+    weights_path: str | None = None,
     device: str = "cuda:0",
     block_size: int = 16,
     watermark_blocks: int | None = None,
@@ -917,6 +918,18 @@ def build_default_app(
     Those globals are what make that server impossible to instantiate twice, and
     impossible to test at all without weights on disk.
     """
+    # `uvicorn --factory` calls this with NO arguments, so every default here has
+    # to be correct unattended. Weights are large and gated and therefore live
+    # outside the repo; LLM_WEIGHTS_PATH is how the Slurm job points at them
+    # without symlinking into vendor/ (which dirties the submodule and makes the
+    # run unpublishable — see results/p1/RESULTS.md §3).
+    if weights_path is None:
+        weights_path = os.environ.get("LLM_WEIGHTS_PATH", "weights")
+
+    # Baseline B2 is selected by environment because the server is launched by a
+    # Slurm script, not by Python. Same process, same wiring, one flag.
+    _static = os.environ.get("SERVING_STATIC_BATCHING") == "1"
+
     import torch
     from engine.loader import load_config, load_weights_gpu
     from engine.model_gpu import LlamaModelGPU
@@ -993,6 +1006,16 @@ def build_default_app(
             max_batch_size=max_batch_size,
             max_prefill_tokens=max_prefill_tokens,
             max_waiting=max_waiting,
+            static_batching=_static,
         ),
     )
+    if _static:
+        # Loud, because a baseline silently measured as the system under test is
+        # the worst possible benchmark error: both configurations would report
+        # the same number and the comparison would look like a null result.
+        print(
+            "SERVING_STATIC_BATCHING=1 — running BASELINE B2 (static batching), "
+            "not the system under test.",
+            flush=True,
+        )
     return create_app(scheduler, tokenizer, config=config)

@@ -135,6 +135,27 @@ class SchedulerConfig:
     max_waiting: int = 1024
     """Queue depth beyond which new requests are SHED rather than queued."""
 
+    static_batching: bool = False
+    """
+    BASELINE B2, not a feature. Admit a batch, run it to completion, admit the
+    next — the thing continuous batching is measured against.
+
+    Implemented as a one-line change to admission (see `_admit`) precisely so the
+    comparison is honest: the kernels, the paged memory manager, the HTTP stack,
+    the tokenizer and the model are all held constant, and the ONLY difference
+    between the two configurations is WHEN a request is allowed to join. Any
+    goodput delta is therefore attributable to scheduling and to nothing else.
+
+    A separate static-batching server would have been easier to write and
+    worthless to compare against, because every other difference would confound
+    the result (docs/BENCHMARK_METHODOLOGY.md §6, B2).
+
+    The waste this exposes: under skewed output lengths a finished sequence's
+    slot stays occupied until the LONGEST sequence in its batch finishes. That
+    idle-slot time is what continuous batching reclaims, and it is why the
+    comparison should be reported as slot occupancy as well as throughput.
+    """
+
 
 @dataclass
 class StepStats:
@@ -217,6 +238,11 @@ class Scheduler:
 
     def _admit(self) -> int:
         """Move requests from waiting to running while they fit. FIFO — no priority yet."""
+        # STATIC BATCHING (B2): a batch runs to completion before the next is
+        # admitted. One condition, one baseline.
+        if self.config.static_batching and self.running:
+            return 0
+
         admitted = 0
         while self.waiting and len(self.running) < self.config.max_batch_size:
             req = self.waiting[0]
