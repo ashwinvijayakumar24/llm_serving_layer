@@ -1199,20 +1199,26 @@ def build_default_app(
         ),
     )
 
+    # ONE source of truth for the pool size. The env override exists so a
+    # benchmark can force real allocator exhaustion (P3) or run several replicas
+    # on one GPU (P5); without it every server sizes its pool from TOTAL VRAM and
+    # the second one on a node OOMs before it can load weights.
+    n_blocks = int(_kv_blocks_env) if _kv_blocks_env else plan.num_blocks
+
     backend = None
     if prefer_flashinfer:
         try:
             from serving.backends.flashinfer_backend import FlashInferBackend
 
             backend = FlashInferBackend(
-                num_layers=n_layers, num_blocks=plan.num_blocks, block_size=block_size,
+                num_layers=n_layers, num_blocks=n_blocks, block_size=block_size,
                 n_kv_heads=n_kv_heads, n_heads=n_heads, head_dim=head_dim, device=device,
             )
         except Exception:  # noqa: BLE001 — the fallback IS the design (R18)
             backend = None
     if backend is None:
         backend = PagedTorchBackend(
-            num_layers=n_layers, num_blocks=plan.num_blocks, block_size=block_size,
+            num_layers=n_layers, num_blocks=n_blocks, block_size=block_size,
             n_kv_heads=n_kv_heads, n_heads=n_heads, head_dim=head_dim, device=device,
         )
 
@@ -1224,9 +1230,15 @@ def build_default_app(
         watermark_blocks = max_batch_size
 
     allocator = BlockAllocator(
-        num_blocks=(int(_kv_blocks_env) if _kv_blocks_env else plan.num_blocks),
-        block_size=block_size,
-        watermark_blocks=watermark_blocks,
+        num_blocks=n_blocks, block_size=block_size, watermark_blocks=watermark_blocks
+    )
+
+    # The allocator hands out block IDS; the backend owns the TENSORS those ids
+    # index. If the allocator's pool were ever the larger of the two it would
+    # hand out an id with no storage behind it. Asserted rather than assumed.
+    assert allocator.num_blocks == backend.num_blocks, (
+        f"allocator has {allocator.num_blocks} blocks but the backend pool has "
+        f"{backend.num_blocks}; block ids would index storage that does not exist"
     )
     from serving.cache.radix import RadixCache
     from serving.scheduler.preemption import PreemptionPolicy

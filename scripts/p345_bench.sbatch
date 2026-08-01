@@ -36,6 +36,9 @@ export PYTHONPATH="${SLURM_SUBMIT_DIR}:${SLURM_SUBMIT_DIR}/vendor/llm_inference_
 SLO_TTFT=434
 SLO_ITL=27.8
 
+# EVERY server must be given an explicit pool size. plan_kv_pool sizes from
+# TOTAL VRAM, so an unconstrained server takes essentially the whole GPU and the
+# next one OOMs while loading weights — which is exactly how job 11608239 died.
 PIDS=()
 start_one () {   # $1=port  $2=label  rest=env assignments
     local port=$1 label=$2; shift 2
@@ -60,9 +63,9 @@ U () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
 # never preempts, which the driver verifies rather than assumes.
 # ---------------------------------------------------------------------------
 echo; echo "################ P3: PREEMPTION ################"
-start_one 9301 p3_recompute SERVING_KV_BLOCKS=600  SERVING_PREEMPTION=recompute
-start_one 9302 p3_swap      SERVING_KV_BLOCKS=600  SERVING_PREEMPTION=swap
-start_one 9303 p3_control   SERVING_KV_BLOCKS=8000
+start_one 9301 p3_recompute SERVING_KV_BLOCKS=700 SERVING_PREEMPTION=recompute
+start_one 9302 p3_swap      SERVING_KV_BLOCKS=700 SERVING_PREEMPTION=swap
+start_one 9303 p3_control   SERVING_KV_BLOCKS=9000
 python3 -m bench.run_p3 \
     --recompute-url "$(U 9301)" --swap-url "$(U 9302)" --control-url "$(U 9303)" \
     --lengths 64,128,256,512 --rate 6 --duration 60 --warmup 15 --drain 10 \
@@ -78,8 +81,8 @@ stop_all
 # correctness claim and must not be presented as if they do.
 # ---------------------------------------------------------------------------
 echo; echo "################ P4: RADIX PREFIX CACHE ################"
-start_one 9401 p4_cache_on
-start_one 9402 p4_cache_off SERVING_PREFIX_CACHE=0
+start_one 9401 p4_cache_on  SERVING_KV_BLOCKS=9000
+start_one 9402 p4_cache_off SERVING_KV_BLOCKS=9000 SERVING_PREFIX_CACHE=0
 python3 -m bench.run_p4 \
     --url "$(U 9401)" --cache-off-url "$(U 9402)" \
     --structures zero,system,conversational,adversarial \
@@ -102,7 +105,7 @@ stop_all
 # one.
 # ---------------------------------------------------------------------------
 echo; echo "################ P5: PREFIX-AWARE ROUTING ################"
-for i in 1 2 3 4; do start_one $((9500+i)) "p5_replica$i" SERVING_KV_BLOCKS=1500; done
+for i in 1 2 3 4; do start_one $((9500+i)) "p5_replica$i" SERVING_KV_BLOCKS=4000; done
 REPLICAS="http://127.0.0.1:9501,http://127.0.0.1:9502,http://127.0.0.1:9503,http://127.0.0.1:9504"
 python3 -m bench.run_p5 \
     --replicas "$REPLICAS" \
