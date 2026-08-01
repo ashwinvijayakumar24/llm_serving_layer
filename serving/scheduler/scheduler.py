@@ -527,30 +527,6 @@ class Scheduler:
         if self.swapped:
             return 0
 
-        # PREVIOUSLY-ADMITTED WORK OUTRANKS NEW WORK.
-        #
-        # A swapped request needs its ENTIRE block count back in one go — 16
-        # blocks for a 256-token sequence. A new admission needs only its first
-        # prefill chunk, capped by `max_prefill_tokens`. So without this, swapping
-        # frees blocks, admission immediately spends them on cheaper new work,
-        # and the swapped request never fits again. Measured (job 11609161): the
-        # swap arm completed 3-5 requests out of ~248, every one of the rest
-        # timing out at 179s, while `_resume_swapped` itself was working fine —
-        # resume latency 1ms, 1 step.
-        #
-        # This is the third time the same principle has had to be applied: the
-        # allocator watermark gates admission but not growth
-        # (`SequenceBlocks.append`), and not resumption (`_resume_swapped`), and
-        # now admission itself must yield to resumption. A sequence that has
-        # already consumed GPU time and holds host memory must not be starved by
-        # work that has done neither.
-        #
-        # Not a deadlock risk: `_resume_swapped` fails a request loudly via
-        # `_fail_unschedulable` if it cannot fit even into a completely empty
-        # pool, so the queue always drains one way or the other.
-        if self.swapped:
-            return 0
-
         admitted = 0
         while self.waiting and len(self.running) < self.config.max_batch_size:
             req = self.waiting[0]

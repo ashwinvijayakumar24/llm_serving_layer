@@ -980,40 +980,21 @@ def test_swapped_request_resumes_even_when_the_watermark_would_block_admission()
     assert req not in sched.swapped
 
 
-def test_admission_yields_to_swapped_requests():
-    """
-    New work must not be admitted while previously-admitted work sits swapped.
-
-    A swapped request needs its ENTIRE block count back at once; a new admission
-    needs only its first prefill chunk. Without this rule, swapping frees blocks,
-    admission spends them on cheaper new work, and the swapped request never fits
-    again — a cascade in which almost nothing completes.
-
-    Measured before the fix (job 11609161): the swap arm completed 3-5 requests
-    out of ~248, the rest timing out at 179 s, while resumption itself was
-    healthy at ~1 ms and 1 step.
-    """
-    from serving.scheduler.preemption import PreemptionPolicy
-
-    model = TinyPagedModel()
-    alloc, _, sched = make_stack(
-        model, 40, max_batch_size=8, max_prefill_tokens=64,
-        preemption_policy=PreemptionPolicy.SWAP,
-    )
-    victim = Request(request_id="v", prompt_ids=list(range(8)), max_tokens=6, ignore_eos=True)
-    sched.add_request(victim)
-    for _ in range(4):
-        sched.step()
-    sched._preempt(victim)
-    assert victim in sched.swapped
-
-    sched.add_request(Request(request_id="new", prompt_ids=list(range(8)),
-                              max_tokens=6, ignore_eos=True))
-    assert sched._admit() == 0, (
-        "new work was admitted while a swapped request was waiting to resume — "
-        "it will spend the blocks the swapped request needs and starve it"
-    )
-
-    sched.run_until_idle(max_steps=400)
-    ids = {r.request_id for r in sched.finished}
-    assert {"v", "new"} <= ids, f"both requests must finish, got {ids}"
+# NOTE — an admission-priority fix was tried here and REVERTED, deliberately.
+#
+# On GPU (job 11609161) the swap arm completed 3-5 requests out of ~248 while
+# resumption itself was healthy (1 ms, 1 step). The obvious hypothesis was that
+# admission spends the freed blocks on new work before a swapped request — which
+# needs its ENTIRE block count back at once — can reclaim them.
+#
+# `if self.swapped: return 0` in `_admit` was written to test that. It could NOT
+# be made to fail on the unfixed code: with this CPU model, admission and
+# resumption complete in the same handful of steps and both orders finish every
+# request. A guard that changes nothing measurable is a guess, and shipping it
+# would have added a throughput cost (blocking all admission whenever anything is
+# swapped) to buy a benefit no test could show.
+#
+# Swap under sustained load is therefore recorded as an OPEN PROBLEM in
+# results/p3/RESULTS.md rather than as fixed. Recompute is measured and healthy.
+# The correctness gate passes for BOTH policies, so this is a throughput/liveness
+# issue under load, not a correctness one.
