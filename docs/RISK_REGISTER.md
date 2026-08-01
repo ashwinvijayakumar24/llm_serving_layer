@@ -68,6 +68,22 @@ Batching changes numerics through reduction order, kernel selection, and attenti
 *Detection:* **batch-invariance test** — a prompt must produce identical greedy output alone and inside a mixed batch with sequences at different positions. Parameterized over batch compositions including the adversarial ones.
 *Mitigation:* if exact bit-identity proves unachievable due to legitimate reduction-order effects, that is a *result to publish*, not a gate to loosen — quantify the divergence rate and the conditions, and say so.
 
+> **REOPENED, WITH A MEASUREMENT, 2026-08-01 (job `11602281`, H200).** The gate
+> passes on TOKENS and fails on the KV underneath them. Same 105-token prompt,
+> cache off, prefilled in one chunk of 105 either way, the only difference being
+> that 286 tokens belonging to other requests shared the forward pass:
+> **max|Δ| = 0.1745 on the per-position K/V fingerprint, at 105 of 105 positions**
+> (`scripts/debug_radix.py`, batch-shape self-test). Every per-sequence attention
+> shape is held fixed by that test, so the sensitivity is not in `attend` — it is
+> in the projections and FFN, whose `M` is the packed token count of the whole
+> batch, and whose fp16 GEMM kernel selection moves with `M`.
+>
+> `tests/test_batch_invariance.py` does not catch this because its prompts are
+> 5–36 tokens: the drift is real there too and simply never flips an argmax. This
+> is the mitigation clause coming due — the divergence is quantified above rather
+> than the gate being loosened — and it is the direct cause of the R6 failure
+> below.
+
 ### R5 — The GPU path has no correctness oracle at all
 **CRITICAL → RETIRED 2026-07-31 · Phase 0 · Inherited**
 
@@ -87,6 +103,46 @@ A prefix cache bug makes the system **faster and wrong** — the most dangerous 
 
 *Detection:* bit-identical greedy output with cache on vs off, run on every benchmark. Explicit test at divergence points that straddle block boundaries — not just aligned ones.
 *Mitigation:* the adversarial near-miss workload from methodology §4 exists specifically for this, with divergence points swept across all offsets within a block.
+
+> **GATE RED 2026-08-01, AND THE CAUSE IS NOT THE CACHE (jobs `11602081`,
+> `11602216`, `11602244`, `11602281`, H200).** `tests/test_radix_gpu.py` is
+> 19/22: the block-boundary sweep passes at all 16 offsets, chunked-prefill-
+> under-a-hit passes, the leak/eviction test passes, and the `zero` control
+> reports zero hits. The three `system` / `conversational` / `adversarial`
+> structure cases fail, each on ONE request in twelve.
+>
+> It is not a wrong block. Instrumenting every position's K and V at every layer
+> (`scripts/debug_radix.py`) shows the reused prefix carries the right tokens at
+> the right positions, differing from the recomputed prefix only in the low bits:
+> **max|Δ| 0.119–0.210 over the reused region**, of which the whole workload
+> shows exactly one argmax flip. Three controls close it:
+>
+> 1. Replaying the divergent request with the cache OFF at prefill budgets
+>    2^20 / 64 / 32 / 16 reproduces the CORRECT output every time — chunking
+>    alone does not do this.
+> 2. Forcing every prefill chunk to exactly one block (`max_prefill_tokens=16`),
+>    so publisher and consumer compute each position inside an identically
+>    shaped forward pass, drives the drift to **exactly 0 at every position of
+>    every request** and all 12 outputs match.
+> 3. The batch-shape self-test under R4 above reproduces the same magnitude with
+>    no cache in the picture at all.
+>
+> So the radix cache hands over the correct block; what it cannot do is make the
+> publisher's forward pass the same *shape* as the consumer's, and this engine's
+> KV is not invariant to that shape. R6's premise — "reuse changes no arithmetic"
+> — is false for a reason that lives in R4, in `linear()`, in vendored engine
+> code. **Phase 4 does not earn its correctness claim, and the fix is batch-
+> invariant GEMMs, not anything in `serving/cache/radix.py`.**
+>
+> One genuine R6 bug WAS found and fixed on the way, by reading rather than by
+> the gate: `Scheduler._cache_insert` published `prefill_ids + output_ids[:-1]`,
+> and after a RECOMPUTE resume `prefill_ids` already contains `output_ids`, so
+> every block past the resume point was filed in the trie under duplicated
+> tokens — right KV, lying key. It now publishes
+> `(prompt_ids + output_ids)[:blocks.num_tokens]`, which is the sequence by
+> definition on every path. Regression:
+> `test_a_recompute_resumed_request_publishes_the_tokens_its_kv_actually_holds`
+> and `test_a_resumed_request_is_still_reusable_by_its_own_continuation`.
 
 ### R7 — Eviction freeing a live block
 **HIGH · Phase 4 · partial detection live since Phase 1**
