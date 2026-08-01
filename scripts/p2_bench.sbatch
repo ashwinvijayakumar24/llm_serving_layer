@@ -19,7 +19,9 @@
 #SBATCH --qos=inferno
 #SBATCH --partition=gpu-h100
 #SBATCH --gres=gpu:h100:1
-#SBATCH --cpus-per-task=16
+# PACE enforces a max 8:1 CPU:GPU ratio on gpu-h100; 16 with one GPU is rejected
+# at submission with 'Invalid generic resource (gres) specification'.
+#SBATCH --cpus-per-task=8
 #SBATCH --time=03:00:00
 #SBATCH --output=logs/p2_bench_%j.out
 #SBATCH --error=logs/p2_bench_%j.out
