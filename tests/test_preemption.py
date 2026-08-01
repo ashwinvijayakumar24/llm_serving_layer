@@ -978,3 +978,42 @@ def test_swapped_request_resumes_even_when_the_watermark_would_block_admission()
         "being starved by the ADMISSION watermark, which does not apply to it"
     )
     assert req not in sched.swapped
+
+
+def test_admission_yields_to_swapped_requests():
+    """
+    New work must not be admitted while previously-admitted work sits swapped.
+
+    A swapped request needs its ENTIRE block count back at once; a new admission
+    needs only its first prefill chunk. Without this rule, swapping frees blocks,
+    admission spends them on cheaper new work, and the swapped request never fits
+    again — a cascade in which almost nothing completes.
+
+    Measured before the fix (job 11609161): the swap arm completed 3-5 requests
+    out of ~248, the rest timing out at 179 s, while resumption itself was
+    healthy at ~1 ms and 1 step.
+    """
+    from serving.scheduler.preemption import PreemptionPolicy
+
+    model = TinyPagedModel()
+    alloc, _, sched = make_stack(
+        model, 40, max_batch_size=8, max_prefill_tokens=64,
+        preemption_policy=PreemptionPolicy.SWAP,
+    )
+    victim = Request(request_id="v", prompt_ids=list(range(8)), max_tokens=6, ignore_eos=True)
+    sched.add_request(victim)
+    for _ in range(4):
+        sched.step()
+    sched._preempt(victim)
+    assert victim in sched.swapped
+
+    sched.add_request(Request(request_id="new", prompt_ids=list(range(8)),
+                              max_tokens=6, ignore_eos=True))
+    assert sched._admit() == 0, (
+        "new work was admitted while a swapped request was waiting to resume — "
+        "it will spend the blocks the swapped request needs and starve it"
+    )
+
+    sched.run_until_idle(max_steps=400)
+    ids = {r.request_id for r in sched.finished}
+    assert {"v", "new"} <= ids, f"both requests must finish, got {ids}"
