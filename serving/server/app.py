@@ -1141,6 +1141,21 @@ def build_default_app(
     # Slurm script, not by Python. Same process, same wiring, one flag.
     _static = os.environ.get("SERVING_STATIC_BATCHING") == "1"
 
+    # Benchmark knobs, read from the environment because the server is launched
+    # by a Slurm script rather than by Python. Each one selects a CONFIGURATION
+    # of the same binary — no code path is special-cased for benchmarking, so an
+    # arm of a comparison cannot accidentally be a different program.
+    #
+    #   SERVING_KV_BLOCKS    override the derived pool size. Phase 3 needs a
+    #                        pool small enough that the allocator genuinely runs
+    #                        out, and a control pool large enough that it never
+    #                        does. Both must be the same server.
+    #   SERVING_PREEMPTION   recompute | swap
+    #   SERVING_PREFIX_CACHE 0 disables the radix cache (the Phase 4 control arm)
+    _kv_blocks_env = os.environ.get("SERVING_KV_BLOCKS")
+    _preempt_env = os.environ.get("SERVING_PREEMPTION")
+    _prefix_cache_on = os.environ.get("SERVING_PREFIX_CACHE", "1") != "0"
+
     import torch
     from engine.loader import load_config, load_weights_gpu
     from engine.model_gpu import LlamaModelGPU
@@ -1209,16 +1224,36 @@ def build_default_app(
         watermark_blocks = max_batch_size
 
     allocator = BlockAllocator(
-        num_blocks=plan.num_blocks, block_size=block_size, watermark_blocks=watermark_blocks
+        num_blocks=(int(_kv_blocks_env) if _kv_blocks_env else plan.num_blocks),
+        block_size=block_size,
+        watermark_blocks=watermark_blocks,
     )
-    scheduler = Scheduler(
-        model, backend, allocator,
-        SchedulerConfig(
-            max_batch_size=max_batch_size,
-            max_prefill_tokens=max_prefill_tokens,
-            max_waiting=max_waiting,
-            static_batching=_static,
-        ),
+    from serving.cache.radix import RadixCache
+    from serving.scheduler.preemption import PreemptionPolicy
+
+    # `block_copy` is what makes copy-on-write real: the cache asks the BACKEND
+    # to duplicate a block's KV, because the cache owns indices and the backend
+    # owns tensors. Without it, COW would silently share a block it had promised
+    # to copy.
+    prefix_cache = (
+        RadixCache(allocator, block_copy=getattr(backend, "copy_block", None))
+        if _prefix_cache_on else None
+    )
+    sched_cfg = SchedulerConfig(
+        max_batch_size=max_batch_size,
+        max_prefill_tokens=max_prefill_tokens,
+        max_waiting=max_waiting,
+        static_batching=_static,
+    )
+    if _preempt_env:
+        sched_cfg.preemption_policy = PreemptionPolicy(_preempt_env.lower())
+    scheduler = Scheduler(model, backend, allocator, sched_cfg, prefix_cache=prefix_cache)
+    print(
+        f"config: kv_blocks={allocator.num_blocks} "
+        f"preemption={sched_cfg.preemption_policy} "
+        f"prefix_cache={'on' if prefix_cache else 'OFF'} "
+        f"static_batching={_static}",
+        flush=True,
     )
     if _static:
         # Loud, because a baseline silently measured as the system under test is
