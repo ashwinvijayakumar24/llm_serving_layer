@@ -197,6 +197,55 @@ def workload(structure, **kw):
 @pytest.mark.parametrize(
     "structure", ["zero", "system", "conversational", "adversarial"]
 )
+def test_cache_correctness_at_matched_batch_shape(model, structure):
+    """
+    THE CACHE'S OWN CORRECTNESS GATE — batch size 1, so batch shape is IDENTICAL
+    between the cache-on and cache-off arms.
+
+    WHY THIS EXISTS SEPARATELY FROM THE TEST BELOW
+    ----------------------------------------------
+    The full-batch gate below fails, and NOT because of the cache. The engine's
+    `linear()` takes the packed batch token count as its `M` dimension, and
+    cuBLAS selects different kernels and split-K by shape, so fp16 reduction
+    order — and therefore the logits — depend on how many OTHER requests share
+    the forward pass. Measured at max|dlogit| 0.1745 with the cache entirely out
+    of the loop; see results/p4/FINDING_batch_shape_numerics.md.
+
+    A cache HIT changes what gets computed in a step, so it changes batch shape,
+    so it trips that pre-existing property. Attributing the resulting divergence
+    to the cache would be wrong.
+
+    At batch size 1 the confound disappears: every step contains exactly one
+    sequence, both arms compute identically-shaped GEMMs, and any difference in
+    output IS the cache's fault. That makes this a real gate rather than a
+    weakened one — it is strictly more sensitive to cache bugs than the batched
+    version, because nothing else can move the logits.
+
+    What it does NOT cover: cache correctness under concurrent batching. That
+    remains blocked on the engine's numerics and is reported as such.
+    """
+    m, config = model
+    wl = workload(structure)
+    groups = [{r.request_id: list(r.token_ids)} for r in wl.requests]
+
+    expected, got, rc, _ = compare(m, config, groups, max_tokens=8,
+                                   max_batch_size=1, max_prefill_tokens=128)
+    assert_identical(expected, got, f"{structure} @ batch=1")
+
+    snap = rc.snapshot()
+    assert snap["blocks_reused"] > 0 or structure == "zero", (
+        f"{structure}: no blocks were reused, so this run proves nothing about the cache"
+    )
+    print(
+        f"\n  {structure} @ batch=1: identical output, block hit rate "
+        f"{snap['block_hit_rate']:.3f} "
+        f"(reused {snap['blocks_reused']} of {snap['blocks_required']})"
+    )
+
+
+@pytest.mark.parametrize(
+    "structure", ["zero", "system", "conversational", "adversarial"]
+)
 def test_greedy_output_identical_with_cache_on_and_off(model, structure):
     """
     THE GATE, on all four sharing structures.
