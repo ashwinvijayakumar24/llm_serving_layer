@@ -1,11 +1,13 @@
 """
 R6 DIAGNOSTIC — where does the cache-on run's KV first disagree with cache-off?
 
-Runs the failing `system` / `conversational` structures from tests/test_radix_gpu.py
-twice (cache off, cache on) and fingerprints, per sequence, the layer-0 K vector at
-EVERY logical position after every forward pass. A prefix cache that hands over the
-wrong (or never-written) block shows up as the first position whose fingerprint
-differs — which localises the bug to a block index rather than to a token index.
+Runs a failing structure from tests/test_radix_gpu.py twice (cache off, cache on)
+and fingerprints, per sequence, the layer-0 K vector at EVERY logical position
+after every forward pass. A prefix cache that hands over the wrong (or
+never-written) block shows up as a position whose fingerprint is wildly different;
+fp16 reduction-order drift shows up as a position whose fingerprint differs in the
+last bits. The two are told apart by MAGNITUDE, which is why the magnitudes are
+printed rather than a boolean.
 
     python3 scripts/debug_radix.py system
 """
@@ -17,6 +19,7 @@ import sys
 
 import torch
 
+import serving.scheduler.scheduler as sched_mod
 from bench.workloads.generator import LengthSpec, WorkloadConfig, generate
 from serving.cache.radix import RadixCache
 from serving.memory.allocator import BlockAllocator
@@ -26,6 +29,17 @@ WEIGHTS_PATH = os.environ.get("LLM_WEIGHTS_PATH", "vendor/llm_inference_engine/w
 BLOCK_SIZE = 16
 NUM_BLOCKS = 2048
 VOCAB_LIMIT = 32_000
+
+_REAL_BUILD = sched_mod.build_batch_meta
+_CURRENT: list = []
+
+
+def _patched_build(seqs, device, page_size, **kw):
+    _CURRENT[:] = [s.blocks.seq_id for s in seqs]
+    return _REAL_BUILD(seqs, device, page_size, **kw)
+
+
+sched_mod.build_batch_meta = _patched_build
 
 
 class Recorder:
@@ -44,11 +58,12 @@ class Recorder:
         return self._model.device
 
     def forward_varlen(self, tokens, meta, backend):
+        seq_ids = list(_CURRENT)
         out = self._model.forward_varlen(tokens, meta, backend)
-        self._record(meta, backend)
+        self._record(meta, backend, seq_ids)
         return out
 
-    def _record(self, meta, backend):
+    def _record(self, meta, backend, seq_ids):
         bs = meta.page_size
         indptr = meta.kv_indptr.tolist()
         indices = meta.kv_indices.tolist()
@@ -60,7 +75,7 @@ class Recorder:
             slots = [pages[p // bs] * bs + (p % bs) for p in range(klen)]
             idx = torch.tensor(slots, dtype=torch.long, device=k_flat.device)
             fp = k_flat[idx].float().sum(dim=(1, 2)).cpu().tolist()
-            sid = self._seq_ids[i]
+            sid = seq_ids[i]
             self.kv[sid] = fp
             self.trace.setdefault(sid, []).append((q_lens[i], klen, list(pages)))
 
@@ -81,10 +96,8 @@ def make_stack(model, config, *, cache, **cfg):
     return allocator, rc, sched, rec
 
 
-def run_staged(sched, rec, groups, max_tokens):
+def run_staged(sched, groups, max_tokens):
     out, seqmap, admit = {}, {}, {}
-    real_select = sched._select_batch
-
     for group in groups:
         for rid, ids in group.items():
             sched.add_request(
@@ -92,16 +105,15 @@ def run_staged(sched, rec, groups, max_tokens):
                         max_tokens=max_tokens, ignore_eos=True)
             )
         while sched.has_work:
-            batch, _ = real_select()
-            rec._seq_ids = [r.blocks.seq_id for r in batch]
-            for r in batch:
-                seqmap[r.blocks.seq_id] = r.request_id
-                admit.setdefault(
-                    r.request_id,
-                    (len(r.prefill_ids), r.prefill_pos, r.cached_blocks,
-                     list(r.blocks.block_ids)),
-                )
             sched.step()
+            for r in sched.running:
+                if r.blocks is not None:
+                    seqmap[r.blocks.seq_id] = r.request_id
+                    admit.setdefault(
+                        r.request_id,
+                        (len(r.prefill_ids), r.prefill_pos, r.cached_blocks,
+                         list(r.blocks.block_ids)),
+                    )
         out.update({r.request_id: list(r.output_ids) for r in sched.finished})
     return out, seqmap, admit
 
@@ -126,39 +138,76 @@ def main():
     cfg = dict(max_batch_size=8, max_prefill_tokens=128)
 
     _, _, off, rec_off = make_stack(model, config, cache=False, **cfg)
-    exp, map_off, adm_off = run_staged(off, rec_off, groups, 8)
+    exp, map_off, adm_off = run_staged(off, groups, 8)
 
     _, rc, on, rec_on = make_stack(model, config, cache=True, **cfg)
-    got, map_on, adm_on = run_staged(on, rec_on, groups, 8)
+    got, map_on, adm_on = run_staged(on, groups, 8)
 
-    print(f"\n===== {structure} =====")
+    print(f"\n===== {structure} =====", flush=True)
     inv_off = {v: k for k, v in map_off.items()}
     inv_on = {v: k for k, v in map_on.items()}
 
     for rid in sorted(exp):
-        if got[rid] == exp[rid]:
-            continue
-        div = next(i for i, (a, b) in enumerate(zip(exp[rid], got[rid])) if a != b)
-        print(f"\n--- {rid}: output diverges at token {div}")
-        print(f"    off: {exp[rid]}")
-        print(f"    on : {got[rid]}")
-        print(f"    admit off (prompt_len, prefill_pos, cached_blocks, blocks): {adm_off[rid]}")
-        print(f"    admit on  (prompt_len, prefill_pos, cached_blocks, blocks): {adm_on[rid]}")
+        same = got[rid] == exp[rid]
         a, b = rec_off.kv[inv_off[rid]], rec_on.kv[inv_on[rid]]
-        print(f"    kv len off={len(a)} on={len(b)}")
-        bad = [p for p in range(min(len(a), len(b))) if abs(a[p] - b[p]) > 1e-2]
-        if bad:
-            p = bad[0]
-            print(f"    FIRST KV MISMATCH at position {p} (block {p // BLOCK_SIZE}), "
-                  f"{len(bad)} of {min(len(a), len(b))} positions differ")
-            print(f"    mismatching blocks: {sorted({q // BLOCK_SIZE for q in bad})}")
-            print(f"    off[{p}]={a[p]:.4f}  on[{p}]={b[p]:.4f}")
-        else:
-            print("    KV IDENTICAL at every position — the bug is not the KV contents")
-        print(f"    trace off: {rec_off.trace[inv_off[rid]][:4]}")
-        print(f"    trace on : {rec_on.trace[inv_on[rid]][:4]}")
+        n = min(len(a), len(b))
+        diffs = [abs(a[p] - b[p]) for p in range(n)]
+        worst = max(diffs) if diffs else 0.0
+        nz = [p for p in range(n) if diffs[p] > 0]
+        pl, pp, cb, blk = adm_on[rid]
+        tag = "OK " if same else "DIV"
+        print(f"{tag} {rid}: prompt={pl} prefill_pos_on={pp} cached_blocks={cb} "
+              f"kv_len off={len(a)} on={len(b)} | KV max|d|={worst:.4g} "
+              f"n_differing={len(nz)}/{n} first={nz[0] if nz else '-'}", flush=True)
+        if not same:
+            div = next(i for i, (x, y) in enumerate(zip(exp[rid], got[rid])) if x != y)
+            print(f"     output diverges at token {div}")
+            print(f"     off: {exp[rid]}")
+            print(f"     on : {got[rid]}")
+            print(f"     admit off: {adm_off[rid]}")
+            print(f"     admit on : {(pl, pp, cb, blk)}")
+            big = [p for p in range(n) if diffs[p] > 0.5]
+            print(f"     positions with |d|>0.5: {big[:20]} "
+                  f"(blocks {sorted({p // BLOCK_SIZE for p in big})[:20]})")
+            if nz:
+                p = nz[0]
+                print(f"     first differing position {p} (block {p // BLOCK_SIZE}): "
+                      f"off={a[p]:.6f} on={b[p]:.6f} |d|={diffs[p]:.3g}")
+            print(f"     trace off: {rec_off.trace[inv_off[rid]][:3]}")
+            print(f"     trace on : {rec_on.trace[inv_on[rid]][:3]}")
 
     print("\nsnapshot:", {k: v for k, v in rc.snapshot().items() if k != "definitions"})
+    chunk_shape_selftest(model, config, groups)
+
+
+def chunk_shape_selftest(model, config, groups):
+    """
+    IS THE KV EVEN A FUNCTION OF THE TOKENS ALONE?
+
+    Prefill the SAME prompt with two different chunk budgets, cache off both
+    times, and compare the resulting K. If the two disagree, the KV depends on
+    the SHAPE of the forward pass as well as on its content, and "reuse is
+    bit-identical because it is the same tokens at the same positions by the same
+    kernel" is false as stated — which is a claim about the engine, not about the
+    radix cache.
+    """
+    print("\n===== chunk-shape self-test (cache OFF both runs) =====", flush=True)
+    prompt = list(next(iter(groups[0].values())))
+    fps = {}
+    for budget in (256, 128, 48, 32):
+        _, _, s, rec = make_stack(model, config, cache=False,
+                                  max_batch_size=1, max_prefill_tokens=budget)
+        s.add_request(Request(request_id="x", prompt_ids=list(prompt),
+                              max_tokens=1, ignore_eos=True))
+        s.run_until_idle()
+        fps[budget] = rec.kv[0]
+    base = fps[256]
+    for budget, fp in fps.items():
+        n = min(len(base), len(fp))
+        d = [abs(base[p] - fp[p]) for p in range(n)]
+        print(f"  prompt_len={len(prompt)} budget={budget}: max|d| vs budget=256 "
+              f"is {max(d):.4g}, differing positions {sum(1 for x in d if x > 0)}/{n}",
+              flush=True)
 
 
 if __name__ == "__main__":
