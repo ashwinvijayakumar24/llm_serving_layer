@@ -59,7 +59,9 @@ def main():
     base = run(model, cfg, 0)               # TARGET alone
     print(f"target alone: {len(TARGET)} tokens, argmax={int(base.argmax())}")
     print()
-    print(f"{'filler seqs':>12} {'batch tokens':>13} {'max|dlogit|':>12} {'argmax':>8} {'flipped':>8}")
+    hdr = (f"{'filler seqs':>12} {'batch tokens':>13} {'max|dlogit|':>12} "
+           f"{'argmax':>8} {'flipped':>8}")
+    print(hdr)
     flips = 0
     for n in (1, 2, 4, 6):
         other = run(model, cfg, n)
