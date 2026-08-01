@@ -473,7 +473,7 @@ def test_harness_artifact_validates():
     assert art.window, "samples without a recorded window are rejected by the schema (R11)"
 
 
-def test_harness_artifact_is_unpublishable_outside_slurm():
+def test_harness_artifact_is_unpublishable_outside_slurm(monkeypatch):
     """
     Documents the rule rather than working around it. S1 is a comparison, and
     docs/BENCHMARK_METHODOLOGY.md §5 requires every A/B to run back-to-back
@@ -481,15 +481,39 @@ def test_harness_artifact_is_unpublishable_outside_slurm():
     laptop run has no allocation id, so it can never back the claim — the
     artifact is still written, because it is real data.
 
-    If this test ever fails, either the run really is inside Slurm, or the
-    publication gate has been loosened.
+    HERMETIC ON PURPOSE. The Slurm variables are cleared explicitly rather than
+    assumed absent. An earlier version asserted `allocation_id is None` and
+    passed everywhere except the one place it mattered — on a Slurm node, where
+    it failed the whole suite for the wrong reason. A test whose result depends
+    on where it runs is testing its environment, not its subject.
     """
+    for var in ("SLURM_JOB_ID", "SLURMD_NODENAME", "SLURM_NODELIST",
+                "SLURM_JOB_PARTITION", "SLURM_JOB_QOS"):
+        monkeypatch.delenv(var, raising=False)
+
     art = run_capacity_bench(small_config()).artifact
     ok, blockers = s1_publishable(art.provenance)
     assert ok is False
     assert any("allocation" in b.lower() for b in blockers)
     assert art.provenance.allocation_id is None
     assert any("NOT PUBLISHABLE AS S1" in n for n in art.notes)
+
+
+def test_harness_artifact_records_allocation_inside_slurm(monkeypatch):
+    """
+    The other direction: inside an allocation the id IS captured, so a genuine
+    S1 run can be published and two runs can be checked for comparability (R12).
+
+    Without this, the test above would pass trivially if provenance capture
+    broke entirely and always returned None.
+    """
+    monkeypatch.setenv("SLURM_JOB_ID", "11598374")
+    monkeypatch.setenv("SLURMD_NODENAME", "atl1-1-02-005-30-0")
+    monkeypatch.setenv("SLURM_JOB_QOS", "inferno")
+
+    art = run_capacity_bench(small_config()).artifact
+    assert art.provenance.allocation_id == "11598374@atl1-1-02-005-30-0"
+    assert art.provenance.slurm_qos == "inferno"
 
 
 def test_harness_records_the_seed_and_is_reproducible():

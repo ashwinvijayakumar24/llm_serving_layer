@@ -18,24 +18,21 @@
 # The validity rule is unaffected — this is a correctness gate, not a published
 # number, and no benchmark may come from embers regardless.
 #
-# PARTITION AND GRES ARE DELIBERATELY UNPINNED.
+# GPU TYPE IS PINNED, AND THE REASON IS A BUG THIS SCRIPT ALREADY HIT.
 #
-# This gate needs a CUDA device and nothing else: PagedTorchBackend is pure
-# PyTorch, and the contiguous reference path runs with use_cuda_attn=False, so
-# no custom kernel and therefore no sm_80 dependency. Naming one partition just
-# means queueing behind whoever wants that exact GPU — measured: gpu-a100 had 33
-# jobs pending while gpu-h100 had 10. Listing several lets Slurm take whichever
-# frees first, and `--gres=gpu:1` (generic, not `gpu:a100:1`) is what makes that
-# legal across GPU types.
+# A generic `--gres=gpu:1` was routed by PACE to a Tesla V100 (sm_70) even
+# though the partition list excluded gpu-v100 — the site remaps generic gres.
+# This conda env runs torch 2.12+cu130, and CUDA 13 dropped Volta, so
+# torch.cuda.is_available() came back False, every gate test SKIPPED, and the
+# job exited 0. A skipped gate is indistinguishable from a passing one.
 #
-# BENCHMARKS MUST NOT DO THIS. A performance number has to name its hardware and
-# stay on one allocation (R12). Unpinning is correct for correctness runs only.
+# Typed gres is what actually pins the hardware. sm_80+ is required.
 #
 #SBATCH --job-name=p1_gate
 #SBATCH --account=paceship-simpliearn
 #SBATCH --qos=inferno
-#SBATCH --partition=gpu-h100,gpu-a100,gpu-l40s,gpu-h200
-#SBATCH --gres=gpu:1
+#SBATCH --partition=gpu-a100
+#SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/p1_gate_%j.out
@@ -62,6 +59,24 @@ git -C vendor/llm_inference_engine describe --tags --always
 git rev-parse --short HEAD
 
 echo
+echo "=== PREFLIGHT: the GPU must be usable, or fail now ==="
+# Fail here rather than letting the gate skip. Job 11598374 skipped all 16 gate
+# tests on a V100 and reported success; that must never happen silently again.
+python3 - <<'PREFLIGHT'
+import sys, torch
+if not torch.cuda.is_available():
+    sys.exit("FATAL: torch.cuda.is_available() is False")
+cap = torch.cuda.get_device_capability(0)
+name = torch.cuda.get_device_name(0)
+print(f"  {name}  sm_{cap[0]}{cap[1]}  torch {torch.__version__} cuda {torch.version.cuda}")
+if cap < (8, 0):
+    sys.exit(f"FATAL: {name} is sm_{cap[0]}{cap[1]}; this torch build requires sm_80+")
+print("  preflight OK")
+PREFLIGHT
+
+export REQUIRE_GPU=1      # turns a skipped gate into a hard failure
+
+echo
 echo "=== CPU suite (must still pass on the GPU node) ==="
 python3 -m pytest tests/ -q -m "not gpu" 2>&1 | tail -5
 
@@ -74,7 +89,7 @@ echo "=== capacity measurement (S1) ==="
 # --sweep reports the ratio ACROSS mean sequence lengths, because a single
 # capacity ratio without its length distribution is not a defensible claim.
 # --write emits an Artifact with full provenance into results/.
-python3 bench/capacity.py --seed 20260731 --gpu --sweep --write 2>&1 | tail -50
+python3 bench/capacity.py --seed 20260731 --gpu --sweep 32,64,128,256,512,1024,2048 --write 2>&1 | tail -50
 
 echo
 echo "=== done ==="

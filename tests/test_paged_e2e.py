@@ -26,12 +26,52 @@ Requires CUDA and real weights. Run on PACE:
     pytest tests/test_paged_e2e.py -v -s
 """
 
+import os
+
 import pytest
 import torch
 
+def _cuda_status() -> str | None:
+    """Return None if CUDA is usable, else a reason string."""
+    if not torch.cuda.is_available():
+        return "torch.cuda.is_available() is False"
+    try:
+        cap = torch.cuda.get_device_capability(0)
+        name = torch.cuda.get_device_name(0)
+    except Exception as exc:  # pragma: no cover
+        return f"could not query device: {exc}"
+    # torch built against CUDA 13 dropped Volta (sm_70). A V100 will report a
+    # device and then fail or silently misbehave; treat it as unusable.
+    if cap < (8, 0):
+        return f"{name} is sm_{cap[0]}{cap[1]}; this build needs sm_80+"
+    return None
+
+
+_CUDA_REASON = _cuda_status()
+
+# WHY THIS IS NOT A PLAIN skipif.
+#
+# This file IS the Phase 1 gate. A skipped gate and a passing gate look identical
+# in a job log — 'no failures, exit 0' — which means a run that verified nothing
+# can be mistaken for a run that verified everything. That happened: job 11598374
+# landed on a V100 (sm_70) under a CUDA-13 torch build, every test skipped, and
+# the job reported success.
+#
+# So: skipping is allowed on a developer laptop, where it is obvious. In CI or on
+# a Slurm node — anywhere a green result would be TRUSTED — set REQUIRE_GPU=1 and
+# an unusable GPU becomes a hard failure instead of a silent pass.
+_REQUIRE_GPU = os.environ.get("REQUIRE_GPU") == "1"
+
+if _CUDA_REASON and _REQUIRE_GPU:
+    pytest.fail(
+        f"REQUIRE_GPU=1 but CUDA is unusable: {_CUDA_REASON}. "
+        "The Phase 1 gate cannot run, and a skipped gate must not be reported as a pass.",
+        pytrace=False,
+    )
+
 pytestmark = [
     pytest.mark.gpu,
-    pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available"),
+    pytest.mark.skipif(_CUDA_REASON is not None, reason=_CUDA_REASON or ""),
 ]
 
 WEIGHTS_PATH = "vendor/llm_inference_engine/weights"
