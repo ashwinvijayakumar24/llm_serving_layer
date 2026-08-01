@@ -4,3 +4,19 @@ AUTHOR-WRITTEN. Phase 4.
 Explainability gate: block-boundary truncation, why refcount AND LRU are both
 needed, when COW triggers.
 """
+
+from serving.cache.radix import (
+    CacheStats,
+    MatchResult,
+    RadixCache,
+    RadixNode,
+    attach_prefix,
+)
+
+__all__ = [
+    "CacheStats",
+    "MatchResult",
+    "RadixCache",
+    "RadixNode",
+    "attach_prefix",
+]

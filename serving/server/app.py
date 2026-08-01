@@ -100,6 +100,29 @@ emitted here: it is defined as *intended dispatch -> admission*, and the server
 cannot observe intended dispatch — only the load generator knows it. Emitting
 arrival-to-admission under that name would be the engine's `peak_mem_mb`
 mistake with a different label.
+
+`GET /metrics/prometheus` exposes the same state in the Prometheus text format
+(`serving/metrics/prometheus.py`), under the same name policy. It is additive:
+the JSON `/metrics` above is what the benchmark harness reads and is unchanged.
+
+A CUDA ERROR IS FATAL TO THIS REPLICA (docs/RISK_REGISTER.md R10)
+-----------------------------------------------------------------
+`SchedulerLoop.run` checks for CUDA errors once per step
+(`serving/metrics/cuda_guard.py`, frequency set by
+`ServerConfig.cuda_check_every_n_steps`). An unchecked launch failure does not
+raise: the forward pass returns a correctly-shaped tensor of garbage, argmax
+picks a token, and the replica emits plausible text at full throughput with every
+metric green. That is why the check exists and why finding one is terminal — the
+context is poisoned and cannot be reset in-process under PyTorch's caching
+allocator.
+
+The error therefore lands in the same handler as any other failed step: the loop
+marks itself unhealthy, fails EVERY in-flight stream explicitly with an error
+chunk (so the fault appears in the client's accounting rather than as a timeout),
+stops stepping, and `/health` returns 503 with `fatal.kind == "cuda"` so a router
+quarantines the replica instead of retrying into it. The per-step
+`torch.cuda.synchronize()` is also what keeps `step_duration_host_ms` a measure
+of execution rather than launch queueing (R2), so it is not purely a cost.
 """
 
 from __future__ import annotations
@@ -119,7 +142,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from serving.metrics import prometheus as prom
 from serving.metrics.artifact import REGISTRY
+from serving.metrics.cuda_guard import CudaFatalError, CudaGuard
 from serving.scheduler.scheduler import EOS_IDS
 from serving.scheduler.scheduler import Request as SchedRequest
 
@@ -336,6 +361,29 @@ class ServerMetrics:
     dozens of them.
     """
 
+    histograms: dict[str, prom.Histogram] = field(default_factory=lambda: {
+        "ttft_from_arrival_ms": prom.Histogram(prom.LATENCY_BUCKETS_MS),
+        "itl_server_ms": prom.Histogram(prom.LATENCY_BUCKETS_MS),
+        "e2e_from_arrival_ms": prom.Histogram(prom.LATENCY_BUCKETS_MS),
+        "step_duration_host_ms": prom.Histogram(prom.STEP_BUCKETS_MS),
+    })
+    """
+    Fixed-bucket histograms for the Prometheus endpoint. Bounded memory and no
+    sample retention, because `observe` runs once per token on the request path.
+
+    NAMED FOR WHAT THE SERVER CAN ACTUALLY SEE (R16). These are `*_from_arrival`
+    / `*_server`, not `ttft_ms` / `itl_ms` / `e2e_ms`: the registered metrics are
+    defined from the client's INTENDED DISPATCH, and the interval between
+    intended dispatch and arrival here is exactly the coordinated-omission
+    interval (R1) that this process cannot observe. Published latency numbers
+    come from bench/loadgen.py; these are for dashboards and alerts.
+    """
+
+    def observe(self, name: str, value_ms: float) -> None:
+        hist = self.histograms.get(name)
+        if hist is not None:
+            hist.observe(value_ms)
+
     @property
     def uptime_s(self) -> float:
         return max(1e-9, time.perf_counter() - self.started_at)
@@ -370,16 +418,28 @@ class SchedulerLoop:
     is the claim `SchedulerConfig.max_prefill_tokens` has to keep true.
     """
 
-    def __init__(self, scheduler: Any, metrics: ServerMetrics, idle_sleep_s: float = 0.002):
+    def __init__(
+        self,
+        scheduler: Any,
+        metrics: ServerMetrics,
+        idle_sleep_s: float = 0.002,
+        cuda_guard: CudaGuard | None = None,
+    ):
         self.scheduler = scheduler
         self.metrics = metrics
         self.idle_sleep_s = idle_sleep_s
+        # Default to a guard rather than to None: "no CUDA error checking
+        # anywhere" is the inherited defect (R10), so the safe default has to be
+        # ON. On a machine without CUDA every entry point is a no-op, which is
+        # why the CPU test suite runs the identical code path.
+        self.cuda_guard = cuda_guard if cuda_guard is not None else CudaGuard()
 
         self.steps = 0
         self.idle_polls = 0
         self.step_time_total_s = 0.0
         self.step_time_max_s = 0.0
         self.last_error: str | None = None
+        self.fatal_kind: str | None = None
         self.healthy = True
 
         self._task: asyncio.Task | None = None
@@ -436,8 +496,29 @@ class SchedulerLoop:
             t0 = time.perf_counter()
             try:
                 self.scheduler.step()
+                # THE DECLARED CUDA CHECK POINT (R10). Inside the try, so a
+                # poisoned context takes exactly the same terminal path as a
+                # thrown step — the difference is only what `fatal_kind` says.
+                # Placed AFTER step() and inside the timed region because the
+                # synchronise is also what makes the host clock below measure
+                # execution rather than kernel-launch queueing (R2).
+                self.cuda_guard.maybe_check("scheduler.step", self.steps)
             except asyncio.CancelledError:
                 raise
+            except CudaFatalError as exc:
+                # A CUDA error is FATAL TO THE REPLICA and is never retried. The
+                # context is poisoned; every subsequent forward pass returns
+                # garbage of the correct shape, which the client cannot tell from
+                # a correct answer. Continuing would convert a detected fault
+                # back into the silent-wrong-output mode the check exists to
+                # prevent, so this replica stops serving and says so.
+                self.last_error = str(exc)
+                self.fatal_kind = "cuda"
+                self.healthy = False
+                for stream in list(self._streams.values()):
+                    stream.fail(self.last_error)
+                self._streams.clear()
+                return
             except Exception as exc:  # noqa: BLE001 — see below
                 # A failed step is not recoverable by retrying: the batch that
                 # failed is still the batch that will be assembled next step, so
@@ -447,6 +528,7 @@ class SchedulerLoop:
                 # 503, so an orchestrator sees a dead replica rather than a
                 # silently wedged one (docs/ARCHITECTURE.md §8.2).
                 self.last_error = f"{type(exc).__name__}: {exc}"
+                self.fatal_kind = "step"
                 self.healthy = False
                 for stream in list(self._streams.values()):
                     stream.fail(self.last_error)
@@ -457,6 +539,7 @@ class SchedulerLoop:
             self.steps += 1
             self.step_time_total_s += dt
             self.step_time_max_s = max(self.step_time_max_s, dt)
+            self.metrics.observe("step_duration_host_ms", dt * 1e3)
 
             # The single most important line in this file. See the class
             # docstring: one yield per bounded step is what makes the server
@@ -471,6 +554,8 @@ class SchedulerLoop:
             "idle_polls_total": self.idle_polls,
             "idle_sleep_s": self.idle_sleep_s,
             "last_error": self.last_error,
+            "fatal_kind": self.fatal_kind,
+            "cuda": self.cuda_guard.stats(),
             "step_duration_host_ms": {
                 "mean": (self.step_time_total_s / self.steps * 1e3) if self.steps else None,
                 "max": self.step_time_max_s * 1e3 if self.steps else None,
@@ -507,6 +592,19 @@ class ServerConfig:
     """
     max_tokens_cap: int = 4096
     max_prompt_tokens: int = 8192
+    cuda_check_every_n_steps: int = 1
+    """
+    How often `SchedulerLoop` checks for CUDA errors (R10). 1 = every step,
+    n = every n-th step, 0 = never.
+
+    1 by default. The cost is one `torch.cuda.synchronize()` per step, bounded by
+    the step's own device time — work the host has to wait for anyway before the
+    next step's sampled tokens are usable. What a larger value buys is host time;
+    what it costs is that up to n-1 steps of possibly-garbage output are streamed
+    to clients before the fault is noticed, and that
+    `step_duration_host_ms` loses its synchronisation guarantee on the unchecked
+    steps (R2). Both are declared costs, which is the point of the knob.
+    """
 
 
 # ---------------------------------------------------------------------------
@@ -588,7 +686,8 @@ def create_app(
     """
     cfg = config or ServerConfig()
     m = metrics or ServerMetrics()
-    loop = SchedulerLoop(scheduler, m, idle_sleep_s=cfg.idle_sleep_s)
+    guard = CudaGuard(every_n_steps=cfg.cuda_check_every_n_steps)
+    loop = SchedulerLoop(scheduler, m, idle_sleep_s=cfg.idle_sleep_s, cuda_guard=guard)
     ids = itertools.count()
 
     @contextlib.asynccontextmanager
@@ -605,6 +704,7 @@ def create_app(
     app.state.tokenizer = tokenizer
     app.state.metrics = m
     app.state.config = cfg
+    app.state.cuda_guard = guard
 
     # -- admission ----------------------------------------------------------
 
@@ -670,6 +770,12 @@ def create_app(
         completion_id = req.request_id
         created = int(time.time())
         done = False
+        # Server-side latency observation. Anchored on `req.arrival_time`, which
+        # is when this process first saw the request — NOT the client's intended
+        # dispatch. The two differ by exactly the interval coordinated omission
+        # hides (R1), which is why these feed histograms named `*_from_arrival`
+        # and never the registered ttft_ms / e2e_ms (R16).
+        last_content_at: float | None = None
         try:
             # Role chunk first, OpenAI-style. It carries NO content, which is
             # exactly why bench/loadgen.py times TTFT to the first non-empty
@@ -704,6 +810,13 @@ def create_app(
                         m.empty_detokenizations_total += 1
                         continue
                     m.output_tokens_total += 1
+                    now = time.perf_counter()
+                    if last_content_at is None:
+                        m.observe("ttft_from_arrival_ms",
+                                  (now - req.arrival_time) * 1e3)
+                    else:
+                        m.observe("itl_server_ms", (now - last_content_at) * 1e3)
+                    last_content_at = now
                     yield _chunk(completion_id, created, cfg.model_id, {"content": text}, None)
 
                 elif kind == "error":
@@ -721,6 +834,8 @@ def create_app(
                         m.requests_cancelled += 1
                     else:
                         m.requests_completed += 1
+                        m.observe("e2e_from_arrival_ms",
+                                  (time.perf_counter() - req.arrival_time) * 1e3)
                     yield _chunk(completion_id, created, cfg.model_id, {}, reason)
                     yield "data: [DONE]\n\n"
                     return
@@ -848,6 +963,18 @@ def create_app(
             "status": "ok" if ok else "unhealthy",
             "uptime_s": m.uptime_s,
             "model": cfg.model_id,
+            # THE ROUTER'S QUARANTINE SIGNAL (R10). A poisoned CUDA context is
+            # not recoverable in-process, so this replica is finished: `fatal`
+            # says so explicitly, in a machine-readable field, rather than
+            # leaving a router to infer it from a 503 that might be transient.
+            # `restart_required` is the distinction that matters — retrying into
+            # this replica cannot succeed, and draining it cannot fix it.
+            "fatal": None if ok and loop.fatal_kind is None else {
+                "kind": loop.fatal_kind,
+                "error": loop.last_error,
+                "restart_required": loop.fatal_kind is not None,
+                "quarantine": loop.fatal_kind is not None,
+            },
             "scheduler": scheduler.snapshot(),
             "loop": loop.stats(),
             "capabilities": {
@@ -863,8 +990,10 @@ def create_app(
     @app.get("/metrics")
     async def metrics_endpoint():
         """
-        JSON now; Prometheus text format is Phase 6. The harness reads JSON, and
-        a wrong-but-scrapeable exposition format would be worse than none.
+        JSON, read by the benchmark harness. `/metrics/prometheus` renders the
+        same state for scrapers; this one stays the source the artifact pipeline
+        uses, because a scrape format is lossy about units and source in exactly
+        the way the artifact schema refuses to be.
         """
         alloc = getattr(scheduler, "allocator", None)
         registered: dict[str, Any] = {
@@ -919,6 +1048,27 @@ def create_app(
             } if alloc is not None else None,
             "loop": loop.stats(),
         }
+
+    @app.get("/metrics/prometheus")
+    async def metrics_prometheus():
+        """
+        The same state as `/metrics`, in Prometheus exposition format.
+
+        ADDITIVE, not a replacement. The benchmark harness reads the JSON
+        endpoint and the artifact schema is what backs a published number; this
+        one is for scraping, dashboards, and alerts. Two renderings of one set of
+        counters — there is no second source of truth.
+
+        Content type is the text-format 0.0.4 media type; `version=0.0.4` is not
+        decoration, it is how a scraper knows not to try to parse this as
+        protobuf or OpenMetrics.
+        """
+        return Response(
+            content=prom.render_server_metrics(
+                m, scheduler, loop, guard=guard, process_memory=_process_memory()
+            ),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
 
     return app
 
