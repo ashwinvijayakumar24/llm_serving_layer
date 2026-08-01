@@ -659,7 +659,9 @@ def test_goodput_on_a_hand_constructed_set():
     verdicts = [meets_slo(r, cfg) for r in results]
     assert [ok for ok, _ in verdicts] == [True] * 4 + [False] * 6
     assert "ttft" in verdicts[4][1]
-    assert "itl" in verdicts[6][1]
+    # The per-token clause is judged on TPOT, not p95 ITL: client ITL is bursty
+    # and its p95 reports the burst gap rather than generation speed.
+    assert "tpot" in verdicts[6][1]
     assert "outcome=error" in verdicts[8][1]
 
     run = LoadGenRun(
@@ -680,7 +682,7 @@ def test_single_token_response_is_judged_without_an_itl_clause():
     cfg = cfg_for(slo_ttft_ms=200.0, slo_itl_ms=1.0)
     r = _synthetic_result(0, 0.0, 0.0, tokens=1, ttft_s=0.05)
     ok, why = meets_slo(r, cfg)
-    assert ok and "no ITL series" in why
+    assert ok and "no per-token rate to judge" in why
 
 
 def test_slo_thresholds_are_parameters_not_constants():

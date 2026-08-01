@@ -651,6 +651,28 @@ def meets_slo(r: RequestResult, cfg: LoadGenConfig) -> tuple[bool, str]:
     judged on TTFT and completion alone and the reason string says so, so a
     workload that degenerates into one-token replies cannot quietly pass the ITL
     clause by having no ITLs.
+
+    THE PER-TOKEN CLAUSE IS JUDGED ON TPOT, NOT ON p95 ITL.
+    -------------------------------------------------------
+    Client-observed ITL is bimodal: SSE chunks arrive in bursts, so a request's
+    ITL series is a mix of near-zero gaps and occasional large ones. Its p95
+    therefore reports the burst GAP, not the per-token generation time, and it
+    exceeds any threshold derived from real decode speed.
+
+    Measured: unloaded TPOT p50 9.3 ms, raw ITL p50 0.08 ms with p90 ~30 ms
+    (job 11602207; reproduced on CPU against a fake model doing a fixed 10 ms
+    per token, so it is the server's emission pattern, not a client artefact).
+
+    An earlier version anchored the THRESHOLD on TPOT but still EVALUATED
+    against p95 ITL. Every request then failed the per-token clause while its
+    TTFT sat comfortably inside budget, and goodput read ~0 at every offered
+    load — a system that was in fact serving 1049 tok/s looked completely
+    broken. Threshold and evaluation must use the same statistic.
+
+    TPOT = (last_token - first_token) / (n_tokens - 1), averaged WITHIN the
+    request, is immune to how tokens were bunched on the wire. The ITL
+    distribution is still recorded in the artifact, because burstiness is real
+    and a user perceives it — it is simply not what the pass/fail turns on.
     """
     if r.outcome != Outcome.COMPLETED:
         return False, f"outcome={r.outcome}"
@@ -659,12 +681,11 @@ def meets_slo(r: RequestResult, cfg: LoadGenConfig) -> tuple[bool, str]:
         return False, "no content chunk ever arrived"
     if ttft >= cfg.slo_ttft_ms:
         return False, f"ttft {ttft:.1f}ms >= {cfg.slo_ttft_ms}ms"
-    itls = r.itls_ms
-    if not itls:
-        return True, "met (single-token response: no ITL series to judge)"
-    p = percentile(itls, cfg.slo_itl_percentile)
-    if p >= cfg.slo_itl_ms:
-        return False, f"p{cfg.slo_itl_percentile:g} itl {p:.1f}ms >= {cfg.slo_itl_ms}ms"
+    tpot = r.tpot_ms
+    if tpot is None:
+        return True, "met (single-token response: no per-token rate to judge)"
+    if tpot >= cfg.slo_itl_ms:
+        return False, f"tpot {tpot:.1f}ms >= {cfg.slo_itl_ms}ms"
     return True, "met"
 
 
