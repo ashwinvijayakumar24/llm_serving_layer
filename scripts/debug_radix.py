@@ -144,7 +144,14 @@ def main():
         max_turns=3, vocab_size=VOCAB_LIMIT, name=f"dbg-{structure}",
     ))
     groups = [{r.request_id: list(r.token_ids)} for r in wl.requests]
-    cfg = dict(max_batch_size=8, max_prefill_tokens=128)
+    # A UNIFORM prefill budget makes every chunk exactly one block, for the
+    # publisher and for the consumer, with the cache on and with it off. Every
+    # forward pass that computes position p then packs the same number of
+    # tokens and attends over the same kv_len, so if reuse is the only variable
+    # left, the KV must be bit-identical. Pass 16 as argv[2] to run it.
+    budget = int(sys.argv[2]) if len(sys.argv) > 2 else 128
+    cfg = dict(max_batch_size=8, max_prefill_tokens=budget)
+    print(f"### structure={structure} max_prefill_tokens={budget}", flush=True)
 
     _, _, off, rec_off = make_stack(model, config, cache=False, **cfg)
     exp, map_off, adm_off = run_staged(off, groups, 8)
@@ -166,6 +173,9 @@ def main():
         nz = (per_pos > 0).nonzero().flatten().tolist()
         pl, pp, cb, blk = adm_on[rid]
         tag = "OK " if same else "DIV"
+        npref = min(cb * BLOCK_SIZE, n)
+        print(f"     [prefix drift {rid}: max|d| over [0,{npref}) = "
+              f"{(d[:, :npref].max() if npref else 0):.5g}]", flush=True)
         print(f"{tag} {rid}: prompt={pl} prefill_pos_on={pp} cached_blocks={cb} "
               f"kv_len off={a.shape[1]} on={b.shape[1]} | KV max|d|={d.max():.4g} "
               f"n_differing_pos={len(nz)}/{n} first={nz[0] if nz else '-'} "

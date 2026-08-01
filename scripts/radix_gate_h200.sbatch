@@ -32,7 +32,9 @@ python3 -m pip install -q "flashinfer-python==0.6.16" 2>&1 | tail -1 || true
 if [ "${RADIX_DIAGNOSE:-0}" = "1" ]; then
     echo; echo "############ R6 DIAGNOSTIC ############"
     for s in ${RADIX_STRUCTURES:-system conversational adversarial}; do
-        python3 scripts/debug_radix.py "$s" 2>&1 || echo ">>> diagnostic errored on $s"
+        for b in ${RADIX_BUDGETS:-128}; do
+            python3 scripts/debug_radix.py "$s" "$b" 2>&1 || echo ">>> errored on $s/$b"
+        done
     done
 fi
 
