@@ -57,7 +57,15 @@ A preemption bug produces *plausible text*. Output stays fluent, no metric degra
 *Mitigation:* per-request token accounting — count tokens emitted vs tokens expected, assert on every retire. Recompute and swap tested independently; a bug in one must not be masked by the other being the default.
 
 ### R4 — Batched output diverging from single-sequence output
-**CRITICAL → DETECTION LIVE AND PASSING 2026-08-01 · Phase 2**
+**CRITICAL → CONFIRMED REAL, MITIGATION CLAUSE INVOKED 2026-08-01 · Phase 2**
+
+> **The risk materialised, and the register's own mitigation clause applies:** exact bit-identity is NOT achievable, so the divergence rate and conditions are published rather than the gate being loosened.
+>
+> Measured (`results/p4/FINDING_batch_shape_numerics.md`, jobs `11602281`, `11602316`): logits move with the PACKED BATCH TOKEN COUNT, because `linear()`'s `M` dimension changes cuBLAS kernel and split-K selection and therefore fp16 reduction order. A byte-identical target sequence at identical positions shows max|Δlogit| up to **0.1745**, and independent verification without the cache or scheduler reproduces **0.01953** at 361+ packed tokens.
+>
+> **Token-level invariance is therefore probabilistic, not structural.** The Phase 2 gate passes because its prompts are 5-36 tokens with comfortable argmax margins; the drift is present there too and simply never flips a decision. Phase 4's longer prefix-shared prompts flip roughly one argmax per 12-request workload.
+>
+> Forcing uniform batch shapes drives the drift to exactly zero, which localises the cause precisely. The fix — pinned cuBLAS algorithms, fp32 accumulation, or deterministic split-K — lives in the ENGINE's forward pass and costs throughput.
 
 > The gate exists and passes on H100 (job `11598894`, 9 tests): mixed prompt lengths, batch sizes 2/3/4, a chunked prefill sharing a batch with decodes, staggered mid-flight arrival, cancellation isolation, and a leak check. This was the first thing in the project to run `n_seqs > 1` on real weights — Phase 1 was batch-1 throughout. Bit-identity held; the mitigation clause (publish the divergence rate instead of loosening the gate) was not needed.
 >
