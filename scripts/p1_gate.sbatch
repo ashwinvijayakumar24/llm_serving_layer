@@ -18,11 +18,24 @@
 # The validity rule is unaffected — this is a correctness gate, not a published
 # number, and no benchmark may come from embers regardless.
 #
+# PARTITION AND GRES ARE DELIBERATELY UNPINNED.
+#
+# This gate needs a CUDA device and nothing else: PagedTorchBackend is pure
+# PyTorch, and the contiguous reference path runs with use_cuda_attn=False, so
+# no custom kernel and therefore no sm_80 dependency. Naming one partition just
+# means queueing behind whoever wants that exact GPU — measured: gpu-a100 had 33
+# jobs pending while gpu-h100 had 10. Listing several lets Slurm take whichever
+# frees first, and `--gres=gpu:1` (generic, not `gpu:a100:1`) is what makes that
+# legal across GPU types.
+#
+# BENCHMARKS MUST NOT DO THIS. A performance number has to name its hardware and
+# stay on one allocation (R12). Unpinning is correct for correctness runs only.
+#
 #SBATCH --job-name=p1_gate
 #SBATCH --account=paceship-simpliearn
 #SBATCH --qos=inferno
-#SBATCH --partition=gpu-a100
-#SBATCH --gres=gpu:a100:1
+#SBATCH --partition=gpu-h100,gpu-a100,gpu-l40s,gpu-h200
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/p1_gate_%j.out
