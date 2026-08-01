@@ -164,6 +164,62 @@ none were run.
 
 ---
 
+## 3b. The crossover sweep — the prediction was FALSIFIED
+
+**Job `11611626`.** Raw log: [`p4_crossover_11611626.log`](p4_crossover_11611626.log).
+
+The methodology predicted (§10, case 4 by analogy) that the cache's benefit
+**grows with prompt length**, because the saving is prefill work avoided and
+prefill cost scales with prompt size. So the ~150-token negative result should
+have flipped positive at longer prompts.
+
+It did not. Measured on the `zero` control, which is the cleanest signal because
+there is nothing to reuse and the number is pure overhead:
+
+| prompt_mean | cache-on minus cache-off, TTFT p50 | p99 | evictions |
+|---|---|---|---|
+| 150 | **+0.6 ms** | −0.1 ms | 0 |
+| 512 | **−0.4 ms** | +1.0 ms | 0 |
+| 1024 | **+416.2 ms** | +969.4 ms | 11,673 |
+| 2048 | **+907.3 ms** | +1567.7 ms | 8,072 |
+
+**The overhead grows with prompt length faster than the saving does.** The
+mechanism is visible in the eviction column: at 150 and 512 tokens the trie fits
+and nothing is evicted; at 1024 tokens a request occupies ~64 blocks and at 2048
+tokens ~128, so the pool churns — 11,673 evictions in a 45 s window — and every
+request pays for a trie that is being continuously demolished and rebuilt.
+
+The zero-sharing hit rate corroborates it: 0.034 at 150 tokens, but **0.153 at
+1024 and 0.089 at 2048**, where it should be near zero. Those are blocks matching
+by accident against a churning trie, not genuine reuse.
+
+### Where the cache does help
+
+Deep conversational sharing, and only there:
+
+| prompt_mean | structure | share | hit rate | Δ TTFT p50 |
+|---|---|---|---|---|
+| 150 | conversational | 1.00 | 0.794 | **−20.4 ms** |
+| 150 | conversational | 0.50 | 0.712 | **−14.8 ms** |
+| 2048 | conversational | 1.00 | 0.498 | **−20.6 ms** |
+| 1024 | conversational | 1.00 | 0.618 | +33.1 ms |
+
+At short prompts with heavy multi-turn reuse the cache pays — about 20 ms at
+TTFT p50, on a 60 ms baseline. Everywhere else it costs. **Every one of these
+cells failed the steady-state check**, so they are indicative and cannot back a
+published number.
+
+### Why a falsified prediction is worth keeping
+
+It was written down before the measurement and it was wrong in a specific,
+diagnosable way: the analysis accounted for the *saving* scaling with prompt
+length and not for the *bookkeeping* scaling with blocks-per-request. That is a
+better artifact than a prediction that quietly came true, and it is the honest
+answer to "did the cache make it faster?" — **no, except under deep
+conversational reuse, and here is the cost curve.**
+
+---
+
 ## 4. Validity
 
 - **NOT PUBLISHABLE:** the run reports `dirty=True` — untracked artifacts from
