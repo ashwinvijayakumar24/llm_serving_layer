@@ -1034,7 +1034,24 @@ class Scheduler:
             )
             need = handle.num_blocks + headroom + 1
 
-            if not self.allocator.can_allocate(need):
+            # NOT `can_allocate`, which reserves the watermark. The watermark
+            # exists to stop ADMISSION of new work while the running set might
+            # not be steppable; a swapped request is not new work — it was
+            # admitted, ran, and had its memory taken away. Holding it behind the
+            # admission watermark starves it: under sustained pressure the
+            # watermark is never satisfied, the request parks forever, the
+            # scheduler keeps stepping, and the client eventually times out.
+            #
+            # Measured (job 11608501): the swap arm logged 36 preemptions at a
+            # preemption RATE of 0.0000 — an enormous step count with nothing
+            # completing — and e2e p99 of 179,954 ms at longer lengths, which is
+            # the client timeout rather than a latency.
+            #
+            # `need` already includes one step of growth for everything that will
+            # be running, so this is not unbounded: it is the same headroom
+            # `allocate` gives an already-admitted sequence that crosses a block
+            # boundary (see `SequenceBlocks.append`).
+            if self.allocator.num_free < need:
                 if self.allocator.num_free == self.allocator.num_blocks:
                     # The pool is entirely free and this sequence still does not
                     # fit. No amount of waiting changes that, and silently

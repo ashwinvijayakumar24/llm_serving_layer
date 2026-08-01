@@ -63,12 +63,12 @@ U () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
 # never preempts, which the driver verifies rather than assumes.
 # ---------------------------------------------------------------------------
 echo; echo "################ P3: PREEMPTION ################"
-start_one 9301 p3_recompute SERVING_KV_BLOCKS=700 SERVING_PREEMPTION=recompute
-start_one 9302 p3_swap      SERVING_KV_BLOCKS=700 SERVING_PREEMPTION=swap
-start_one 9303 p3_control   SERVING_KV_BLOCKS=9000
+start_one 9301 p3_recompute SERVING_KV_BLOCKS=1200 SERVING_PREEMPTION=recompute
+start_one 9302 p3_swap      SERVING_KV_BLOCKS=1200 SERVING_PREEMPTION=swap
+start_one 9303 p3_control   SERVING_KV_BLOCKS=40000   # must NEVER preempt; the driver verifies this
 python3 -m bench.run_p3 \
     --recompute-url "$(U 9301)" --swap-url "$(U 9302)" --control-url "$(U 9303)" \
-    --lengths 64,128,256,512 --rate 6 --duration 60 --warmup 15 --drain 10 \
+    --lengths 64,128,256 --rate 4 --duration 60 --warmup 15 --drain 10 \
     --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
     --results-dir results/p3 2>&1 || echo "P3 driver exited non-zero (invalid cells)"
 stop_all

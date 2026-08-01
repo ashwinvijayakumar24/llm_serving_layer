@@ -922,3 +922,59 @@ def test_a_sequence_larger_than_the_pool_fails_loudly(model):
     assert steps < 500, "livelocked instead of failing"
     assert sched.finished[0].state == RequestState.FAILED
     assert "outgrew the KV pool" in sched.finished[0].error
+
+
+# ---------------------------------------------------------------------------
+# Swap resume must not be gated on the ADMISSION watermark
+# ---------------------------------------------------------------------------
+
+
+def test_swapped_request_resumes_even_when_the_watermark_would_block_admission():
+    """
+    A swapped request is not new work.
+
+    The watermark exists to stop ADMISSION while the running set might not be
+    steppable. A swapped request was already admitted, ran, and had its memory
+    taken away; holding it behind the admission watermark starves it. Under
+    sustained pressure the watermark is never satisfied, the request parks
+    forever, the scheduler keeps stepping, and the client times out.
+
+    Measured before the fix (job 11608501): the swap arm reported 36 preemptions
+    at a preemption RATE of 0.0000 — an enormous step count with nothing
+    completing — and an e2e p99 of 179,954 ms, which is a timeout rather than a
+    latency.
+
+    The rig sets a watermark large enough that `can_allocate` refuses, while
+    leaving enough genuinely free blocks for the resume itself.
+    """
+    from serving.scheduler.preemption import PreemptionPolicy
+
+    model = TinyPagedModel()
+    alloc, _, sched = make_stack(
+        model, 40, max_batch_size=4, max_prefill_tokens=64,
+        preemption_policy=PreemptionPolicy.SWAP,
+    )
+    req = Request(request_id="v", prompt_ids=list(range(8)), max_tokens=6, ignore_eos=True)
+    sched.add_request(req)
+    for _ in range(4):
+        sched.step()
+    assert req.state is not RequestState.WAITING, "victim never started"
+
+    sched._preempt(req)
+    assert req in sched.swapped, "request was not swapped out"
+
+    # Raise the watermark AFTER the request is swapped: admission is now blocked
+    # while free blocks still exist, which is exactly the situation that starved
+    # the resume.
+    alloc._watermark = alloc.num_free + 1
+    assert not alloc.can_allocate(1), (
+        "rig is wrong: the watermark must block admission for this to test anything"
+    )
+    assert alloc.num_free > 0, "rig is wrong: there must be free blocks to resume into"
+
+    resumed = sched._resume_swapped()
+    assert resumed >= 1, (
+        "a swapped request did not resume although free blocks existed — it is "
+        "being starved by the ADMISSION watermark, which does not apply to it"
+    )
+    assert req not in sched.swapped
