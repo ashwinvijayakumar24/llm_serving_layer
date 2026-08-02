@@ -69,6 +69,20 @@ U () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
 # are live at most. 40,000 leaves the cache room to hold every block it ever sees
 # within one cell without a single eviction. Any eviction in this run is
 # therefore a signal, not background noise — and is reported.
+#
+# THIS ARITHMETIC IS WRONG ABOVE 512 TOKENS AND JOB 11617299 PROVED IT. The
+# 1024- and 2048-token cells each logged 7,525-10,788 evictions against this
+# 40,000-block pool. Three things the estimate above omits: the window is 90 s
+# (20 warmup + 60 steady + 10 drain), not 45, so ~180 requests arrive, not 90;
+# prompt length is LOGNORMAL, so a mean of 2048 has a long right tail; and the
+# cache holds a reference to every block it caches for the whole cell, so
+# nothing is returned as requests retire. ~180 x 128 = 23,040 is the floor, not
+# the ceiling, and the tail carries it past 40,000.
+#
+# Consequence: the 150- and 512-token cells are clean and valid; every 1024 and
+# 2048 cell is INVALID and the project claims nothing at those lengths. Fixing
+# it needs a bounded max_cached_blocks — which measures a DIFFERENT cache — or a
+# shorter cell. Neither has been run. See results/p4_clean/RESULTS.md §3.
 POOL=40000
 
 # ONE FRESH SERVER PAIR PER CELL — per (length, structure, sharing rate).
@@ -118,7 +132,17 @@ def find(o,k):
             if r is not None: return r
     return None
 ev=find(d,'evictions')
-print(f'  eviction audit: {ev}' + ('  !! CONTAMINATED' if ev not in (None,0) else '  clean'))
+# ABSENT IS NOT CLEAN. The first version of this audit read
+#   '!! CONTAMINATED' if ev not in (None,0) else 'clean'
+# and printed 'eviction audit: None  clean' for all 36 cells of job 11617299 —
+# the key was never in /metrics at all, so a MISSING measurement was reported as
+# a PASSING one. The driver's own summary table showed 7,525-10,788 evictions
+# inside single 1024/2048-token cells at the same time. An audit that cannot
+# distinguish 'zero' from 'did not look' is worse than no audit, because it
+# converts an unknown into a green tick. Three outcomes, never two.
+if ev is None:   print('  eviction audit: UNKNOWN — no evictions key in /metrics; audit did NOT run')
+elif ev == 0:    print('  eviction audit: 0  clean')
+else:            print(f'  eviction audit: {ev}  !! CONTAMINATED')
 "
       stop_all
     done

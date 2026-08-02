@@ -1,0 +1,122 @@
+{
+  "allocation_id": "11617299@atl1-1-03-019-14-0",
+  "blockers": [
+    "Working tree is dirty \u2014 the measured code is not any commit."
+  ],
+  "breakeven_sharing_rate": {
+    "system": {
+      "crossed": false,
+      "crossover_x": null,
+      "reason": "only 0 usable point(s); a crossover needs at least 2"
+    }
+  },
+  "cells": [
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T031701_atl1-1-03-019-14-0_p4_zero_share0.00_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T031530_atl1-1-03-019-14-0_p4_zero_share0.00_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 37774.0,
+        "cache_blocks_reused": 145.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 0.0,
+        "cache_inserts": 37803.0,
+        "cache_lookups": 146.0,
+        "cache_partial_block_truncations": 145.0,
+        "cache_requests_with_a_hit": 145.0,
+        "cache_tokens_matched_but_recomputed": 2175.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 37803,
+        "cache_max_node_depth": 513,
+        "cache_max_partial_hit_depth": 1,
+        "cache_node_count": 37803,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.2666666666666666,
+      "goodput_on": 1.2666666666666666,
+      "mean_partial_hit_depth_blocks": 0.9931506849315068,
+      "measured_block_hit_rate": 0.0038386191560332503,
+      "measured_request_hit_rate": 0.9931506849315068,
+      "n_ttft_off": 89,
+      "n_ttft_on": 89,
+      "oracle_block_sharing_rate": 0.0,
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.",
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "sharing_rate": 0.0,
+      "structure": "zero",
+      "ttft_p50_cache_off": 123.83775863291646,
+      "ttft_p50_cache_on": 127.27043669165994,
+      "ttft_p50_delta": 3.432678058743477,
+      "ttft_p99_cache_off": 216.53113950255272,
+      "ttft_p99_cache_on": 232.02885515886496,
+      "ttft_p99_delta": 15.497715656312238,
+      "valid": false,
+      "workload_fingerprint": "db904cf8ad19cccfafa3fb53e9a91d04"
+    },
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T032002_atl1-1-03-019-14-0_p4_system_share0.50_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T031831_atl1-1-03-019-14-0_p4_system_share0.50_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 49638.0,
+        "cache_blocks_reused": 6871.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 10788.0,
+        "cache_inserts": 12985.0,
+        "cache_lookups": 199.0,
+        "cache_partial_block_truncations": 158.0,
+        "cache_requests_with_a_hit": 199.0,
+        "cache_tokens_matched_but_recomputed": 1442.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 40000,
+        "cache_max_node_depth": 513,
+        "cache_max_partial_hit_depth": 282,
+        "cache_node_count": 40000,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.3,
+      "goodput_on": 0.016666666666666666,
+      "mean_partial_hit_depth_blocks": 34.52763819095477,
+      "measured_block_hit_rate": 0.13842217655828196,
+      "measured_request_hit_rate": 1.0,
+      "n_ttft_off": 89,
+      "n_ttft_on": 11,
+      "oracle_block_sharing_rate": 0.03059490084985836,
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.",
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "sharing_rate": 0.5,
+      "structure": "system",
+      "ttft_p50_cache_off": 125.45658302448714,
+      "ttft_p50_cache_on": 656.9238843743576,
+      "ttft_p50_delta": 531.4673013498705,
+      "ttft_p99_cache_off": 209.85034838530183,
+      "ttft_p99_cache_on": 1054.1201533863955,
+      "ttft_p99_delta": 844.2698050010937,
+      "valid": false,
+      "workload_fingerprint": "cbda2668da3251679c8376fe452a7d73"
+    }
+  ],
+  "offered_load_rps": 2.0,
+  "publishable": false,
+  "sharing_rates": [
+    0.5
+  ],
+  "structures": [
+    "zero",
+    "system"
+  ],
+  "zero_sharing_overhead_statement": [
+    "  zero sharing: block hit rate 0.0038 (expected ~0). Turning the cache on COSTS 3.43 ms at TTFT p50 and 15.50 ms at p99, for zero benefit.",
+    "    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (\u00a77). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive."
+  ]
+}

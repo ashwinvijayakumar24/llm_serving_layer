@@ -1,0 +1,63 @@
+{
+  "allocation_id": "11617299@atl1-1-03-019-14-0",
+  "blockers": [],
+  "breakeven_sharing_rate": {},
+  "cells": [
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T003028_atl1-1-03-019-14-0_p4_zero_share0.00_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T002857_atl1-1-03-019-14-0_p4_zero_share0.00_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 5119.0,
+        "cache_blocks_reused": 181.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 0.0,
+        "cache_inserts": 5120.0,
+        "cache_lookups": 182.0,
+        "cache_partial_block_truncations": 181.0,
+        "cache_requests_with_a_hit": 181.0,
+        "cache_tokens_matched_but_recomputed": 2715.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 5120,
+        "cache_max_node_depth": 90,
+        "cache_max_partial_hit_depth": 1,
+        "cache_node_count": 5120,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.7833333333333334,
+      "goodput_on": 1.7666666666666666,
+      "mean_partial_hit_depth_blocks": 0.9945054945054945,
+      "measured_block_hit_rate": 0.03535846845086931,
+      "measured_request_hit_rate": 0.9945054945054945,
+      "n_ttft_off": 118,
+      "n_ttft_on": 118,
+      "oracle_block_sharing_rate": 0.0,
+      "reasons": [],
+      "sharing_rate": 0.0,
+      "structure": "zero",
+      "ttft_p50_cache_off": 57.5684267649379,
+      "ttft_p50_cache_on": 58.190234683536346,
+      "ttft_p50_delta": 0.6218079185984493,
+      "ttft_p99_cache_off": 86.18401273461738,
+      "ttft_p99_cache_on": 82.39403011314027,
+      "ttft_p99_delta": -3.789982621477108,
+      "valid": true,
+      "workload_fingerprint": "b459a46c11e6d65b2f3e38b6935a1834"
+    }
+  ],
+  "offered_load_rps": 2.0,
+  "publishable": true,
+  "sharing_rates": [
+    0.0
+  ],
+  "structures": [
+    "zero"
+  ],
+  "zero_sharing_overhead_statement": [
+    "  zero sharing: block hit rate 0.0354 (expected ~0). Turning the cache on COSTS 0.62 ms at TTFT p50 and 3.79 ms at p99, for zero benefit.",
+    "    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (\u00a77). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive."
+  ]
+}

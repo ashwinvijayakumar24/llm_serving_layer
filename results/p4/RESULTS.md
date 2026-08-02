@@ -221,11 +221,8 @@ and **zero evictions**:
 | 150 | +0.6 ms | −0.1 ms |
 | 512 | −0.4 ms | +1.0 ms |
 
-**At these lengths the cache is approximately free and approximately useless** on
-this hardware — within a millisecond either way on a 60–80 ms TTFT. That is
-consistent with the earlier 150-token run and is the honest summary of what has
-been measured.
-
+Both of those rows are the **zero-sharing control**, where the cache is expected
+to do nothing — so they show it costs nothing, not that it achieves nothing.
 Deep conversational reuse showed −14.8 ms and −20.4 ms at 150 tokens, which is a
 real direction but sits in cells that failed the steady-state check.
 
@@ -233,12 +230,34 @@ real direction but sits in cells that failed the steady-state check.
 
 A **fresh server per cell**, or an explicit cache clear between cells, or a
 bounded `max_cached_blocks` so the trie cannot consume the whole pool. The first
-is cleanest and costs only startup time. Not run — recorded as the next step
-rather than approximated.
+is cleanest and costs only startup time.
 
 **The prediction is therefore UNTESTED at long prompts, not falsified.** An
 earlier revision of this document claimed it had been falsified; that claim was
 wrong and is corrected here rather than silently edited.
+
+### → SUPERSEDED. The fresh-server-per-cell run has since been done.
+
+**Job `11617299`, 36 fresh server pairs — [`results/p4_clean/RESULTS.md`](../p4_clean/RESULTS.md).**
+It is the authoritative P4 measurement; this document is retained for the two
+failure modes it records, not for its numbers.
+
+What changed once the cells were independent:
+
+- The cache **does** pay off where sharing exists. 512-tok system prefix at 50%
+  sharing: **−6.3 ms TTFT p50, −37.7 ms p99 (−23%)**. 150-tok conversational at
+  100% sharing: **−17.3 ms p50** on a 64.8 ms baseline. All with evictions 0 and
+  n = 118/118. The "approximately useless" reading above came from quoting the
+  zero-sharing control as if it were the result.
+- The +416 / +907 ms figures are confirmed artifacts. The clean zero-sharing
+  control is **+0.9 … +4.4 ms at the same 1024/2048 lengths**.
+- 1024 and 2048 remain **untested**: even one cell saturates a 40,000-block pool
+  at those lengths, so all 24 cells are INVALID. The sizing argument in
+  `scripts/p4_clean.sbatch` that said this was impossible was itself wrong, and
+  is corrected in place.
+- The per-cell eviction audit added to catch precisely this **also failed
+  silently** — it printed `eviction audit: None  clean` for all 36 cells because
+  the metrics key was absent and the guard treated absent as zero.
 
 ---
 

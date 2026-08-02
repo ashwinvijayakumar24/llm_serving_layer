@@ -1,0 +1,68 @@
+{
+  "allocation_id": "11617299@atl1-1-03-019-14-0",
+  "blockers": [
+    "Working tree is dirty \u2014 the measured code is not any commit."
+  ],
+  "breakeven_sharing_rate": {},
+  "cells": [
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T030328_atl1-1-03-019-14-0_p4_zero_share0.00_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T030157_atl1-1-03-019-14-0_p4_zero_share0.00_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 37774.0,
+        "cache_blocks_reused": 145.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 0.0,
+        "cache_inserts": 37803.0,
+        "cache_lookups": 146.0,
+        "cache_partial_block_truncations": 145.0,
+        "cache_requests_with_a_hit": 145.0,
+        "cache_tokens_matched_but_recomputed": 2175.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 37803,
+        "cache_max_node_depth": 513,
+        "cache_max_partial_hit_depth": 1,
+        "cache_node_count": 37803,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.2666666666666666,
+      "goodput_on": 1.25,
+      "mean_partial_hit_depth_blocks": 0.9931506849315068,
+      "measured_block_hit_rate": 0.0038386191560332503,
+      "measured_request_hit_rate": 0.9931506849315068,
+      "n_ttft_off": 89,
+      "n_ttft_on": 89,
+      "oracle_block_sharing_rate": 0.0,
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.",
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "sharing_rate": 0.0,
+      "structure": "zero",
+      "ttft_p50_cache_off": 126.2042087824824,
+      "ttft_p50_cache_on": 127.62387402199238,
+      "ttft_p50_delta": 1.4196652395099818,
+      "ttft_p99_cache_off": 215.4664425115065,
+      "ttft_p99_cache_on": 349.7647439373819,
+      "ttft_p99_delta": 134.29830142587542,
+      "valid": false,
+      "workload_fingerprint": "db904cf8ad19cccfafa3fb53e9a91d04"
+    }
+  ],
+  "offered_load_rps": 2.0,
+  "publishable": false,
+  "sharing_rates": [
+    0.5
+  ],
+  "structures": [
+    "zero"
+  ],
+  "zero_sharing_overhead_statement": [
+    "  zero sharing: block hit rate 0.0038 (expected ~0). Turning the cache on COSTS 1.42 ms at TTFT p50 and 134.30 ms at p99, for zero benefit.",
+    "    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (\u00a77). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive."
+  ]
+}

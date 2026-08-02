@@ -1,0 +1,115 @@
+{
+  "allocation_id": "11617299@atl1-1-03-019-14-0",
+  "blockers": [
+    "Working tree is dirty \u2014 the measured code is not any commit."
+  ],
+  "breakeven_sharing_rate": {
+    "conversational": {
+      "crossed": false,
+      "crossover_x": null,
+      "reason": "only 1 usable point(s); a crossover needs at least 2"
+    }
+  },
+  "cells": [
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T010034_atl1-1-03-019-14-0_p4_zero_share0.00_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T005903_atl1-1-03-019-14-0_p4_zero_share0.00_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 5119.0,
+        "cache_blocks_reused": 181.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 0.0,
+        "cache_inserts": 5120.0,
+        "cache_lookups": 182.0,
+        "cache_partial_block_truncations": 181.0,
+        "cache_requests_with_a_hit": 181.0,
+        "cache_tokens_matched_but_recomputed": 2715.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 5120,
+        "cache_max_node_depth": 90,
+        "cache_max_partial_hit_depth": 1,
+        "cache_node_count": 5120,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.7666666666666666,
+      "goodput_on": 1.7666666666666666,
+      "mean_partial_hit_depth_blocks": 0.9945054945054945,
+      "measured_block_hit_rate": 0.03535846845086931,
+      "measured_request_hit_rate": 0.9945054945054945,
+      "n_ttft_off": 118,
+      "n_ttft_on": 118,
+      "oracle_block_sharing_rate": 0.0,
+      "reasons": [],
+      "sharing_rate": 0.0,
+      "structure": "zero",
+      "ttft_p50_cache_off": 60.310047747719864,
+      "ttft_p50_cache_on": 59.55562688485827,
+      "ttft_p50_delta": -0.7544208628615934,
+      "ttft_p99_cache_off": 90.96226227255576,
+      "ttft_p99_cache_on": 86.31912951706148,
+      "ttft_p99_delta": -4.643132755494278,
+      "valid": true,
+      "workload_fingerprint": "b459a46c11e6d65b2f3e38b6935a1834"
+    },
+    {
+      "artifacts": {
+        "cache_off": "results/p4_clean/20260802T010335_atl1-1-03-019-14-0_p4_conversational_share0.00_cache_off.json",
+        "cache_on": "results/p4_clean/20260802T010205_atl1-1-03-019-14-0_p4_conversational_share0.00_cache_on.json"
+      },
+      "cache_counters_delta": {
+        "cache_blocks_required": 5119.0,
+        "cache_blocks_reused": 302.0,
+        "cache_cow_copies": 0.0,
+        "cache_evictions": 0.0,
+        "cache_inserts": 4998.0,
+        "cache_lookups": 182.0,
+        "cache_partial_block_truncations": 181.0,
+        "cache_requests_with_a_hit": 182.0,
+        "cache_tokens_matched_but_recomputed": 1815.0
+      },
+      "cache_gauges_after": {
+        "cache_cached_blocks": 10118,
+        "cache_max_node_depth": 90,
+        "cache_max_partial_hit_depth": 31,
+        "cache_node_count": 10118,
+        "cache_shared_blocks_refcount_gt_1": 0
+      },
+      "degeneracy_warnings": [],
+      "goodput_off": 1.8166666666666667,
+      "goodput_on": 1.7666666666666666,
+      "mean_partial_hit_depth_blocks": 1.6593406593406594,
+      "measured_block_hit_rate": 0.05899589763625708,
+      "measured_request_hit_rate": 1.0,
+      "n_ttft_off": 118,
+      "n_ttft_on": 118,
+      "oracle_block_sharing_rate": 0.0,
+      "reasons": [],
+      "sharing_rate": 0.0,
+      "structure": "conversational",
+      "ttft_p50_cache_off": 57.18823826454411,
+      "ttft_p50_cache_on": 58.692652705254034,
+      "ttft_p50_delta": 1.5044144407099225,
+      "ttft_p99_cache_off": 83.02789698377119,
+      "ttft_p99_cache_on": 82.41421833046789,
+      "ttft_p99_delta": -0.6136786533032961,
+      "valid": true,
+      "workload_fingerprint": "a874121716d854fd2330987a5105b41a"
+    }
+  ],
+  "offered_load_rps": 2.0,
+  "publishable": false,
+  "sharing_rates": [
+    0.0
+  ],
+  "structures": [
+    "zero",
+    "conversational"
+  ],
+  "zero_sharing_overhead_statement": [
+    "  zero sharing: block hit rate 0.0354 (expected ~0). Turning the cache on saves 0.75 ms at TTFT p50 and 4.64 ms at p99, for zero benefit."
+  ]
+}
