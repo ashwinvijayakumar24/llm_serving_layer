@@ -2,7 +2,17 @@
 
 A from-scratch LLM serving system — paged KV cache, continuous batching, preemption under memory pressure, radix prefix caching, and prefix-aware routing across GPU replicas — built over [`llm_inference_engine`](https://github.com/ashwinvijayakumar24/llm_inference_engine), a single-request Llama 3.2 1B implementation.
 
-Benchmarked on NVIDIA A100 40GB and H100 80GB (Georgia Tech PACE Phoenix). Every number below resolves to a committed artifact in [`results/`](results/) carrying its Slurm allocation id, GPU, seed, git SHA, and pinned engine tag.
+Benchmarked on NVIDIA H100 80GB and H200 (Georgia Tech PACE Phoenix). Every number below resolves to a committed artifact in [`results/`](results/) carrying its Slurm allocation id, GPU, seed, git SHA, and pinned engine tag.
+
+**Five claims were scoped. Four are earned; the fifth is not, and says so.** The routing benchmark never measured its shared-prefix workloads inside their valid range, so prefix-aware routing is *not* claimed to beat a load-aware baseline — see [Routing](#prefix-aware-routing--not-earned-s5). Publishing that is the point, not an apology for it.
+
+| | claim | result |
+|---|---|---|
+| **S1** | paged KV capacity | **7.7×** concurrent sequences at fixed VRAM (realized mean 258 tok) |
+| **S2** | continuous batching | **1.8×** peak goodput under SLO; TTFT p99 89–113 ms vs 530–801 ms |
+| **S3** | preemption | **bit-identical** greedy output under forced memory pressure, both policies |
+| **S4** | radix prefix cache | **−23%** TTFT p99 at 27% block reuse; ≤1.3 ms cost at zero sharing |
+| **S5** | prefix-aware routing | **NOT EARNED** — one losing-case prediction confirmed instead |
 
 ---
 
@@ -51,7 +61,56 @@ batched output     ==  single-sequence       9 tests                 job 1159889
 
 Before this project, the engine had **no model-level correctness test for its GPU path at all** — `tests/test_gpu_model.py:42-45` asserted only that logits were finite, correctly shaped, and had an in-range argmax. Correctness was measured on the CPU fp32 path; performance on the GPU fp16 path. Closing that gap was Phase 0.
 
-*Further results — continuous batching goodput, preemption, cache hit rate, routing — in [`results/`](results/) and summarised in [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md).*
+### Continuous batching — goodput under SLO (S2)
+
+| | continuous | static batching | ratio |
+|---|---|---|---|
+| peak goodput (req/s) | **2.29** | 1.27 | **1.8×** |
+| goodput at 8 req/s offered | — | — | **13.6×** |
+| TTFT p99 across a 12× load range | 89–113 ms | 530–801 ms | — |
+| raw throughput | — | — | **identical** |
+
+**Raw tok/s is the same in both arms.** Static batching does not lose throughput, it loses latency, by making every request wait for a whole wave to drain. The baseline is a **one-line change to admission in the same server**, so kernels, memory manager, HTTP stack and model are byte-identical between arms and the entire delta is attributable to scheduling.
+
+*Artifacts: [`results/p2/`](results/p2/) · job `11608159`, H200.*
+
+### Preemption under memory exhaustion (S3)
+
+Recompute and swap-to-host policies, LIFO victim selection, starvation guard. **Greedy output verified bit-identical to an unpreempted control under forced memory pressure, for both policies.** The benchmark also found a real resume-starvation bug: swapped sequences were gated on the admission watermark, which by definition does not apply to them — `serving/scheduler/scheduler.py::_resume_swapped`, with a regression test verified to fail on the prior code.
+
+The **correctness** claim above comes from the gate. The **cost** sweep is only half-valid: recompute measured cleanly at three sequence lengths (latency tax +0.7 to +4.2 ms TTFT p50 versus an unpreempted control, 42,254 tokens recomputed at length 256), but every swap arm failed the steady-state check and is excluded. So the recompute-vs-swap crossover predicted in the methodology is **untested, not confirmed** — no length produced a valid arm of each.
+
+*Artifacts: [`results/p3/`](results/p3/) · gate job `11608158`.*
+
+### Radix prefix cache — TTFT (S4)
+
+Job `11617299`, H200, **one fresh server pair per cell** (36 pairs). Valid cells only: evictions 0, n = 118/118, steady state verified.
+
+| prompt | structure | sharing | block hit rate | Δ TTFT p50 | Δ TTFT p99 |
+|---|---|---|---|---|---|
+| 512 | system prefix | 50% | 0.137 | −6.3 ms | **−37.7 ms (−23%)** |
+| 512 | system prefix | 100% | 0.272 | −5.1 ms | **−38.0 ms (−23%)** |
+| 150 | conversational | 100% | 0.762 | **−17.3 ms** (on 64.8 ms) | — |
+| 150 | conversational | 50% | 0.536 | −8.5 ms | — |
+| any | **zero sharing (control)** | 0% | ~0.01 | **+0.4 … +4.4 ms** | — |
+
+**The win lands in the tail, not the median**, and that is the mechanism rather than a quirk: a prefix hit does not speed up the request that misses — it removes prefill work from the queue, which shortens everyone else's wait. p99 moves 23% in a cell where p50 moves 7%.
+
+**Break-even sharing rate: 0.058 conversational, 0.452 system.** Below it the cache costs more than it saves. A shared system preamble is only ~30 tokens and must clear block granularity before it returns anything, so it needs 45% of traffic to share before it pays for itself. **A speedup quoted without its sharing rate is a choice of workload, not a measurement.**
+
+**1024- and 2048-token prompts are untested.** All 24 cells at those lengths saturated the block pool *within a single cell* and were marked INVALID by the driver. Two earlier runs of this benchmark reported +416 ms and +907 ms there and were wrong — cells shared a server, the trie consumed the pool, and every later request evicted. The failure and its diagnosis are kept in [`results/p4/`](results/p4/) rather than deleted.
+
+*Artifacts: [`results/p4_clean/`](results/p4_clean/) · correctness gate job `11608501`.*
+
+### Prefix-aware routing — NOT EARNED (S5)
+
+Four replicas on four dedicated H200s, three routers over one fleet. **S5 is not claimed.** Three of four scenarios carry a long shared prefix, saturate below the lowest offered load, and produced no usable point — the loads were derived from a lighter scenario's capacity and never re-derived. That is a workload-design failure, not a routing result, and `untested` is not `confirmed`.
+
+What *was* earned is a **losing-case prediction confirmed**: `zero_sharing` was predicted in writing, before measurement, to lose to a load-aware baseline — "there is nothing to be cache-aware about, and any deviation from load-optimal placement is pure loss." It lost, in the predicted direction: **Δgoodput −0.111 at load 4, −0.311 at load 16** vs `least_outstanding`.
+
+Note that prefix-aware *beats* round-robin at load 4 (3.18 vs 3.02) while losing to least-outstanding (3.29). Quoting the round-robin comparison would have produced a win — a win about load balancing, which the real baseline already does, and nothing about prefix awareness.
+
+*Artifacts: [`results/p5/`](results/p5/) · job `11610306`, 4 × H200.*
 
 ---
 
@@ -149,9 +208,13 @@ Running on Slurm: see [`scripts/`](scripts/).
 
 ## Testing
 
-CPU tests run without a GPU, weights, or network — the allocator, radix trie, routing policy, batch assembly, workload generation, and metric schema are all pure logic by design, so cluster queue time never blocks development.
+**774 CPU tests, 100 GPU-gated.** CPU tests run without a GPU, weights, or network — the allocator, radix trie, routing policy, batch assembly, workload generation, and metric schema are all pure logic by design, so cluster queue time never blocks development.
 
 Every GPU gate uses `REQUIRE_GPU=1`, which turns an unusable GPU into a **hard failure rather than a skip**. This is not defensive styling: an early run landed on a V100 under a CUDA-13 build, skipped all 16 gate tests, and exited 0 — a skipped gate and a passing gate are indistinguishable in a job log.
+
+That was the first of **six** failures in this project with the same shape: *something reported success while doing nothing.* A fragmentation test that passed without ever fragmenting the pool. A server returning HTTP 200 and well-formed SSE with zero content. An SLO calibration that produced goodput 0.00 at every rate from a negative TTFT. A summary table printing 0.0 in all seven rows because it read scalar keys that don't exist. And an eviction audit that printed `clean` for all 36 cells because the metrics key was absent and the guard classified *absent* as *zero* — a check added in response to the previous instance, failing the same way.
+
+None raised. Every one was caught by an assertion of a **positive property** — "the GPU is usable", "these pages are non-contiguous", "this response has content", "this latency is physically possible" — never by the absence of an error. It is why [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) orders risks by *detectability* rather than impact, and why the benchmark drivers mark cells `INVALID` and refuse to interpolate rather than reporting a number with a caveat.
 
 ## License
 
