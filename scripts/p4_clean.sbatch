@@ -30,7 +30,7 @@
 #SBATCH --partition=gpu-h200
 #SBATCH --gres=gpu:h200:1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=03:00:00
+#SBATCH --time=05:00:00
 #SBATCH --output=logs/p4_clean_%j.out
 #SBATCH --error=logs/p4_clean_%j.out
 
@@ -71,48 +71,58 @@ U () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
 # therefore a signal, not background noise — and is reported.
 POOL=40000
 
+# ONE FRESH SERVER PAIR PER CELL — per (length, structure, sharing rate).
+#
+# Fresh-per-LENGTH was not enough, and the arithmetic says why: nine cells shared
+# one server and each issues ~180 requests once warmup and drain are counted.
+#   512 tok:  9 x 180 x  32 =  51,840 blocks against a 40,000 pool
+#  1024 tok:  9 x 180 x  64 = 103,680
+#  2048 tok:  9 x 180 x 128 = 207,360
+# The 512-token cells duly logged 4,759 and 8,968 evictions. Per CELL the worst
+# case is 180 x 128 = 23,040 blocks, comfortably inside 40,000, so the cache can
+# hold everything it sees and never evict.
+#
+# 36 restarts at ~25 s is ~15 minutes of startup. That is the price of cells that
+# do not contaminate each other, and it is cheap next to a wrong conclusion —
+# the previous run's +416 ms was exactly this artefact.
 for PLEN in 150 512 1024 2048; do
-    echo
-    echo "################ prompt_mean=${PLEN}  (FRESH SERVERS) ################"
-    start_one 9401 "on_${PLEN}"  SERVING_KV_BLOCKS=$POOL
-    start_one 9402 "off_${PLEN}" SERVING_KV_BLOCKS=$POOL SERVING_PREFIX_CACHE=0
+  for STRUCT in zero system conversational; do
+    for SHARE in 0.0 0.5 1.0; do
+      echo
+      echo "########## len=${PLEN} struct=${STRUCT} share=${SHARE} (FRESH PAIR) ##########"
+      start_one 9401 "on_${PLEN}_${STRUCT}_${SHARE}"  SERVING_KV_BLOCKS=$POOL
+      start_one 9402 "off_${PLEN}_${STRUCT}_${SHARE}" SERVING_KV_BLOCKS=$POOL SERVING_PREFIX_CACHE=0
 
-    set +e
-    python3 -m bench.run_p4 \
-        --url "$(U 9401)" --cache-off-url "$(U 9402)" \
-        --structures zero,system,conversational \
-        --sharing-rates 0.0,0.5,1.0 \
-        --prompt-mean "$PLEN" --output-mean 32 \
-        --rate 2 --duration 60 --warmup 20 --drain 10 \
-        --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
-        --label "clean_len${PLEN}" --results-dir results/p4_clean 2>&1
-    set -e
+      set +e
+      python3 -m bench.run_p4 \
+          --url "$(U 9401)" --cache-off-url "$(U 9402)" \
+          --structures "$STRUCT" --sharing-rates "$SHARE" \
+          --prompt-mean "$PLEN" --output-mean 32 \
+          --rate 2 --duration 60 --warmup 20 --drain 10 \
+          --slo-ttft-ms $SLO_TTFT --slo-itl-ms $SLO_ITL --seed 20260801 \
+          --label "clean_${PLEN}_${STRUCT}_${SHARE}" --results-dir results/p4_clean 2>&1
+      set -e
 
-    # The check that would have caught the original mistake. Any eviction here
-    # means the pool saturated inside a single cell, which invalidates the cell.
-    echo "--- eviction audit for prompt_mean=${PLEN} ---"
-    curl -s "http://127.0.0.1:9401/metrics" 2>/dev/null \
-        | python3 -c "
+      # ANY eviction here means the pool saturated inside a single cell, which is
+      # the failure this whole restructuring exists to prevent. Reported per cell
+      # rather than inferred later from a suspicious total.
+      curl -s "http://127.0.0.1:9401/metrics" 2>/dev/null | python3 -c "
 import json,sys
-try:
-    d = json.load(sys.stdin)
-except Exception:
-    print('  (metrics unavailable)'); raise SystemExit
-def find(o, key):
-    if isinstance(o, dict):
-        for k, v in o.items():
-            if k == key: return v
-            r = find(v, key)
+try: d=json.load(sys.stdin)
+except Exception: print('  eviction audit: metrics unavailable'); raise SystemExit
+def find(o,k):
+    if isinstance(o,dict):
+        for a,b in o.items():
+            if a==k: return b
+            r=find(b,k)
             if r is not None: return r
     return None
-ev = find(d, 'evictions')
-print(f'  evictions this cell: {ev}')
-if ev not in (None, 0):
-    print('  !! NON-ZERO: the pool saturated inside this cell and the numbers are contaminated')
-else:
-    print('  clean: the cache never had to evict, so cells are independent')
+ev=find(d,'evictions')
+print(f'  eviction audit: {ev}' + ('  !! CONTAMINATED' if ev not in (None,0) else '  clean'))
 "
-    stop_all
+      stop_all
+    done
+  done
 done
 
 echo; echo "=== artifacts: $(ls results/p4_clean 2>/dev/null | wc -l) ==="
