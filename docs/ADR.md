@@ -1,7 +1,7 @@
 # Architecture Decision Log
 
 **Status:** draft 1, 2026-07-31. Planning only; no implementation.
-**Depends on:** `docs/PRD.md`, `docs/BENCHMARK_METHODOLOGY.md`, `docs/ARCHITECTURE.md`, `docs/PHASE_PLAN.md`. Engine @ `6ff40a1`.
+**Depends on:** `docs/PRD.md`, `docs/BENCHMARK_METHODOLOGY.md`, `docs/ARCHITECTURE.md`, the phase plan. Engine @ `6ff40a1`.
 
 One file, one decision per section. Numbering is stable and referenced from `ARCHITECTURE.md` (ADR-001 … ADR-007) — those numbers must not be reused or renumbered.
 
@@ -49,29 +49,29 @@ A paged KV cache needs an attention kernel that can read K/V through a block tab
 
 The engine's kernel cannot be extended into a paged one. Its pybind ABI has no stride, block-table, or block-size arguments (`kernels/bindings.cpp:29-31`) — a paged cache is not *expressible* across that boundary, not merely awkward. `Q` is `[n_heads, head_dim]` with no batch axis (`kernels/attention_decode.cu:30-32`), so a paged *batched* kernel is a rewrite, not an extension. Rewriting also re-opens the 100-input numerical gate (`tests/test_attention_kernel.py:72-85`) and the "0.98–0.99× PyTorch SDPA" claim (`BENCHMARKS.md:102`) that the existing kernel currently owns.
 
-The project's lane is systems engineering applied to AI, not kernel engineering (PRD §1). "Can he write CUDA" is already answered by the engine and is a *deprioritized lane*. Meanwhile PRD §8 fixes a late-August freeze at roughly four weeks / ~120 engineer-hours (PHASE_PLAN §0), against which a paged kernel is estimated at 15–25 hours of pointer-arithmetic debugging (ARCHITECTURE §10/A3).
+The project's lane is systems engineering applied to AI, not kernel engineering (PRD §1). "Can this author write CUDA" is already answered by the engine and is a *deprioritized lane*. Meanwhile PRD §8 fixes a late-August freeze at roughly four weeks / ~120 engineer-hours (the phase plan §0), against which a paged kernel is estimated at 15–25 hours of pointer-arithmetic debugging (ARCHITECTURE §10/A3).
 
 **Decision**
 
 Two paged-attention implementations behind one `AttentionBackend` protocol (PRD §C4):
 
-1. **`PagedTorchBackend`** — pure PyTorch block-gather into SDPA, ~150 lines, written by the author. This is the correctness oracle and the hand-written reference. Written **first**, because it is layout-independent (PHASE_PLAN §4).
+1. **`PagedTorchBackend`** — pure PyTorch block-gather into SDPA, ~150 lines, written by the author. This is the correctness oracle and the hand-written reference implementation. Written **first**, because it is layout-independent (the phase plan §4).
 2. **`FlashInferBackend`** — FlashInfer's paged kernels as the fast path, integrated behind the same protocol.
 
-Benchmarked head-to-head at matched sequence lengths. Attribution wording is fixed and non-negotiable (PRD §C4, PHASE_PLAN §11): *"integrated FlashInfer's paged-attention kernels behind a pluggable attention backend; wrote a PyTorch reference implementation as the correctness oracle."* Never "wrote a paged kernel."
+Benchmarked head-to-head at matched sequence lengths. Attribution wording is fixed and non-negotiable (PRD §C4, the phase plan §11): *"integrated FlashInfer's paged-attention kernels behind a pluggable attention backend; wrote a PyTorch reference implementation as the correctness oracle."* Never "wrote a paged kernel."
 
 **Alternatives considered**
 
-- **Write a paged-attention CUDA kernel (ARCHITECTURE §10/A3).** Rejected. It is the longest pole in the project for the smallest signal: the marginal claim is "can write a *second*, harder CUDA kernel," in a lane the author has explicitly deprioritized, at the cost of the phase that carries the actual claim set. It is also not an extension of existing work — the ABI (`kernels/bindings.cpp:29-31`) and the batch-less `Q` shape (`attention_decode.cu:30-32`) mean starting over. And the failure mode is bad: a subtly wrong paged kernel produces plausible text, so debugging it competes for the same attention as the scheduler. **[inference]** The honest cost accounting is that this trade buys ~20 hours of scheduler work with ~20 hours of kernel work that duplicates an answered question.
+- **Write a paged-attention CUDA kernel (ARCHITECTURE §10/A3).** Rejected. It is the longest pole in the project for the smallest signal: the marginal claim is "can write a *second*, harder CUDA kernel," in a lane this project explicitly deprioritizes, at the cost of the phase that carries the actual claim set. It is also not an extension of existing work — the ABI (`kernels/bindings.cpp:29-31`) and the batch-less `Q` shape (`attention_decode.cu:30-32`) mean starting over. And the failure mode is bad: a subtly wrong paged kernel produces plausible text, so debugging it competes for the same attention as the scheduler. **[inference]** The honest cost accounting is that this trade buys ~20 hours of scheduler work with ~20 hours of kernel work that duplicates an answered question.
 - **FlashInfer only, no PyTorch reference.** Rejected. Three separate losses. (a) No oracle: with FlashInfer as the only paged path, a divergence cannot be attributed between the allocator, the block tables, and the kernel. (b) No fallback: FlashInfer's build on PACE is unverified, and a build failure would block the entire project's critical path. (c) No answer to *"why did you use a library here?"* other than "it was there" — whereas having written the reference makes the layout contract something the author can defend cold.
-- **PyTorch reference only, no FlashInfer.** Rejected as the plan, retained as the explicit Phase 1 cut (PHASE_PLAN §4). The memory claim (S1) does not depend on FlashInfer at all; the throughput headroom and the library-vs-hand-written A/B do.
+- **PyTorch reference only, no FlashInfer.** Rejected as the plan, retained as the explicit Phase 1 cut (the phase plan §4). The memory claim (S1) does not depend on FlashInfer at all; the throughput headroom and the library-vs-hand-written A/B do.
 - **`torch.nn.functional.scaled_dot_product_attention` over a materialized contiguous cache, with paging only in the allocator.** Rejected. It reintroduces exactly the whole-cache copy that ADR-005 eliminates, and it makes the "paged attention" claim false — the paging would be bookkeeping with no kernel behind it.
 
 **Consequences**
 
 - The strongest kernel-level claim in this repo is an *integration* claim. That is a real cost, and it is why the wording is fixed in advance rather than allowed to drift under questioning.
 - Two implementations to keep numerically in sync. The bit-identical greedy gate applies to both.
-- Hard dependency on an unverified third-party layout contract. ADR-005's block layout is asserted as reasonable, **not** as FlashInfer-compatible (ARCHITECTURE §11); it is verified before Phase 2, not discovered in Phase 2 (PHASE_PLAN §12).
+- Hard dependency on an unverified third-party layout contract. ADR-005's block layout is asserted as reasonable, **not** as FlashInfer-compatible (ARCHITECTURE §11); it is verified before Phase 2, not discovered in Phase 2 (the phase plan §12).
 - The PyTorch path will be slower. That is fine and is itself the published A/B — a measured number justifying the library is stronger than an assumption.
 - Makes harder: any future claim about paged-kernel *internals*. The author owns the block-gather logic, not the FlashInfer kernel's inner loop, and must say so.
 
@@ -112,7 +112,7 @@ The hint table is best-effort and lossy. Its "if lost" entry in the state table 
 - Hint staleness must be handled as a *normal* case, not an error case: a stale hint sends a request to a replica that simply misses.
 - Purging hints is now a correctness-adjacent operation on quarantine — a dead replica's stale hints actively pull traffic toward it (ARCHITECTURE §9.3, step 2).
 - Makes harder: any claim about global cache utilization across the fleet. There is no global view to measure, only per-replica hit rates plus routing outcomes.
-- The settled answer is prepared in advance: *"How do you keep the router's view of the cache consistent?" — you don't, and that's the design.*
+- The answer is settled in advance: *"How do you keep the router's view of the cache consistent?" — you don't, and that's the design.*
 
 **Revisit if:** measured hit rate under prefix-aware routing is close to B5's (i.e. the hints are so stale they carry no signal), which would indicate the TTL/update model — not the sharing model — needs work. Genuine shared state is only reconsidered if replicas ever span nodes with an RDMA fabric, which is out of scope.
 
@@ -148,13 +148,13 @@ tokens axis:   [ d0 d1 d2 d3 | a0 | b0 ]             shape (6, hidden)
   3. *A padding mask threads everywhere,* including through code that currently has no idea sequences exist.
   This is not luck. A varlen layout is *chosen* precisely so that every position-independent op sees a plain 2-D matrix and cannot tell that multiple sequences are present.
 - **Ragged/nested tensors.** Rejected. Immature support across the ops in use, and it would hide the exact index arithmetic (`cu_query_lens`, `slot_mapping`) that the author needs to own for the explainability gate. The manual flattening *is* the artifact.
-- **One forward pass per sequence, batching only the scheduling.** Rejected — this is what the engine effectively does today, and it is exactly the failure the build log names: *"true scaling needs a batched-GEMM step"* (`docs/BUILD_LOG.md:1164`). Continuous batching without a batched forward pass is bookkeeping with no throughput behind it (PRD §G2).
+- **One forward pass per sequence, batching only the scheduling.** Rejected — this is what the engine effectively does today, and it is exactly the failure the build log names: *"true scaling needs a batched-GEMM step"* (`engine:docs/BUILD_LOG.md:1164`). Continuous batching without a batched forward pass is bookkeeping with no throughput behind it (PRD §G2).
 
 **Consequences**
 
 - **The batched forward and the paged cache are the same change to the same surface, not two projects** (ARCHITECTURE §2.5). This is the structural finding that makes the four-week freeze survivable at all.
 - The genuinely batch-sensitive surface shrinks to four things: attention + KV (`components_gpu.py:137-182`, replaced by the backend), the causal mask (`components_gpu.py:171-174`, becomes the backend's job via `cu_query_lens`/`kv_lens`), position construction (`model_gpu.py:65,133`, moved to the caller), and last-token logits (`model_gpu.py:88` `x[-1:]`, replaced by a `last_token_ix` gather).
-- Cost: index arithmetic moves into CPU-side batch assembly, and off-by-one bugs there are silent. Mitigated by the batch-invariance gate (PHASE_PLAN §5 DoD: a prompt must produce identical greedy output alone and inside a mixed batch).
+- Cost: index arithmetic moves into CPU-side batch assembly, and off-by-one bugs there are silent. Mitigated by the batch-invariance gate (the phase plan §5 DoD: a prompt must produce identical greedy output alone and inside a mixed batch).
 - Cost: `x[-1:]` becoming a gather means "the last token" is no longer a slice — every place that assumed it was must be found.
 - Makes harder: any op that genuinely wants a sequence dimension (e.g. certain sliding-window or block-sparse schemes) must reconstruct it from `cu_query_lens`.
 
@@ -169,7 +169,7 @@ tokens axis:   [ d0 d1 d2 d3 | a0 | b0 ]             shape (6, hidden)
 
 **Context**
 
-Phase 1 ships paged KV with batch deliberately held at 1, so that a paged-attention bug cannot hide behind a batching bug (PHASE_PLAN §4). Batching arrives in Phase 2. The natural inference is to design the seam batch-1 now and widen it later, and `SERVING_INTERFACE.md:258` recommends exactly that deferral.
+Phase 1 ships paged KV with batch deliberately held at 1, so that a paged-attention bug cannot hide behind a batching bug (the phase plan §4). Batching arrives in Phase 2. The natural inference is to design the seam batch-1 now and widen it later, and `SERVING_INTERFACE.md:258` recommends exactly that deferral.
 
 The seam itself is a widening of an existing hook. `engine/components_gpu.py:114` already takes `decode_kernel=`, threaded from `LlamaModelGPU.__init__` (`engine/model_gpu.py:44-53`) to the call sites at `:79,:147`. Today that hook injects **only the math** — `(q,k,v,scale) -> out` at `components_gpu.py:150-158` — while the engine keeps owning the cache read/write at `:137-142`.
 
@@ -197,8 +197,8 @@ The hook widens by exactly one notch: the injected object owns *both* the cache 
 **Consequences**
 
 - Phase 1 carries interface complexity it does not use: `cu_query_lens` is always `[0, n]`, `last_token_ix` always `[n-1]`, `block_tables` always one row. Accepted deliberately.
-- **[inference]** There is a real hazard in a protocol whose batched path is unexercised for a whole phase: `n_seqs == 1` can pass while `n_seqs > 1` is quietly wrong. Phase 2's batch-invariance gate is what catches it, and it is in the DoD for exactly this reason (PHASE_PLAN §5).
-- Phase 0 ships a pure-interface change with no behavior (`engine/attention_backend.py`), which is why Phase 0 earns no published claim and is still a hard gate (PHASE_PLAN §3).
+- **[inference]** There is a real hazard in a protocol whose batched path is unexercised for a whole phase: `n_seqs == 1` can pass while `n_seqs > 1` is quietly wrong. Phase 2's batch-invariance gate is what catches it, and it is in the DoD for exactly this reason (the phase plan §5).
+- Phase 0 ships a pure-interface change with no behavior (`engine/attention_backend.py`), which is why Phase 0 earns no published claim and is still a hard gate (the phase plan §3).
 - Positive: the seam is stable across the whole project, so the submodule pin can advance monotonically rather than in coordinated breaking steps.
 - Makes harder: reviewing Phase 1 in isolation, since the interface is justified by work that has not landed yet. This ADR is that justification.
 
@@ -241,7 +241,7 @@ Sizing arithmetic: `2 (K,V) × 16 layers × 16 tokens × 8 kv_heads × 64 head_d
 - The whole-cache transpose does not appear anywhere on the paged path. The engine's contiguous path keeps it, unchanged, because that path is frozen (ADR-009).
 - Internal fragmentation of at most `block_size - 1` tokens per sequence. At 16, that is bounded and small relative to the 2048-slot reservation it replaces.
 - Cache hit rate must be reported at **block** granularity (METHODOLOGY §7), because that is the granularity at which work is actually saved. A hit rate reported per token would be a different, flattering number.
-- Block-boundary handling becomes the highest-density bug region in the project — the divergence-mid-block case (ARCHITECTURE §9.1), COW on partially-filled shared blocks, `slot_mapping` off-by-ones. This is why the adversarial near-miss workload exists (METHODOLOGY §4) and why Phase 1's DoD requires bit-identical output at ≥3 lengths that straddle block boundaries (PHASE_PLAN §4).
+- Block-boundary handling becomes the highest-density bug region in the project — the divergence-mid-block case (ARCHITECTURE §9.1), COW on partially-filled shared blocks, `slot_mapping` off-by-ones. This is why the adversarial near-miss workload exists (METHODOLOGY §4) and why Phase 1's DoD requires bit-identical output at ≥3 lengths that straddle block boundaries (the phase plan §4).
 - Makes harder: comparing memory numbers against the engine's, since the units differ (blocks vs reserved slots). Every S1 figure must state both.
 
 **Revisit if:** FlashInfer's verified layout contract disagrees (then §3.1 changes and nothing above it does, per ARCHITECTURE §11), or the block-size sweep shows a different size dominating on hit rate *and* overhead.
@@ -267,7 +267,7 @@ PRD §5 names preemption the **deepest systems content in the project**.
 
 **Decision**
 
-Both are implemented, selected by a policy flag, and benchmarked head-to-head under forced memory pressure, swept over sequence length to find (or fail to find) a crossover (PHASE_PLAN §6).
+Both are implemented, selected by a policy flag, and benchmarked head-to-head under forced memory pressure, swept over sequence length to find (or fail to find) a crossover (the phase plan §6).
 
 The prediction is recorded **before** measurement. **[inference]** For Llama 3.2 1B specifically, recompute is expected to win at nearly all lengths: the model is tiny, prefill is cheap, and KV per token is small — `8 kv_heads × 64 head_dim × 16 layers × 2 (K,V) × 2 bytes = 32 KB/token` — so neither side is under real pressure.
 
@@ -275,7 +275,7 @@ That prediction is exactly why it is worth measuring. A measured result showing 
 
 **Alternatives considered**
 
-- **Recompute only.** Rejected as the plan; retained as the explicit freeze-date cut (~12h instead of ~23h, PHASE_PLAN §6). Recompute alone is sufficient for the system to be *honest* above the knee, which is all that PHASE_PLAN's property 4 demands. What is lost is the comparison — and the comparison, not the mechanism, is what makes this the best systems topic in the project. The bullet degrades from "measured [policy] faster by [N]% at [length]-token sequences and published the crossover analysis" to "implemented preemption with recompute."
+- **Recompute only.** Rejected as the plan; retained as the explicit freeze-date cut (~12h instead of ~23h, the phase plan §6). Recompute alone is sufficient for the system to be *honest* above the knee, which is all that the phase plan's property 4 demands. What is lost is the comparison — and the comparison, not the mechanism, is what makes this the deepest systems topic in the project. The claim degrades from "measured [policy] faster by [N]% at [length]-token sequences and published the crossover analysis" to "implemented preemption with recompute."
 - **Swap only.** Rejected outright. It is the strictly worse single choice here: it needs pinned host memory management and a transfer path, and **[inference]** it is predicted to *lose* on this model. Implementing only the policy expected to lose, and then having no measurement to say so, is the worst of both.
 - **Pick one by reading the vLLM paper and citing it.** Rejected, and this is the real alternative being rejected. Citing someone else's crossover is precisely the answer that collapses under one follow-up question — *"does that hold for your model?"* The project's premise (PRD §G3) is to *"defend recompute-versus-swap with measurements from this system, not from a paper."*
 - **A dynamic/adaptive policy that picks per victim** (e.g. by sequence length against a measured threshold). Deferred, not rejected. It is the obvious follow-on, but it presupposes the crossover measurement this ADR exists to produce. Building the adaptive policy first would mean hard-coding a threshold nobody has measured.
@@ -283,13 +283,13 @@ That prediction is exactly why it is worth measuring. A measured result showing 
 **Consequences**
 
 - ~23h in Phase 3, sitting directly on the freeze line (~100h cumulative). This is the decision most exposed to schedule risk, which is why the cut is pre-planned rather than improvised.
-- Two preemption paths means two ways to silently corrupt output. The gate is the same for both and is non-negotiable: **greedy output under forced preemption must be bit-identical to greedy output without preemption** (ARCHITECTURE §5.2, PHASE_PLAN §6). This is the single most important test in the project, because a preemption bug produces plausible text, degrades no metric, and would be discovered by nobody.
+- Two preemption paths means two ways to silently corrupt output. The gate is the same for both and is non-negotiable: **greedy output under forced preemption must be bit-identical to greedy output without preemption** (ARCHITECTURE §5.2, the phase plan §6). This is the single most important test in the project, because a preemption bug produces plausible text, degrades no metric, and would be discovered by nobody.
 - Swap requires pinned host memory management and a GPU↔host transfer path that exists for no other reason. Real complexity, carried for a comparison.
 - Preemption metrics must break out by policy (METHODOLOGY §2), so the harness carries a dimension it would not otherwise have.
 - **The interaction worth knowing cold:** recompute is cheaper than the naive analysis suggests once a radix cache exists (P4), because the victim's own prefix blocks may still be resident — so "re-prefill" often means re-prefilling only the generated tail (ARCHITECTURE §9.2, step 5). This is a real reason to expect recompute to win here, and it is a feature-interaction answer rather than a recited one.
 - Makes harder: reporting a single preemption cost. Every preemption number is now two numbers plus a length sweep.
 
-**Revisit if:** Phase 2 overruns and the freeze line is threatened — then swap is cut first (PHASE_PLAN §6, and the cut order in the freeze-line section: swap and FlashInfer, ~17h together, before anything in Phase 2). Also revisit if the sweep finds no crossover in the reachable length range, in which case the honest publication is the null result plus the projection, not a manufactured crossover.
+**Revisit if:** Phase 2 overruns and the freeze line is threatened — then swap is cut first (the phase plan §6, and the cut order in the freeze-line section: swap and FlashInfer, ~17h together, before anything in Phase 2). Also revisit if the sweep finds no crossover in the reachable length range, in which case the honest publication is the null result plus the projection, not a manufactured crossover.
 
 ---
 
@@ -320,7 +320,7 @@ The escape hatch is stated in advance rather than discovered: if profiling shows
 **Consequences**
 
 - The event loop is released between iterations, so HTTP work interleaves with decode at ~10–30 ms granularity (ARCHITECTURE §7).
-- **Load-bearing dependency:** a step is only non-blocking if a step is *short*. Chunked prefill is what bounds step duration — a 2000-token prefill run as one unit would pin the loop for its full duration. **[inference]** The throughput feature and the concurrency model are therefore the same mechanism (ARCHITECTURE §5.1). This is why chunked prefill's step-duration bound is a *measured* item in Phase 4's DoD (PHASE_PLAN §7), not an assumption.
+- **Load-bearing dependency:** a step is only non-blocking if a step is *short*. Chunked prefill is what bounds step duration — a 2000-token prefill run as one unit would pin the loop for its full duration. **[inference]** The throughput feature and the concurrency model are therefore the same mechanism (ARCHITECTURE §5.1). This is why chunked prefill's step-duration bound is a *measured* item in Phase 4's DoD (the phase plan §7), not an assumption.
 - Python-side batch assembly (building `BatchMeta`, `slot_mapping`, block tables) is on the critical path and cannot overlap GPU execution. That is the accepted cost.
 - **Cancellation becomes a memory-correctness requirement.** Client disconnect sets a flag on the sequence; the scheduler retires it at the next iteration boundary and explicitly frees its blocks and decrements refcounts. The engine gets abandonment right by accident (`engine/scheduler.py:11-45` stops at the next `yield`) but has *no way to reclaim the cache*, because `KVCacheGPU` is constructed per call and garbage-collected (`:26-27`). Here, **cancellation must free memory, or a disconnect-heavy workload leaks the entire KV pool** (ARCHITECTURE §7).
 - Makes harder: any future CPU-heavy work on the replica (tokenization of very long prompts, complex admission policies) — it lands directly on the loop.
@@ -338,7 +338,7 @@ The escape hatch is stated in advance rather than discovered: if profiling shows
 
 The serving layer sits directly on top of `../llm_inference_engine` and requires changes to it (ARCHITECTURE §2.7). The engine's compiled kernel `.so` lands in a gitignored `build/` directory, and `engine/model_gpu.py:45-53` manipulates `sys.path`, which breaks under a non-editable install (PRD §6).
 
-The project also has a non-technical constraint that is a real constraint: **two repos carry two independent claim sets**, split as engine = model internals, kernels, quantization; serving = paged KV, continuous batching, radix prefix caching, prefix-aware routing (PRD §C7).
+The project also has a scoping constraint that is a real constraint: **two repos carry two independent claim sets**, split as engine = model internals, kernels, quantization; serving = paged KV, continuous batching, radix prefix caching, prefix-aware routing (PRD §C7).
 
 **Decision**
 
@@ -350,7 +350,7 @@ Submodule specifically, rather than a published package, because the compiled `.
 
 - **Fork the engine into a monorepo (ARCHITECTURE §10/A1).** Rejected. Two reasons, one technical and one not, and both are real.
   - *Technical:* the dependency boundary is what **forces a real interface**. Inside one repo, the fastest path to any problem is reaching into engine internals, and within a week there would be no seam to defend — `BatchMeta` and `AttentionBackend` exist as a *contract* precisely because crossing them is expensive.
-  - *Non-technical:* the claim sets collapse into one. That is not vanity; the project's stated purpose (PRD §1) is to be a defensible line about serving systems, distinct from a line about model internals.
+  - *Scope:* the two claim sets collapse into one. The project's stated purpose (PRD §1) is to make a defensible set of claims about serving systems, distinct from claims about model internals.
   - Cost, stated plainly: cross-repo changes are slower during Phase 1. Mitigated by the submodule pin, so the engine tracks a known SHA and the `.so` sits at a known relative path.
 - **Vendor the engine's source into this repo.** Rejected (PRD §3). It is a fork with worse provenance — upstream fixes must be manually re-applied, and the engine's own test suite stops being this project's regression gate.
 - **Put batching and paging *in* the engine (ARCHITECTURE §10/A2).** Rejected. It collapses the two independent claim sets, and puts the engine's clean batch-1 benchmark claims at risk of numeric drift (`SERVING_INTERFACE.md:284`). PRD §6 states the boundary flatly: continuous batching, the scheduler, the allocator, eviction, and routing are **explicitly not engine changes.** The engine exposes hooks; the serving layer owns the scheduler.
@@ -360,7 +360,7 @@ Submodule specifically, rather than a published package, because the compiled `.
 **Consequences**
 
 - Every seam change is a two-repo change plus a pin bump. This is the direct reason ADR-004 refuses to design the protocol twice.
-- Contributors (and CI) must remember `--recurse-submodules`, and CI must build the kernel or skip GPU tests. Phase 0's DoD requires `pip install -e` + submodule to resolve on a clean PACE allocation (PHASE_PLAN §3).
+- Contributors (and CI) must remember `--recurse-submodules`, and CI must build the kernel or skip GPU tests. Phase 0's DoD requires `pip install -e` + submodule to resolve on a clean PACE allocation (the phase plan §3).
 - The engine's existing test suite becomes this project's free regression gate — but only because of ADR-009's additive rule.
 - Every published artifact must record **both** the serving-repo git SHA and the pinned engine SHA/tag (METHODOLOGY §11), because a number is meaningless without knowing which engine produced it.
 - Makes harder: rapid iteration on the seam during Phase 0–1, exactly when the seam is least settled.
@@ -376,7 +376,7 @@ Submodule specifically, rather than a published package, because the compiled `.
 
 **Context**
 
-The engine's published claims are all statements about the **contiguous, batch-1 path**: `BENCHMARKS.md:102` (v3 kernel ≈ 0.98–0.99× PyTorch SDPA), `tests/test_forward.py:113,137` (logits within 1e-3), `tests/test_decode.py:30-48` (32 greedy tokens bit-identical to HF). Those claims are on a resume. This project needs to modify the same files those claims live in.
+The engine's published claims are all statements about the **contiguous, batch-1 path**: `BENCHMARKS.md:102` (v3 kernel ≈ 0.98–0.99× PyTorch SDPA), `tests/test_forward.py:113,137` (logits within 1e-3), `tests/test_decode.py:30-48` (32 greedy tokens bit-identical to HF). Those claims are published. This project needs to modify the same files those claims live in.
 
 ARCHITECTURE §2 calls this boundary load-bearing: *"Everything else can be refactored; this boundary cannot, because it spans two repos and two independent claim sets."*
 
@@ -402,7 +402,7 @@ Also fixed: `tests/test_generate.py`'s `"input_ids"` → `"token_ids"` key (`:42
 
 **Consequences**
 
-- The engine's existing test suite becomes the regression gate for free. Phase 0's DoD requires all engine tests green **including the 5 that currently error** (PHASE_PLAN §3).
+- The engine's existing test suite becomes the regression gate for free. Phase 0's DoD requires all engine tests green **including the 5 that currently error** (the phase plan §3).
 - Two attention paths coexist in `components_gpu.py` forever, and two forward entry points in `model_gpu.py`. Accepted duplication.
 - The engine's contiguous path keeps its whole-cache transpose (`components_gpu.py:153-154`, ~67 MB/token at kv_seq 2048 per `BENCHMARKS.md:149`). It is not optimized; it is simply not on the serving path (ADR-005).
 - Total prerequisite engine work is bounded at ~6–10 hours (ARCHITECTURE §2.7), which is what makes Phase 0 a 16-hour gate rather than a project.
@@ -436,14 +436,14 @@ The production HTTP surface — FastAPI ingress, SSE streaming, admission contro
 
 - **Fix and extend the engine's server into the production surface.** Rejected. Fixing the blocking-generator bug at `engine/server.py:69` properly means introducing the scheduler, the admission controller, and the async token queues — i.e. building this project inside the engine repo, which ADR-008 rejects for its own reasons. It would also violate ADR-009's additive rule on the engine's most user-visible file.
 - **Delete the engine's server since this one supersedes it.** Rejected. It is the engine's own published claim (`README.md:144`) and its single-request reference behavior is useful for A/B sanity checks.
-- **Serve the OpenAI protocol from the router only, with a private protocol replica-side.** Considered, and partially adopted: the router exposes the OpenAI-compatible ingress to clients (PHASE_PLAN §8). Replicas still speak the same shape so a single replica can be benchmarked directly without the router — which baseline B1 requires (METHODOLOGY §6).
+- **Serve the OpenAI protocol from the router only, with a private protocol replica-side.** Considered, and partially adopted: the router exposes the OpenAI-compatible ingress to clients (the phase plan §8). Replicas still speak the same shape so a single replica can be benchmarked directly without the router — which baseline B1 requires (METHODOLOGY §6).
 
 **Consequences**
 
 - Baseline B1 has a subtlety that must be stated in every result: the engine's server cannot reach the GPU path, so B1 is measured *either* against a serving-layer configuration with batching and paging disabled, *or* against a patched engine server — and **which one is used is stated** (METHODOLOGY §6). Preference is the former, so the HTTP stack is held constant and only the scheduler differs.
 - TTFT's definition must guard against a quiet trap the engine's server demonstrates: it emits a chunk per token id and detokenizes with `skip_special_tokens=True` (`engine/server.py:70`), so leading special tokens produce chunks with **empty `content`**. TTFT is therefore defined against the first chunk with non-empty `delta.content` (METHODOLOGY §2). Timing to the first chunk would understate TTFT.
 - The engine's server remains a known-serializing path. It is not benchmarked as a serving system and no p99 claim is made about it.
-- Claim wording constraint carries forward: the serving line does not say "OpenAI-compatible server" (PHASE_PLAN §11).
+- Claim wording constraint carries forward: the serving claim set does not say "OpenAI-compatible server" (the phase plan §11).
 - Makes harder: keeping two HTTP surfaces roughly protocol-compatible as the API surface grows.
 
 **Revisit if:** never, realistically. The `--backend gpu` nice-to-have may land opportunistically; it changes nothing here.
@@ -489,7 +489,7 @@ The headline result is a **curve, not a point**: goodput (y) vs offered load (x)
 **Consequences**
 
 - Every goodput result carries an SLO definition and the calibration run that produced it. Results without both are not publishable.
-- The SLO must be frozen after Phase 2's calibration (PHASE_PLAN §5) and cannot be re-tuned when a later phase's numbers disappoint.
+- The SLO must be frozen after Phase 2's calibration (the phase plan §5) and cannot be re-tuned when a later phase's numbers disappoint.
 - Cross-hardware comparison gets harder, since the SLO is anchored per-allocation. Accepted — METHODOLOGY §5 forbids cross-session comparison anyway (ADR-021).
 - The reported number is the **knee**, which is a curve feature and requires a load sweep at every configuration. That multiplies benchmark runtime substantially versus reporting a single point.
 - Above the knee, load shedding is what holds goodput flat rather than letting it collapse — which is the entire argument for having load shedding, and makes it a measurable feature rather than a checkbox.
@@ -535,7 +535,7 @@ Closed-loop runs are permitted **only** as a labeled secondary result, for measu
 - Above the knee, **steady state does not exist by definition** — the queue grows without bound. Those runs are measured over a fixed window and explicitly labeled *unsaturated-window measurement*, not *steady state* (METHODOLOGY §4). **[inference]**
 - Runs can be invalidated by harness health rather than system behavior, and discarded runs cost allocation time.
 - Measurement windows must exclude ramp-up and drain, with boundaries recorded per run — including the drain tail is a way to accidentally publish a better p99 than the system has (METHODOLOGY §4).
-- The open-loop harness is Phase 2 scope and is explicitly the thing **not** to cut: *"If something must go, cut Tier-3 metrics and Grafana, not the load model"* (PHASE_PLAN §5).
+- The open-loop harness is Phase 2 scope and is explicitly the thing **not** to cut: *"If something must go, cut Tier-3 metrics and Grafana, not the load model"* (the phase plan §5).
 - Makes harder: comparing against anyone who published closed-loop numbers. That comparison is simply not made.
 
 **Revisit if:** never for primary results. Closed-loop is already permitted, labeled, for service-time isolation.
@@ -573,7 +573,7 @@ Committed **in advance**, so the position is a stated methodology rather than so
 - **Publish an absolute throughput comparison anyway, with caveats.** Rejected. Caveats do not survive being screenshotted, and the number would be read as the claim regardless of the prose around it. The comparison would measure kernel quality — a lane this project explicitly deprioritized (ADR-001, ADR-019).
 - **Normalize by making both systems use the same kernels.** Rejected as impossible in practice: it would mean porting the engine's forward pass into vLLM or vLLM's kernels into the engine, either of which is a larger project than this one.
 - **Compare against vLLM with vLLM detuned to a comparable configuration** (e.g. eager mode, CUDA graphs off, default block size). Rejected. It manufactures a favorable baseline, which is the exact failure mode METHODOLOGY §10 warns about for routing workloads. Handicapping the competitor is worse than not comparing.
-- **Ignore vLLM entirely.** Rejected. Dropping it silently is indistinguishable from having tried and lost. Point 4 exists so that even the *failure* of the shape comparison is a published result — and **[inference]** *"I tried to benchmark against vLLM, here is specifically why the comparison isn't meaningful, and here is what I compared instead"* is a stronger settled answer than a comparison table.
+- **Ignore vLLM entirely.** Rejected. Dropping it silently is indistinguishable from having tried and lost. Point 4 exists so that even the *failure* of the shape comparison is a published result — and **[inference]** *"I tried to benchmark against vLLM, here is specifically why the comparison isn't meaningful, and here is what I compared instead"* is a stronger result than a comparison table.
 
 **Consequences**
 
@@ -609,7 +609,7 @@ One schema change from the engine's version, and it is not optional: **raw per-r
 
 - **SQLite for run history.** Rejected for now, and it is the alternative most likely to become right. It would make cross-run queries pleasant. But it is not in the hot path, it is not a published claim, and a directory of JSON+CSV is diffable, greppable, reviewable in a PR, and readable without tooling. PRD §3: *"even that is a CSV/JSON directory first."* Adding it later is a pure import job, since the raw samples are retained.
 - **Postgres / a real database.** Rejected. Operational weight (a service to run under Slurm, a schema to migrate) for zero request-path benefit, and it would read as padding next to measured systems claims — the same argument that rejects ADR-015.
-- **A time-series database for metrics.** Partially deferred rather than rejected: Prometheus + Grafana are Tier 2 / Phase 6 for *live* observability (PRD §5, PHASE_PLAN §9). That is monitoring, not the artifact of record. The artifact of record stays a committed file, because a Grafana screenshot is not reproducible (ADR-018).
+- **A time-series database for metrics.** Partially deferred rather than rejected: Prometheus + Grafana are Tier 2 / Phase 6 for *live* observability (PRD §5, the phase plan §9). That is monitoring, not the artifact of record. The artifact of record stays a committed file, because a Grafana screenshot is not reproducible (ADR-018).
 - **Request logging to durable storage on the serving path.** Rejected. It adds I/O to the hot path, and the failure model already says in-flight requests are lost on replica death (ADR-002) — durable request logs would imply a recovery story that does not exist.
 
 **Consequences**
@@ -636,21 +636,21 @@ Target hardware is GT PACE Phoenix under **Slurm**, not Kubernetes (PRD §3). PR
 
 **Decision**
 
-Rejected, and recorded as *"deferred, probably permanently"* (ARCHITECTURE §10/A8) / *"recommend against, permanently"* (PHASE_PLAN §10). It sits at Tier 4, evaluated on systems depth alone (PRD §5).
+Rejected, and recorded as *"deferred, probably permanently"* (ARCHITECTURE §10/A8) / *"recommend against, permanently"* (the phase plan §10). It sits at Tier 4, evaluated on systems depth alone (PRD §5).
 
-The substitute is explicit: **know the prior art and be able to place your own work against it.** If asked about llm-d or the Gateway API Inference Extension, *"that's the same idea as my router, at cluster scope"* is worth more than a half-built deployment (PHASE_PLAN §10).
+The substitute is explicit: **know the prior art and be able to place your own work against it.** If asked about llm-d or the Gateway API Inference Extension, *"that's the same idea as my router, at cluster scope"* is worth more than a half-built deployment (the phase plan §10).
 
 **Alternatives considered**
 
-- **Build the K8s deployment as a late phase.** Rejected on three independent grounds, any one of which suffices. (a) *Wrong hardware* — the cluster runs Slurm, so a K8s deployment would be built somewhere other than where every benchmark runs, and would therefore be unmeasured. (b) *Duplicates the router* — the gateway's headline feature is cache-aware routing, which is exactly what Phase 5 builds; deploying it would replace the project's own differentiating work with a config file. (c) *Reads as padding* next to five measured systems claims (PHASE_PLAN §10).
-- **Use the gateway instead of building a router.** Rejected decisively. Prefix-aware routing is the distributed-systems claim and the acknowledged skill gap (PRD §1, PHASE_PLAN §8). Delegating it to a gateway deletes the reason the project exists.
-- **Containerize without orchestration.** Adopted, at Phase 6 (PHASE_PLAN §9), Tier 3 (PRD §5). Docker gives reproducibility and CI value without importing an orchestration layer.
+- **Build the K8s deployment as a late phase.** Rejected on three independent grounds, any one of which suffices. (a) *Wrong hardware* — the cluster runs Slurm, so a K8s deployment would be built somewhere other than where every benchmark runs, and would therefore be unmeasured. (b) *Duplicates the router* — the gateway's headline feature is cache-aware routing, which is exactly what Phase 5 builds; deploying it would replace the project's own differentiating work with a config file. (c) *Reads as padding* next to five measured systems claims (the phase plan §10).
+- **Use the gateway instead of building a router.** Rejected decisively. Prefix-aware routing is the distributed-systems claim and the acknowledged skill gap (PRD §1, the phase plan §8). Delegating it to a gateway deletes the reason the project exists.
+- **Containerize without orchestration.** Adopted, at Phase 6 (the phase plan §9), Tier 3 (PRD §5). Docker gives reproducibility and CI value without importing an orchestration layer.
 - **Benchmark against the gateway as a routing baseline.** Rejected for the same reason as ADR-013: the confounds (different engine, different kernels, different runtime) make it a comparison of implementations rather than of routing policies. B4 and B5 are implemented in-tree precisely so the comparison isolates policy (ADR-017).
 
 **Consequences**
 
 - The project has no deployment story beyond containers plus a Slurm launcher. This is a genuine gap for roles that screen on Kubernetes, and it is stated rather than hidden.
-- Multi-replica orchestration is a launcher script on one 8-GPU node (PHASE_PLAN §8), which is simpler and — importantly — makes "N replicas" mean N whole GPUs with no asterisk (ADR-021).
+- Multi-replica orchestration is a launcher script on one 8-GPU node (the phase plan §8), which is simpler and — importantly — makes "N replicas" mean N whole GPUs with no asterisk (ADR-021).
 - Preserves ~all of Phase 5's budget for routing policy rather than infrastructure.
 - Makes harder: any claim about operating this system in a production cluster environment. The honest answer is that it has been operated under Slurm.
 
@@ -665,38 +665,38 @@ The substitute is explicit: **know the prior art and be able to place your own w
 
 **Context**
 
-Every phase must satisfy four properties (PHASE_PLAN §0): depend only on earlier phases; leave the system working and benchmarkable; earn at least one defensible published claim on its own; and **never leave a half-built feature that makes an earlier claim untrue.**
+Every phase must satisfy four properties (the phase plan §0): depend only on earlier phases; leave the system working and benchmarkable; earn at least one defensible published claim on its own; and **never leave a half-built feature that makes an earlier claim untrue.**
 
 Property 4 is the one that does the real work. The radix prefix cache is the flashier feature and the more commonly recognized one. Preemption is less flashy and is named the deepest systems content in the project (PRD §5, Tier 1).
 
-The freeze is late August, roughly four weeks / ~120 engineer-hours at an assumed ~30/week, with the freeze line at ~100h cumulative (PHASE_PLAN §0). PRD §8 already records the consequence: G1–G3 plus G6 are the realistic freeze-date target; G4 (prefix cache) and G5 (routing) are fall work.
+The freeze is late August, roughly four weeks / ~120 engineer-hours at an assumed ~30/week, with the freeze line at ~100h cumulative (the phase plan §0). PRD §8 already records the consequence: G1–G3 plus G6 are the realistic freeze-date target; G4 (prefix cache) and G5 (routing) are fall work.
 
 **Decision**
 
 Order: P0 prereqs (~16h) → P1 paged KV + allocator (~28h) → P2 batched varlen + continuous batching + HTTP + open-loop harness (~33h) → **P3 preemption (~23h) ← freeze line** → P4 radix cache + chunked prefill (~28h) → P5 multi-replica routing (~36h) → P6 observability/reliability (~20h).
 
-**The reason P3 precedes P4:** without preemption, a continuous-batching claim measured under open-loop load *above the knee* is untrue — the system OOMs or hard-rejects rather than degrading. Since ADR-012 commits to open-loop load and ADR-011 commits to publishing the knee, the system will be driven above capacity **by design**, every run. A system that falls over there invalidates the Phase 2 claim retroactively. That is property 4 (PHASE_PLAN §0, §6).
+**The reason P3 precedes P4:** without preemption, a continuous-batching claim measured under open-loop load *above the knee* is untrue — the system OOMs or hard-rejects rather than degrading. Since ADR-012 commits to open-loop load and ADR-011 commits to publishing the knee, the system will be driven above capacity **by design**, every run. A system that falls over there invalidates the Phase 2 claim retroactively. That is property 4 (the phase plan §0, §6).
 
 Related ordering choices, same logic:
-- **P1 keeps batch at 1 all phase.** The claim is memory, not throughput. Keeping batching out means a paged-attention bug cannot hide behind a batching bug (PHASE_PLAN §4).
-- **P0 earns no published claim and is kept separate anyway**, so its DoD is a hard gate rather than something quietly descoped when P1 runs long (PHASE_PLAN §3).
+- **P1 keeps batch at 1 all phase.** The claim is memory, not throughput. Keeping batching out means a paged-attention bug cannot hide behind a batching bug (the phase plan §4).
+- **P0 earns no published claim and is kept separate anyway**, so its DoD is a hard gate rather than something quietly descoped when P1 runs long (the phase plan §3).
 
 **Alternatives considered**
 
 - **Radix cache before preemption.** Rejected. It is the flashier bullet and the more familiar feature, so this is the ordering the project would drift into under no discipline. It fails property 4: shipping a prefix cache on top of a batching system that collapses at KV exhaustion means the *earlier* throughput claim is dishonest under exactly the load conditions the methodology requires measuring. It also worsens the failure — a radix cache increases the number of resident blocks and their sharing structure, so KV exhaustion arrives with more state to get wrong.
-- **Preemption folded into Phase 2.** Rejected on risk concentration. Phase 2 is already the highest-risk phase, with three independent hard things (batched forward, scheduler, honest load harness), each capable of silently producing a plausible wrong number (PHASE_PLAN §5). Adding preemption gives four, with no clean bisect between them.
-- **Routing (P5) before the radix cache (P4).** Explicitly left open rather than decided (PHASE_PLAN §12). P5 is the stronger differentiator and the acknowledged skill gap; P4 is a hard dependency for *prefix-aware* routing but **not** for routing itself — a load-aware router with health/drain/failover is buildable without a radix cache. If the fall is compressed, "routing without prefix awareness" may beat "prefix cache without routing." Decided with a fall-length estimate in hand, not now.
+- **Preemption folded into Phase 2.** Rejected on risk concentration. Phase 2 is already the highest-risk phase, with three independent hard things (batched forward, scheduler, honest load harness), each capable of silently producing a plausible wrong number (the phase plan §5). Adding preemption gives four, with no clean bisect between them.
+- **Routing (P5) before the radix cache (P4).** Explicitly left open rather than decided (the phase plan §12). P5 is the stronger differentiator and the acknowledged skill gap; P4 is a hard dependency for *prefix-aware* routing but **not** for routing itself — a load-aware router with health/drain/failover is buildable without a radix cache. If the fall is compressed, "routing without prefix awareness" may beat "prefix cache without routing." Decided with a fall-length estimate in hand, not now.
 - **Chunked prefill earlier than P4.** Considered and left where it is, with a caveat: ARCHITECTURE §5.1 makes chunked prefill load-bearing for the *concurrency model* (it bounds step duration, which is what keeps ADR-007's cooperative scheduler responsive). **[inference]** If P2 shows long prefills starving the event loop, a minimal token cap may need to be pulled forward — the full chunked-prefill implementation with cache interaction stays in P4.
 
 **Consequences**
 
-- At freeze: paged KV + allocator, batched varlen forward, continuous batching, preemption, an open-loop harness with goodput-under-SLO, committed artifacts, and a published known-gaps list — **three serving bullets, all measured, all defensible** (PHASE_PLAN §6).
-- **Not** at freeze: the radix prefix cache and prefix-aware routing. PRD §C7's serving claim set names both and **must be recut** to claim only what exists (PHASE_PLAN §11): *"Serving layer — paged block KV cache, continuous batching, and preemption under memory pressure, benchmarked open-loop on goodput under SLO."*
-- Cut order is pre-planned, so cuts are informed rather than panicked: if behind at week 3, cut swap (ADR-006) and FlashInfer (ADR-001) — ~17h together — **before** cutting anything from Phase 2. Phase 2 is where the throughput claim lives and it has no safe cuts (PHASE_PLAN §6).
+- At freeze: paged KV + allocator, batched varlen forward, continuous batching, preemption, an open-loop harness with goodput-under-SLO, committed artifacts, and a published known-gaps list — **three serving bullets, all measured, all defensible** (the phase plan §6).
+- **Not** at freeze: the radix prefix cache and prefix-aware routing. PRD §C7's serving claim set names both and **must be recut** to claim only what exists (the phase plan §11): *"Serving layer — paged block KV cache, continuous batching, and preemption under memory pressure, benchmarked open-loop on goodput under SLO."*
+- Cut order is pre-planned, so cuts are informed rather than panicked: if behind at week 3, cut swap (ADR-006) and FlashInfer (ADR-001) — ~17h together — **before** cutting anything from Phase 2. Phase 2 is where the throughput claim lives and it has no safe cuts (the phase plan §6).
 - The recompute/radix interaction (ARCHITECTURE §9.2) can only be *measured* after P4, so the preemption analysis published at freeze is missing that term and must say so.
 - Makes harder: demoing the project before P4, since prefix caching is the feature a non-specialist recognizes.
 
-**Revisit if:** weekly engineer-hours differ materially from the ~30 assumed — the freeze line moves a phase in either direction and should be recomputed from the real number (PHASE_PLAN §0). Also revisit the P4/P5 order once fall length is known.
+**Revisit if:** weekly engineer-hours differ materially from the ~30 assumed — the freeze line moves a phase in either direction and should be recomputed from the real number (the phase plan §0). Also revisit the P4/P5 order once fall length is known.
 
 ---
 
@@ -720,7 +720,7 @@ Both are implemented, and **B5 is the baseline the claim is made against.** B4 i
 
 The reasoning is the load-bearing part. B5 is **load-aware but cache-blind**, so the delta between B5 and prefix-aware routing isolates **exactly the value of cache awareness** — which is the actual claim. Against B4, a prefix-aware router wins partly because it happens to balance load, and the two effects are not separable.
 
-The corollary is pre-committed: **a prefix-aware router that beats B4 but not B5 has demonstrated load balancing, not prefix awareness, and that result is published as such if it occurs** (METHODOLOGY §6). Phase 5's DoD requires beating B5, not B4 (PHASE_PLAN §8).
+The corollary is pre-committed: **a prefix-aware router that beats B4 but not B5 has demonstrated load balancing, not prefix awareness, and that result is published as such if it occurs** (METHODOLOGY §6). Phase 5's DoD requires beating B5, not B4 (the phase plan §8).
 
 **Alternatives considered**
 
@@ -731,7 +731,7 @@ The corollary is pre-committed: **a prefix-aware router that beats B4 but not B5
 
 **Consequences**
 
-- Both B4 and B5 are implemented (PHASE_PLAN §8, `[C]`), and the results table has three routing policies at every point.
+- Both B4 and B5 are implemented (the phase plan §8, `[C]`), and the results table has three routing policies at every point.
 - The claim is harder to win. That is the intent.
 - The **losing cases are mandatory and pre-registered** (METHODOLOGY §10), which is what makes any win credible. Predicted in writing before measurement, and at minimum cases 1, 2, 3, and 7 are measured and published whether or not they flatter:
   1. *Zero/near-zero sharing* — nothing to be cache-aware about; expected to tie B5, lose slightly if the policy sacrifices any load balance.
@@ -763,7 +763,7 @@ That is the failure this project is explicitly built not to repeat (PRD §G6, S8
 
 **Decision**
 
-`results/` is git-tracked and **explicitly not gitignored** — called out in Phase 0's scaffold item (PHASE_PLAN §3).
+`results/` is git-tracked and **explicitly not gitignored** — called out in Phase 0's scaffold item (the phase plan §3).
 
 Every published number resolves to a committed file containing: the **raw samples** (not just percentiles), the config, the seed, the workload parameters, the git SHA of this repo, the pinned engine SHA/tag, and the Slurm allocation identity (METHODOLOGY §11).
 
@@ -775,7 +775,7 @@ The supporting rules, adopted as a set (METHODOLOGY §11):
 5. **Superseded numbers stay visible** — both versions and the reason, as the engine does for its perplexity figure, superseding +0.14 with +0.044 and explaining that the earlier eval text was not WikiText (`BENCHMARKS.md:191-198`). *Silently replacing a number is indistinguishable from hiding one.*
 6. **A claim whose artifact cannot be regenerated is deleted, not softened.**
 
-And the resume rule that depends on all of it: placeholders `[N]` are filled from committed artifacts only; **every bullet must resolve to a file in `results/`** (PHASE_PLAN §11).
+And the publication rule that depends on all of it: placeholders `[N]` are filled from committed artifacts only; **every published claim must resolve to a file in `results/`** (the phase plan §11).
 
 **Alternatives considered**
 
@@ -788,7 +788,7 @@ And the resume rule that depends on all of it: placeholders `[N]` are filled fro
 **Consequences**
 
 - Repo size grows with raw per-token samples across many configurations. Accepted cost; it is text and it compresses.
-- A number cannot be quoted before its artifact exists, which constrains claim writing to what has actually been measured (PHASE_PLAN §11).
+- A number cannot be quoted before its artifact exists, which constrains claim writing to what has actually been measured (the phase plan §11).
 - Every artifact must carry Slurm allocation identity, because METHODOLOGY §5 forbids cross-allocation comparison (ADR-021) — which means the artifact schema is not optional metadata, it is what makes comparison legal.
 - The engine's `_hw_metadata` (`bench/harness.py:69-99`) is reused and **extended** with Slurm job id, node, allocation id, and QOS (METHODOLOGY §9).
 - One naming hazard is fixed rather than inherited: `bench/harness.py:44-47` reports host RSS under the column name `peak_mem_mb` while `bench/baseline_hf.py:108` reports `torch.cuda.max_memory_allocated()` under **the same name** — the engine's known gap #1 (`BENCHMARKS.md:247`). This project uses GPU allocator metrics for GPU memory and names the column unambiguously, with unit and source recorded in the schema (METHODOLOGY §9, §12).
@@ -815,7 +815,7 @@ This creates an easily-misread situation: a project containing a custom CUDA ker
 
 Stated as a first-class commitment rather than a footnote (PRD §C3): **the custom CUDA kernel is not in the paged path.** It becomes the *single-replica, contiguous-cache reference path*. This is the honest cost of freezing the engine's `.cu` file (PRD §C2), which is what keeps the 0.98–0.99× SDPA claim intact and untouched by serving work.
 
-Attribution rule, non-negotiable and repeated in the phase plan (PHASE_PLAN §11): **say this before being asked.**
+Attribution rule, non-negotiable and repeated in the phase plan (the phase plan §11): **say this before being asked.**
 
 **Alternatives considered**
 
@@ -850,7 +850,7 @@ This project then stacks a paged cache, a batched forward pass, a scheduler, pre
 
 **Decision**
 
-The GPU oracle is built in Phase 0 and is a hard gate: greedy tokens from `LlamaModelGPU` must match `tests/oracle.py`'s `greedy_ids` for both fixture prompts (PHASE_PLAN §3 DoD). It is Tier 0 in the PRD (§5) and a prerequisite for every benchmark in the methodology (METHODOLOGY §12).
+The GPU oracle is built in Phase 0 and is a hard gate: greedy tokens from `LlamaModelGPU` must match `tests/oracle.py`'s `greedy_ids` for both fixture prompts (the phase plan §3 DoD). It is Tier 0 in the PRD (§5) and a prerequisite for every benchmark in the methodology (METHODOLOGY §12).
 
 **Token equality, not logit distance**, is the comparison — GPU fp16 against CPU fp32, where GPU component tests already need `atol=1e-2` (`tests/test_components_gpu.py:83`). Token equality is the tolerance that actually means something across that precision gap.
 
@@ -858,17 +858,17 @@ The `test_generate.py` key fix ships in the same phase, restoring the cache-corr
 
 **Alternatives considered**
 
-- **Skip it; rely on the engine's existing CPU tests.** Rejected, and this is the item that *looks* skippable and is not (PHASE_PLAN §3). The CPU tests say nothing about the fp16 GPU path that every serving claim runs on. Building a batched, paged, preemptible scheduler on a forward pass with no output-level oracle means **any divergence is unattributable** — allocator, batching, paged attention, or a pre-existing GPU-path bug, with no way to bisect (ARCHITECTURE §2.7, METHODOLOGY §12).
+- **Skip it; rely on the engine's existing CPU tests.** Rejected, and this is the item that *looks* skippable and is not (the phase plan §3). The CPU tests say nothing about the fp16 GPU path that every serving claim runs on. Building a batched, paged, preemptible scheduler on a forward pass with no output-level oracle means **any divergence is unattributable** — allocator, batching, paged attention, or a pre-existing GPU-path bug, with no way to bisect (ARCHITECTURE §2.7, METHODOLOGY §12).
 - **Build it later, when something breaks.** Rejected. By then there are four candidate causes and no bisect point; the oracle's value is precisely that it exists *before* the first layer is added. It is also cheap to build, which removes the usual argument for deferral.
 - **Compare logits with a tolerance instead of tokens.** Rejected. Choosing a tolerance across fp16-GPU vs fp32-CPU is guesswork, and the failure mode is a tolerance quietly widened until the test passes. Token equality is binary and un-negotiable-with.
 - **Compare against HuggingFace directly rather than the CPU path.** Both are available (`tests/oracle.py`). The CPU path is the tighter gate because it isolates *this* implementation's GPU-vs-CPU divergence rather than folding in framework differences; HF remains the outer check the CPU path already passes (`tests/test_decode.py:30-48`).
 
 **Consequences**
 
-- Phase 0 grows and still earns no published claim (PHASE_PLAN §3). Accepted — it is a gate, not a bullet.
-- The correctness gate runs **every phase, not once** (PHASE_PLAN §2), because every phase adds a new way to silently corrupt output. The specific gates that descend from this one: bit-identical greedy through `PagedTorchBackend` at block-straddling lengths (P1), batch-invariance — same prompt alone vs in a mixed batch (P2), bit-identical under forced preemption (P3), bit-identical with cache on vs off plus partial-hit correctness at block boundaries (P4).
+- Phase 0 grows and still earns no published claim (the phase plan §3). Accepted — it is a gate, not a claim.
+- The correctness gate runs **every phase, not once** (the phase plan §2), because every phase adds a new way to silently corrupt output. The specific gates that descend from this one: bit-identical greedy through `PagedTorchBackend` at block-straddling lengths (P1), batch-invariance — same prompt alone vs in a mixed batch (P2), bit-identical under forced preemption (P3), bit-identical with cache on vs off plus partial-hit correctness at block boundaries (P4).
 - Every benchmark run carries an output-equality check, so a *faster and wrong* result cannot be published (METHODOLOGY §12).
-- The oracle depends on weights being available, which interacts with PRD §O5 (HF-gated weights) and constrains CI design — CI runs the CPU-only subset (PHASE_PLAN §3).
+- The oracle depends on weights being available, which interacts with PRD §O5 (HF-gated weights) and constrains CI design — CI runs the CPU-only subset (the phase plan §3).
 - Makes harder: nothing. This is the cheapest high-value item in the plan.
 
 **Revisit if:** never.
@@ -891,8 +891,8 @@ Separately, the engine documents that absolute numbers are not portable across s
 **Decision**
 
 1. **Replicas are whole, physically separate GPUs inside one allocation.** No MIG, no co-tenancy, no asterisk on the phrase "N replicas" (ARCHITECTURE §1, METHODOLOGY §13).
-2. **Hardware by purpose** (PHASE_PLAN §2): `gpu-l40s` (8/node, 0.78× A100 SU) for scheduling and routing results, because those results are about *scheduling behavior*, not peak FLOPs. `gpu-h100`/`gpu-h200` (2.43×) only where absolute throughput is the claim. A100 for continuity with the engine's existing numbers.
-3. **Two-QOS discipline:** `embers` (free, preemptible, 8h) for development, iteration, and correctness runs; `inferno` (charged) for published benchmarks. **No published number comes from an `embers` run** — preemption mid-benchmark would silently truncate a measurement window (METHODOLOGY §13, PHASE_PLAN §2).
+2. **Hardware by purpose** (the phase plan §2): `gpu-l40s` (8/node, 0.78× A100 SU) for scheduling and routing results, because those results are about *scheduling behavior*, not peak FLOPs. `gpu-h100`/`gpu-h200` (2.43×) only where absolute throughput is the claim. A100 for continuity with the engine's existing numbers.
+3. **Two-QOS discipline:** `embers` (free, preemptible, 8h) for development, iteration, and correctness runs; `inferno` (charged) for published benchmarks. **No published number comes from an `embers` run** — preemption mid-benchmark would silently truncate a measurement window (METHODOLOGY §13, the phase plan §2).
 4. **Cross-session comparisons are forbidden by default.** Every A/B runs back-to-back in a single Slurm allocation, and the allocation/node/QOS identity is recorded in the artifact. A comparison that cannot be run back-to-back is reported as two separate absolute measurements, **not as a delta** (METHODOLOGY §5).
 
 **Alternatives considered**
@@ -901,7 +901,7 @@ Separately, the engine documents that absolute numbers are not portable across s
 - **MIG partitioning.** Rejected for the same reason, plus its availability is unverified (PRD §8 leaves `nvidia-smi -L` as a first-on-node check). Whole GPUs make the question irrelevant.
 - **Multi-node replicas.** Rejected. It would add inter-node networking to the request path for no gain — an 8-GPU node supplies enough replicas — and it would import a class of failure this project has not budgeted for.
 - **H100/H200 for everything.** Rejected on cost: 2.43× the A100 SU rate for results whose claim is scheduling behavior, not FLOPs. **[inference]** L40S is the better instrument for routing work precisely because the interesting variable is the scheduler, not the arithmetic.
-- **Develop on `inferno` for convenience.** Rejected — it burns the SU balance on iteration. The balance reads 999.93 with 0.00 reserved, but the absolute burn rate is a **two-sample inference** from two ~7.6-minute A100 jobs and explicitly should not be budgeted against; the *ratios* from `TRESBillingWeights` are read directly and are reliable. Calibration with one short instrumented job (record `pace-quota` before/after) precedes any multi-GPU budget (PRD §8/O1 item 6, PHASE_PLAN §2).
+- **Develop on `inferno` for convenience.** Rejected — it burns the SU balance on iteration. The balance reads 999.93 with 0.00 reserved, but the absolute burn rate is a **two-sample inference** from two ~7.6-minute A100 jobs and explicitly should not be budgeted against; the *ratios* from `TRESBillingWeights` are read directly and are reliable. Calibration with one short instrumented job (record `pace-quota` before/after) precedes any multi-GPU budget (PRD §8/O1 item 6, the phase plan §2).
 - **Allow cross-session A/B with a caveat.** Rejected. The engine's own ~25% swing for identical code (`BENCHMARKS.md:17`) shows the effect is larger than most deltas this project will claim. METHODOLOGY §12 lists cross-session A/B as a *silent* threat, and the detection mechanism is mechanical: allocation id in every artifact, and comparisons refuse to render across allocations.
 
 **Consequences**
@@ -909,7 +909,7 @@ Separately, the engine documents that absolute numbers are not portable across s
 - **G5 is unblocked** and multi-replica routing needs no inter-node networking (PRD §8/O1 item 1).
 - The binding constraint on the project is the **freeze date, not hardware** — which reverses the assumption the PRD was drafted under (PRD §8/O1 item 2).
 - Every A/B must be planned as a single allocation, which constrains run scheduling and means a failed run costs the whole allocation's worth of comparisons.
-- Queue wait is real and excluded from author-hour estimates (PHASE_PLAN §0); `gpu-h200` and `gpu-l40s` both showed allocated/drained nodes, so contention exists even though capacity does.
+- Queue wait is real and excluded from author-hour estimates (the phase plan §0); `gpu-h200` and `gpu-l40s` both showed allocated/drained nodes, so contention exists even though capacity does.
 - `embers` preemption must be assumed during development — long dev runs need checkpointing or splitting (PRD §8/O1 item 3).
 - CUDA arch parameterization is **promoted from nice-to-have to prerequisite**: `scripts/build_kernels.sh:10` hardcodes `-DCMAKE_CUDA_ARCHITECTURES=80`; H100/H200 are sm_90 and L40S is sm_89 (PRD §8/O1 item 5, ARCHITECTURE §2.7 item 7).
 - Makes harder: any longitudinal claim across the project's lifetime. Numbers from July and September are not comparable unless re-run.
@@ -944,7 +944,7 @@ Accepted as a known limitation and **stated rather than hidden** (ARCHITECTURE �
 
 - Router crash means total outage. Recorded in the failure-domain table with that blast radius (ARCHITECTURE §8).
 - Fault-injection testing (S7) targets *replica* failure, not router failure — the router failure case has no interesting handling to test.
-- The explainability gate requires being able to explain why the router is a SPOF, exactly what would fix it, and why the hint-only design makes the fix cheap (PHASE_PLAN §8).
+- The design is not complete until why the router is a SPOF, exactly what would fix it, and why the hint-only design makes the fix cheap are all written down (the phase plan §8).
 - Makes harder: any availability claim about the system as a whole. None is made.
 
 **Revisit if:** the project ever needs an availability claim, or if router-level HA becomes a cheap add-on after Phase 5 — the design already permits it.
@@ -958,7 +958,7 @@ Accepted as a known limitation and **stated rather than hidden** (ARCHITECTURE �
 
 **Context**
 
-The engine's `prefill`/`decode_step` return CPU numpy (`engine/model_gpu.py:90,158`) — a deliberate engine choice so the numpy sampler works unchanged (`docs/BUILD_LOG.md:823`), costing ~0.1 ms against a ~12 ms step.
+The engine's `prefill`/`decode_step` return CPU numpy (`engine/model_gpu.py:90,158`) — a deliberate engine choice so the numpy sampler works unchanged (`engine:docs/BUILD_LOG.md:823`), costing ~0.1 ms against a ~12 ms step.
 
 That copy has a second, undocumented-until-now role: it forces a CUDA sync every step, which is **the only reason the engine's host-clock timings are valid** (`BENCHMARKS.md:60`).
 
@@ -1003,7 +1003,7 @@ The workloads deliberately include heavy-tailed output lengths, because *"a sing
 
 **Last-arrived-first (LIFO).** Preempt the most recently admitted sequence. Rationale: it preserves the progress of older requests and bounds worst-case latency for requests already deep into generation.
 
-**Starvation guard:** a sequence preempted K times becomes ineligible for preemption, forcing forward progress. Demonstrated in Phase 3's DoD — a sequence preempted K times must complete (PHASE_PLAN §6).
+**Starvation guard:** a sequence preempted K times becomes ineligible for preemption, forcing forward progress. Demonstrated in Phase 3's DoD — a sequence preempted K times must complete (the phase plan §6).
 
 On recompute, the victim returns to the **front** of the waiting queue with its prompt plus tokens-generated-so-far as its new prompt (ARCHITECTURE §9.2).
 

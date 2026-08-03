@@ -460,7 +460,7 @@ Three further arguments against paging the CUDA kernel itself, all verifiable:
 2. **The ABI forbids describing a paged cache** (`kernels/bindings.cpp:29-31`), as above.
 3. **It puts the engine's best claim at risk.** The 0.98–0.99× SDPA result (`BENCHMARKS.md:102`) is measured against the current kernel. Rewriting it invalidates the measurement and forces a full re-benchmark plus re-validation of `tests/test_attention_kernel.py:72-85`.
 
-**The honest cost of this choice, which must be stated before anyone asks:** on the serving layer's paged path, the custom CUDA kernel **is not in use**. It becomes the single-replica, contiguous-cache reference path. `serving:PRD.md:156` (C3) already says this. Do not let any claim set imply the CUDA kernel serves paged traffic.
+**The honest cost of this choice, which must be stated before anyone asks:** on the serving layer's paged path, the custom CUDA kernel **is not in use**. It becomes the single-replica, contiguous-cache reference path. `serving:PRD.md:156` (C3) already says this. No claim in either repo may imply the CUDA kernel serves paged traffic.
 
 ### Q3 — The transpose problem
 
@@ -679,4 +679,4 @@ python3 -c "import engine"  (cwd=/tmp) -> ModuleNotFoundError: No module named '
 dist-info/direct_url.json            -> file:///.../Personal%20Projects/llm_inference_egine  [path does not exist]
 ```
 
-Files read in full: `engine/{__init__,cache,model_gpu,components_gpu,components,model,scheduler,server,sampler,loader,quant,cli}.py`; `kernels/{attention_decode.cu,bindings.cpp,attn_reference.py,CMakeLists.txt}`; `tests/{oracle,conftest,test_generate,test_gpu_model,test_forward,test_decode,test_components_gpu,test_attention_kernel,test_cache,test_server}.py`; `bench/{harness,bench_attn_kernel}.py`; `pyproject.toml`, `scripts/build_kernels.sh`, `.gitignore`, `README.md`, `BENCHMARKS.md`, and the cited passages of `SERVING_INTERFACE.md`, `CLAIMS_AUDIT.md`, `docs/BUILD_LOG.md`.
+Files read in full: `engine/{__init__,cache,model_gpu,components_gpu,components,model,scheduler,server,sampler,loader,quant,cli}.py`; `kernels/{attention_decode.cu,bindings.cpp,attn_reference.py,CMakeLists.txt}`; `tests/{oracle,conftest,test_generate,test_gpu_model,test_forward,test_decode,test_components_gpu,test_attention_kernel,test_cache,test_server}.py`; `bench/{harness,bench_attn_kernel}.py`; `pyproject.toml`, `scripts/build_kernels.sh`, `.gitignore`, `README.md`, `BENCHMARKS.md`, and the cited passages of `SERVING_INTERFACE.md`, `CLAIMS_AUDIT.md`, `engine:docs/BUILD_LOG.md`.

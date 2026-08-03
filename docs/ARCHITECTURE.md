@@ -217,7 +217,7 @@ class LlamaModelGPU:
         ...
 ```
 
-Note the return type. `prefill`/`decode_step` return CPU numpy (`model_gpu.py:90,158`) — a deliberate engine choice so the numpy sampler works unchanged (`docs/BUILD_LOG.md:823`), costing ~0.1 ms against a ~12 ms step. **`forward_varlen` returns a device tensor**, because at batch 32 that copy is on the critical path for every request in the batch, and because sampling should happen on-GPU.
+Note the return type. `prefill`/`decode_step` return CPU numpy (`model_gpu.py:90,158`) — a deliberate engine choice so the numpy sampler works unchanged (`engine:docs/BUILD_LOG.md:823`), costing ~0.1 ms against a ~12 ms step. **`forward_varlen` returns a device tensor**, because at batch 32 that copy is on the critical path for every request in the batch, and because sampling should happen on-GPU.
 
 This has a consequence the benchmark methodology already flags (§5): the per-token device→host copy at `model_gpu.py:158` is what currently forces a CUDA sync and makes the engine's host-clock timings valid (`BENCHMARKS.md:60`). Removing it on the batched path means **host-side timing silently becomes a measurement of kernel-launch queueing, not execution.** Server-side timing on the batched path must use CUDA events or an explicit declared sync point. This is in the risk register as a silent invalidator.
 
@@ -254,7 +254,7 @@ Sizing: total VRAM − model weights (~2.36 GB fp16, `BENCHMARKS.md:161`) − ac
 
 The engine pays a full KV-cache transpose per layer per token on the kernel path: cache is stored `(kv_seq, n_kv_heads, head_dim)` (`engine/cache.py:28`), the kernel demands `(n_kv_heads, kv_seq, head_dim)` (`kernels/attention_decode.cu:31`), so `components_gpu.py:153-154` does `.transpose(0,1).contiguous()` on the **entire** K and V every layer every step — ~67 MB of copy traffic per token at kv_seq 2048 (`BENCHMARKS.md:149`).
 
-That cost exists because a layout mismatch forces a **whole-cache** copy. It is not a paging problem and paging does not inherit it: a paged kernel reads `block_tables` and gathers only the blocks it needs, or in FlashInfer's case reads the pool directly with no gather at all. Choose the layout the consuming kernel wants and the copy disappears rather than being optimized. **The correct framing plainly: paging didn't make the transpose cheaper, it made the transpose unnecessary.** **→ ADR-005**
+That cost exists because a layout mismatch forces a **whole-cache** copy. It is not a paging problem and paging does not inherit it: a paged kernel reads `block_tables` and gathers only the blocks it needs, or in FlashInfer's case reads the pool directly with no gather at all. Choose the layout the consuming kernel wants and the copy disappears rather than being optimized. **The correct framing: paging didn't make the transpose cheaper, it made the transpose unnecessary.** **→ ADR-005**
 
 ### 3.3 Allocator
 
@@ -305,7 +305,7 @@ The Phase 2 half needs `positions` to already be a caller-supplied per-token ten
 
 ### 5.2 Preemption — recompute vs swap
 
-The highest-value systems topic in the project (PRD §5, Tier 1), so the design must be defensible in both directions rather than picking one.
+The deepest systems topic in the project (PRD §5, Tier 1), so the design must be defensible in both directions rather than picking one.
 
 When blocks run out, a victim sequence is evicted. Two ways to make room:
 
@@ -328,7 +328,7 @@ The comparison is not universal — it depends on the ratio of recompute cost to
 2. If all running sequences are at or above K, fall back to preempting the newest anyway. Forward progress for *someone* beats deadlock for everyone.
 3. Admission is the real defense: the watermark (§3.3) must stop admitting before the system can reach a state where the running set cannot be stepped at all. If step 2 ever fires, that is an **admission-control bug**, and it is instrumented as such rather than silently absorbed.
 
-The invariant worth stating plainly: *preemption policy must never be able to return "no victim" while the batch is non-empty.*
+The invariant worth stating: *preemption policy must never be able to return "no victim" while the batch is non-empty.*
 
 **Correctness gate:** greedy output under forced preemption must be **bit-identical** to greedy output without preemption. This is the single most important test in the project, because a preemption bug is silent — it produces plausible text, degrades no metric, and would be discovered by nobody.
 
@@ -386,7 +386,7 @@ This directly fixes the engine's structural bug. `engine/server.py:69` iterates 
 
 ### 8.1 The router is a SPOF, and that is a deliberate choice
 
-Making it highly available requires either a shared consistent view of replica state (a coordination service, and the whole point of §6 is not having one) or multiple independent routers with divergent hint tables. The second is actually acceptable — hints are advisory, so two routers disagreeing costs cache locality, not correctness — but it is out of scope for the freeze date and adds no learning this project needs. **Stated as a known limitation rather than hidden.** The honest settled answer is: *"it's a SPOF, here's exactly what would be required to fix it, here's why the hint-only design makes that fix cheap, and here's why I didn't."*
+Making it highly available requires either a shared consistent view of replica state (a coordination service, and the whole point of §6 is not having one) or multiple independent routers with divergent hint tables. The second is actually acceptable — hints are advisory, so two routers disagreeing costs cache locality, not correctness — but it is out of scope for the freeze date and adds no learning this project needs. **Stated as a known limitation rather than hidden.** The honest answer is: *"it's a SPOF, here's exactly what would be required to fix it, here's why the hint-only design makes that fix cheap, and here's why I didn't."*
 
 ### 8.2 CUDA errors are a correctness hazard, not just an availability one
 
@@ -449,7 +449,7 @@ Running batch of 8 decoding sequences. Free blocks fall below the watermark; the
                never preempted. This is the gate from §5.2.
 ```
 
-Step 5's parenthetical is worth internalizing: **recompute is cheaper than it looks when a radix cache is present**, because the victim's own prefix may still be cached, so "re-prefill" often means re-prefilling only the generated tail. That interaction between two features is a good settled answer and a real reason to expect recompute to win here.
+Step 5's parenthetical is worth internalizing: **recompute is cheaper than it looks when a radix cache is present**, because the victim's own prefix may still be cached, so "re-prefill" often means re-prefilling only the generated tail. That interaction between two features is a real reason to expect recompute to win here.
 
 ### 9.3 Replica failure mid-request
 

@@ -1,7 +1,7 @@
 # Risk Register
 
 **Status:** draft 1, 2026-07-31. Planning only.
-**Depends on:** `docs/PRD.md`, `docs/BENCHMARK_METHODOLOGY.md`, `docs/ARCHITECTURE.md`, `docs/PHASE_PLAN.md`.
+**Depends on:** `docs/PRD.md`, `docs/BENCHMARK_METHODOLOGY.md`, `docs/ARCHITECTURE.md`, the phase plan.
 
 ---
 
@@ -9,11 +9,11 @@
 
 A crash is not a risk worth a register entry. It announces itself, it blocks the commit, and it gets fixed the same day.
 
-The risks that end projects like this one are the ones that **produce a plausible number that is wrong**. The system runs, the tests pass, the throughput graph looks great, the bullet goes as a published claim — and eight months later one question asks one question that reveals the measurement never meant what it claimed. There is no error message for that, and no amount of care at question time recovers it.
+The risks that end projects like this one are the ones that **produce a plausible number that is wrong**. The system runs, the tests pass, the throughput graph looks great, the claim gets published — and months later one question reveals the measurement never meant what it claimed. There is no error message for that, and no amount of care after the fact recovers it.
 
 So this register is ordered by **detectability**, not by impact. Everything in §2 is something that fails *silently*. §3 and §4 are ordinary risks, handled ordinarily.
 
-**Severity = Impact × Silence.** A silent risk that invalidates a published claim is CRITICAL regardless of how likely it is, because the cost of it landing is a retracted published claim.
+**Severity = Impact × Silence.** A silent risk that invalidates a published claim is CRITICAL regardless of how likely it is, because the cost of it landing is a retracted claim.
 
 | Rating | Meaning |
 |---|---|
@@ -53,7 +53,7 @@ The moment that copy goes, `time.perf_counter()` around the forward pass measure
 
 A preemption bug produces *plausible text*. Output stays fluent, no metric degrades, no exception is raised. It is load-dependent and rare, so it will not appear in casual testing — and it invalidates every correctness claim about the system simultaneously.
 
-*Detection:* greedy output under **forced** memory pressure must be **bit-identical** to an unpreempted run, per request. This is the single most important test in the project (`PHASE_PLAN.md:§6`). It runs in CI and before every published benchmark, not once at implementation time.
+*Detection:* greedy output under **forced** memory pressure must be **bit-identical** to an unpreempted run, per request. This is the single most important test in the project (the phase plan §6). It runs in CI and before every published benchmark, not once at implementation time.
 *Mitigation:* per-request token accounting — count tokens emitted vs tokens expected, assert on every retire. Recompute and swap tested independently; a bug in one must not be masked by the other being the default.
 
 ### R4 — Batched output diverging from single-sequence output
@@ -287,11 +287,11 @@ If one side of a comparison stops early on EOS and the other does not, throughpu
 
 | # | Risk | Sev | Notes |
 |---|---|---|---|
-| R25 | **Freeze date arrives mid-phase**, leaving a half-built feature that makes an earlier claim untrue | HIGH | This is phase-plan property 4. Cut order is pre-decided (`PHASE_PLAN.md:§6` freeze-line box): swap policy first, then FlashInfer. **Phase 2 has no safe cuts.** |
+| R25 | **Freeze date arrives mid-phase**, leaving a half-built feature that makes an earlier claim untrue | HIGH | This is phase-plan property 4. Cut order is pre-decided (the phase plan §6 freeze-line box): swap policy first, then FlashInfer. **Phase 2 has no safe cuts.** |
 | R26 | **Effort assumption wrong.** ~100h to the freeze line assumes ~30/week | HIGH | Recompute from the real number in week 1, not week 3. Every phase carries a cheaper alternative so cuts stay informed. |
 | R27 | **PACE queue wait** — `gpu-h200`/`gpu-l40s` showed allocated and drained nodes | MEDIUM | Two-QOS workflow; `embers` for iteration. Everything that can be developed CPU-side (router policy, allocator logic, radix trie, harness) is developed CPU-side. |
 | R28 | ~~SU exhaustion~~ — **CLOSED 2026-07-31.** Burn rate MEASURED, not inferred: job `11596894` used 0.08 SU for 17:02 on one A100 = **0.282 SU/A100-GPU-hour**, confirming the earlier two-sample estimate. 999.85 SU remaining ≈ 3,500 A100-GPU-hours; an 8×L40S 8-hour run costs ~14 SU | CLOSED | Not a constraint on this project. Prefer `gpu-l40s` (0.78× rate) for scheduling/routing work regardless |
-| R29 | **Explainability gate fails** — a phase ships but can't be explained cold | MEDIUM | Then it does not go as a published claim, per PRD §G7. The gate is the point; failing it is the system working. |
+| R29 | **Explainability gate fails** — a phase ships but can't be explained cold | MEDIUM | Then it is not published as a claim, per PRD §G7. The gate is the point; failing it is the system working. |
 | R30 | **Scope creep into Tier 3/4** | MEDIUM | Tier 4 is explicitly where scope dies (PRD §5). K8s recommended against permanently. |
 | R31 | **vLLM comparison proves unfair and gets quietly dropped** | LOW | Position committed in advance (methodology §8): no throughput claim vs vLLM, ever. If even the shape comparison fails, say so in writing — that is a stronger answer than a table. |
 

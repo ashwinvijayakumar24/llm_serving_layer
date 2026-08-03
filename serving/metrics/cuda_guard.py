@@ -1,7 +1,7 @@
 """
 CUDA error checking at declared points, and the policy that follows from finding one.
 
-WHY THIS FILE EXISTS (docs/RISK_REGISTER.md R10, PHASE_PLAN.md §9)
+WHY THIS FILE EXISTS (docs/RISK_REGISTER.md R10, the phase plan §9)
 -----------------------------------------------------------------
 `CLAIMS_AUDIT.md:299` on the engine: *"No CUDA error checking anywhere... A
 launch failure silently produces garbage rather than raising."* The kernel

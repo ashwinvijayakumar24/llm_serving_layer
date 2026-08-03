@@ -259,7 +259,7 @@ class RouterConfig:
 @dataclass
 class RouterMetrics:
     """
-    Full request accounting, because S7 requires it (PHASE_PLAN §8).
+    Full request accounting, because S7 requires it (the phase plan §8).
 
     `failed_midstream` is the number that matters and the number a less honest
     router would fold into `failed`: requests whose replica died after visible

@@ -201,7 +201,7 @@ The confounds:
 1. **Do not publish "we beat vLLM" or "we are X% of vLLM" as a throughput claim.** It would be dishonest in either direction — flattering if the workload favors this system, self-flagellating if it doesn't, and uninformative either way.
 2. **Do publish vLLM as a *scaling-shape* reference where the shapes are comparable.** Example: does goodput-vs-offered-load show a knee in the same place relative to each system's own batch-1 capacity? Does cache hit rate as a function of sharing rate follow the same curve? These are *design* comparisons, and they are legitimate because they normalize away kernel quality.
 3. **Do use vLLM as a correctness and sanity reference** — if this system's hit rate at a given sharing rate is wildly different from vLLM's on the same workload, one of them has a bug, and finding out which is valuable regardless of the answer.
-4. **If even the shape comparison proves unfair, say so and drop it**, in writing, with the reason. That is a stronger settled answer than a comparison table: *"I tried to benchmark against vLLM, here is specifically why the comparison isn't meaningful, and here is what I compared instead."*
+4. **If even the shape comparison proves unfair, say so and drop it**, in writing, with the reason. That is a stronger result than a comparison table: *"I tried to benchmark against vLLM, here is specifically why the comparison isn't meaningful, and here is what I compared instead."*
 
 ---
 

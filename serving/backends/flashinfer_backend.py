@@ -8,7 +8,7 @@ Everything numerically interesting in this file happens inside
 ``flashinfer-python``. This module owns exactly three things: the physical KV
 pool, the translation from ``BatchMeta`` to FlashInfer's argument list, and the
 decision of *when* ``plan()`` must run. Attribution wording is fixed in
-docs/PHASE_PLAN.md §11 — the kernels are NOT claimed as author-written.
+the phase plan §11 — the kernels are NOT claimed as author-written.
 
 It is drop-in interchangeable with ``PagedTorchBackend``: same constructor
 shape, same pool layout, same two methods. That interchangeability is the whole

@@ -24,9 +24,9 @@ Every consequence of concurrent serving — queueing, admission control, memory 
 
 ### Why this project, for this person
 
-The project's lane is **systems engineering applied to AI**: serving infrastructure, agent harnesses, evals, tooling. Not ML research, not model development, not kernel engineering as a focus. The acknowledged skill gap is distributed systems.
+The project's lane is **systems engineering applied to AI**: serving infrastructure, agent harnesses, evals, tooling. Not ML research, not model development, not kernel engineering. The gap it exists to close is distributed systems.
 
-This project exists to close that gap with something benchmarkable, and to become the primary technical line on a project's claim set — replacing a weaker project. It must survive hostile technical questioning at roughly five distinct claims.
+This project exists to close that gap with something benchmarkable. It must survive hostile technical review at roughly five distinct claims — which is why every claim in this repo is paired with the condition that makes it true, and why claims that could not be measured cleanly are published as not earned.
 
 ---
 
@@ -36,7 +36,7 @@ This project exists to close that gap with something benchmarkable, and to becom
 A paged block KV cache with an allocator, block tables, and a free list, replacing the per-request `max_seq` over-allocation at `engine/scheduler.py:26-27`. Success is measured as concurrent-sequence capacity at fixed VRAM versus the contiguous baseline.
 
 **G2 — Batch the forward pass across independent sequences at different positions.**
-Without this, continuous batching is bookkeeping with no throughput behind it — the engine's own build log says as much: *"true scaling needs a batched-GEMM step"* (`docs/BUILD_LOG.md:1164`). Success is throughput scaling with batch size, reported as a curve, not a point.
+Without this, continuous batching is bookkeeping with no throughput behind it — the engine's own build log says as much: *"true scaling needs a batched-GEMM step"* (`engine:docs/BUILD_LOG.md:1164`). Success is throughput scaling with batch size, reported as a curve, not a point.
 
 **G3 — Schedule at iteration granularity, with preemption that is correct under memory exhaustion.**
 Admit and retire requests between decode steps. When blocks run out, evict — and be able to defend recompute-versus-swap with measurements from this system, not from a paper.
@@ -51,7 +51,7 @@ The losing case must be predicted in writing before it is measured, and publishe
 Open-loop load generation, goodput under a declared SLO as the headline metric, committed result artifacts, a published known-gaps list. This inherits the standard the engine already set in `BENCHMARKS.md:243-250`, including its committed artifacts (24 files under `bench/results/`). The improvement is in *content*, not practice: raw per-request samples rather than pre-computed percentiles, realized workload distributions, and provenance fields sufficient to reject an invalid comparison.
 
 **G7 — Depth of understanding over shipped features.**
-Every component is labeled *author-written* or *assistant-written*. A phase is not done until the author can derive its design and tradeoffs from first principles. Anything that fails that gate does not appear as a published claim, regardless of whether the code works.
+Every component is labeled *author-written* or *assistant-written*. A phase is not done until the author can derive its design and tradeoffs from first principles, unaided. Anything that fails that gate is not published as a claim, regardless of whether the code works.
 
 ---
 
@@ -63,7 +63,7 @@ Every component is labeled *author-written* or *assistant-written*. A phase is n
 | **Writing a paged-attention CUDA kernel** | The engine already answers "can he write CUDA" (`kernels/attention_decode.cu`, 311 lines, three staged versions, warp-shuffle reductions, flash combine rule). A second, harder kernel costs the longest pole in the project for a marginal signal in a deprioritized lane. See §7 and the forthcoming ADR. |
 | **Forking or vendoring the engine** | It is consumed as a pinned dependency. Changes to it are small, upstreamed, and enumerated in §6. |
 | **Replacing the engine's HTTP server** | It stays a single-request reference path, as its README already scopes it (`README.md:144`). The production surface lives here. |
-| **SQL / relational persistence** | Deliberately out of scope. Not in the hot path, not for a published claim. One legitimate non-hot-path use exists — persisting benchmark runs for cross-session comparison — and even that is a CSV/JSON directory first, matching `bench/harness.py:187-202`. Revisit only if run comparison becomes genuinely painful. |
+| **SQL / relational persistence** | Deliberately out of scope. Not in the hot path, and nothing in this project's claim set depends on it. One legitimate non-hot-path use exists — persisting benchmark runs for cross-session comparison — and even that is a CSV/JSON directory first, matching `bench/harness.py:187-202`. Revisit only if run comparison becomes genuinely painful. |
 | **Kubernetes as a required phase** | Target hardware is GT PACE Phoenix under Slurm. K8s + a cache-aware inference gateway (llm-d, Gateway API Inference Extension) is a *late optional* phase, evaluated on systems depth alone. See §5, Tier 4. |
 | **Multi-GPU tensor parallelism** | Different problem (intra-model sharding). This project is inter-request systems work. Would dilute the claim set. |
 | **Beating vLLM on absolute throughput** | Not achievable and not the claim. Fairness of any vLLM comparison is a benchmark-methodology question, handled there. |
@@ -107,7 +107,7 @@ Priority tiers. **Time and risk are annotated per feature in the phase plan (del
 
 ### Tier 1 — Core (the project is not the project without these)
 
-Paged block KV cache · block allocator with free list · block tables · PyTorch paged-attention reference path (**Author** — the correctness oracle and the hand-written reference) · FlashInfer paged-attention fast path behind the same interface (**Assistant** integration, **Author** must understand the layout contract) · **batched varlen forward pass** (Author) · continuous batching / iteration-level scheduling (Author) · request queue and admission control (Author) · **preemption on KV exhaustion, recompute vs swap** (Author — deepest systems content in the project) · production HTTP surface with SSE streaming (Assistant) · client-disconnect cancellation propagating into the scheduler (Author for the scheduler half) · core metrics: TTFT, TPOT/ITL, throughput, goodput, queue depth, GPU memory, preemption rate (Assistant wiring, Author defines what each means) · open-loop benchmark harness (Assistant scaffold, Author designs the workload model).
+Paged block KV cache · block allocator with free list · block tables · PyTorch paged-attention reference path (**Author** — the correctness oracle and the hand-written reference implementation) · FlashInfer paged-attention fast path behind the same interface (**Assistant** integration, **Author** must understand the layout contract) · **batched varlen forward pass** (Author) · continuous batching / iteration-level scheduling (Author) · request queue and admission control (Author) · **preemption on KV exhaustion, recompute vs swap** (Author — deepest systems content in the project) · production HTTP surface with SSE streaming (Assistant) · client-disconnect cancellation propagating into the scheduler (Author for the scheduler half) · core metrics: TTFT, TPOT/ITL, throughput, goodput, queue depth, GPU memory, preemption rate (Assistant wiring, Author defines what each means) · open-loop benchmark harness (Assistant scaffold, Author designs the workload model).
 
 ### Tier 2 — Differentiating
 
@@ -157,7 +157,7 @@ Stated here as PRD-level constraints; each gets a full ADR with alternatives.
 
 **C3 — The custom CUDA kernel is not in the paged path.** Say it before being asked. `kernels/bindings.cpp:29-31` has no stride, block-table, or block-size arguments — a paged cache is inexpressible across that ABI. The custom kernel becomes the *single-replica, contiguous-cache reference path*. This is the honest cost of C2.
 
-**C4 — Two paged-attention implementations, both shipped.** A pure-PyTorch block-gather path written by the author (correctness oracle, hand-written reference, ~150 lines) and FlashInfer as the fast path behind the same interface. Benchmarked against each other. This yields an honest A/B, a fallback if FlashInfer will not build on PACE, and a real answer to *"why did you use a library here."*
+**C4 — Two paged-attention implementations, both shipped.** A pure-PyTorch block-gather path written by the author (correctness oracle, hand-written reference implementation, ~150 lines) and FlashInfer as the fast path behind the same interface. Benchmarked against each other. This yields an honest A/B, a fallback if FlashInfer will not build on PACE, and a real answer to *"why did you use a library here."*
 **Attribution, fixed wording:** *integrated FlashInfer's paged-attention kernels behind a pluggable attention backend; wrote a PyTorch reference implementation as the correctness oracle.* Never "wrote a paged kernel."
 ✅ **Verified 2026-07-31** against `flashinfer-python==0.6.16` source on PACE (`ARCHITECTURE.md:§2.3.1`). The block layout and `page_size=16` choice were correct; the page-addressing metadata was not — FlashInfer uses a CSR triple (`kv_indptr`/`kv_indices`/`kv_last_page_len`), not a padded `block_tables` matrix. Corrected in `BatchMeta`. The mismatch cost an adapter, not a redesign, which is the outcome C2's seam was chosen to produce.
 
@@ -165,7 +165,7 @@ Stated here as PRD-level constraints; each gets a full ADR with alternatives.
 
 **C6 — Goodput under a declared SLO is the headline metric.** Raw throughput is reported but is not the claim. Load generation is open-loop. Rationale belongs to the benchmark methodology doc, but the commitment is made here so the phase DoDs can depend on it.
 
-**C7 — Claim-set boundary.** Engine = model internals, kernels, quantization. Serving = paged KV, continuous batching, radix prefix caching, prefix-aware routing. The words *"OpenAI-compatible server"* are spent on the engine line and must not reappear on the serving line (`SERVING_INTERFACE.md:157`).
+**C7 — Claim boundary.** Engine = model internals, kernels, quantization. Serving = paged KV, continuous batching, radix prefix caching, prefix-aware routing. The words *"OpenAI-compatible server"* are spent on the engine line and must not reappear on the serving line (`SERVING_INTERFACE.md:157`).
 
 ---
 
@@ -173,7 +173,7 @@ Stated here as PRD-level constraints; each gets a full ADR with alternatives.
 
 *Resolved 2026-07-31: O2 answered (late-August freeze), O4 answered (C4 confirmed). O1 open, verification checklist owed. O3 and O5 remain.*
 
-**Consequence of the late-August freeze — recorded here because it changes the goal set, not just the schedule.** Roughly four weeks. Tier 1 does not fit in four weeks, and Tier 1 does not contain prefix-aware routing (Tier 2). G5 and the routing half of C7's resume-line split are therefore **not** freeze-date deliverables under any honest reading. The phase plan will carry two cut lines — a freeze-date bullet set and a fall-rolling bullet set — rather than one plan aimed at full completion. G1–G3 plus G6 are the realistic freeze-date target; G4 and G5 are fall work.
+**Consequence of the late-August freeze — recorded here because it changes the goal set, not just the schedule.** Roughly four weeks. Tier 1 does not fit in four weeks, and Tier 1 does not contain prefix-aware routing (Tier 2). G5 and the routing half of C7's claim-set split are therefore **not** freeze-date deliverables under any honest reading. The phase plan will carry two cut lines — a freeze-date bullet set and a fall-rolling bullet set — rather than one plan aimed at full completion. G1–G3 plus G6 are the realistic freeze-date target; G4 and G5 are fall work.
 
 **O1 — PACE GPU concurrency. ~~Blocks all routing work.~~ RESOLVED 2026-07-31, measured on the cluster.**
 

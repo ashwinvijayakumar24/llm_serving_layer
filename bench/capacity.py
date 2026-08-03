@@ -20,7 +20,7 @@ Two things it deliberately does NOT do:
 
 2. It does not run the model. Capacity is an allocation property. Bit-identical
    output through PagedTorchBackend is a separate Phase 1 gate
-   (docs/PHASE_PLAN.md §4, Definition of done) and is not what this file claims.
+   (the phase plan §4, Definition of done) and is not what this file claims.
 
 WHY THE RATIO IS REPORTED AS A FUNCTION OF LENGTH
 -------------------------------------------------

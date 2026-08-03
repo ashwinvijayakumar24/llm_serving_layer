@@ -12,7 +12,7 @@ Sizing the watermark for that worst case would mean admitting almost nothing.
 So the design is: admit optimistically against a modest watermark, and keep a
 mechanism that can *always* make room. That mechanism is preemption. Without it,
 the honest behaviour above the knee is an `AllocationError` mid-forward-pass —
-i.e. the server falls over instead of degrading (PHASE_PLAN §6, property 4).
+i.e. the server falls over instead of degrading (the phase plan §6, property 4).
 
 THE TWO POLICIES (ARCHITECTURE §5.2)
 ------------------------------------

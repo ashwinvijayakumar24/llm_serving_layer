@@ -208,7 +208,7 @@ class HealthEvent:
     An append-only record of every state transition.
 
     Exists because S7 is "fault injection during a load run **with full request
-    accounting**" (PHASE_PLAN §8). An availability story with no per-event trail
+    accounting**" (the phase plan §8). An availability story with no per-event trail
     is unauditable — "requests were re-routed" is a claim, and this list is what
     turns it into a number.
     """

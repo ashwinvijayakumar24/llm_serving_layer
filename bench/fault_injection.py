@@ -4,7 +4,7 @@ Fault-injection harness: kill a replica mid-run and account for EVERY request.
 WHAT CLAIM THIS BACKS
 ---------------------
 Phase 5's router claims "health checking, graceful draining, and failover"
-(PHASE_PLAN.md §11, bullet 5). Failover is the one of the three that cannot be
+(the phase plan §11, bullet 5). Failover is the one of the three that cannot be
 demonstrated by inspection, and it is also the one where a plausible-looking demo
 proves nothing. "I killed a replica and the load generator kept printing numbers"
 is not evidence: a failover bug does not usually stop the run, it silently loses

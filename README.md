@@ -123,8 +123,6 @@ Note that prefix-aware *beats* round-robin at load 4 (3.18 vs 3.02) while losing
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Open-loop load generation, goodput under SLO, baselines, **and where prefix-aware routing is predicted to lose** |
 | [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) | 41 risks ordered by **detectability**, because a silent wrong number is worse than a crash |
 | [`docs/ADR.md`](docs/ADR.md) | 24 decision records with alternatives and revisit triggers |
-| [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) | How it was built, including what went wrong |
-| [`docs/LEARNING_MAP.md`](docs/LEARNING_MAP.md) | Concepts, canonical papers, review questions per phase |
 
 Three decisions worth arguing with:
 
