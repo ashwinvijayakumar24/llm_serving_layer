@@ -1,0 +1,280 @@
+---------------------------------------
+Begin Slurm Prolog: Aug-03-2026 12:00:25
+Job ID:    11653157
+User ID:   avijayakumar41
+Account:   paceship-simpliearn
+Job name:  p4_prov
+Partition: gpu-h200
+QOS:       inferno
+---------------------------------------
+=== node: atl1-1-01-007-7-0.pace.gatech.edu  job: 11653157 ===
+NVIDIA H200, 143771 MiB
+=== provenance preflight ===
+  HEAD: ac5d22736a2518a37029e40cfbe071f0f8ce8437
+  tree: CLEAN
+  artifacts -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p4_prov_out_11653157 (copied into results/p4_prov/ at the end)
+
+########## len=512 struct=system share=0.5 ##########
+  up: on_512_system_0.5 (16s)
+  up: off_512_system_0.5 (10s)
+==============================================================================
+PHASE 4 / S4 — radix prefix cache
+------------------------------------------------------------------------------
+allocation   11653157@atl1-1-01-007-7-0
+node/host    atl1-1-01-007-7-0
+gpu          NVIDIA H200 x1
+qos          inferno
+repo         ac5d22736a2518a37029e40cfbe071f0f8ce8437  dirty=False
+engine       v0.2.1
+seed         20260801
+publishable  True
+==============================================================================
+
+### SERVER PRE-FLIGHT
+
+  cache-on   cache_enabled=True   http://127.0.0.1:9401/v1/chat/completions
+  cache-off  cache_enabled=False   http://127.0.0.1:9402/v1/chat/completions
+
+### SWEEP — 2 structures x 1 sharing rates, 182 requests per cell (60s steady state)
+
+  zero            share 0.00  oracle  0.000  measured  0.011  ttft_p50      77.7  delta       0.3  OK
+  system          share 0.50  oracle  0.123  measured  0.137  ttft_p50      72.1  delta      -4.8  OK
+
+### WHAT THE CACHE COSTS WHEN IT NEVER HELPS (the mandatory control, §7)
+
+  zero sharing: block hit rate 0.0110 (expected ~0). Turning the cache on COSTS 0.32 ms at TTFT p50 and 3.16 ms at p99, for zero benefit.
+    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (§7). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive.
+
+### HIT RATE AND TTFT vs SHARING RATE, BY STRUCTURE
+
+structure  share  oracle  hit_rate  req_hits  depth  evict  cow  shared>1  ttft_p50  ttft_p99  d_p50  d_p99    n  valid
+---------  -----  ------  --------  --------  -----  -----  ---  --------  --------  --------  -----  -----  ---  -----
+     zero   0.00   0.000     0.011     0.995   0.99      0    0         0      77.7     165.2    0.3    3.2  118     OK
+   system   0.50   0.123     0.137     1.000  12.35      0    0         0      72.1     124.7   -4.8  -38.1  118     OK
+
+  oracle    = generator's infinite-cache block sharing rate, the UPPER BOUND.
+  hit_rate  = server blocks_reused / blocks_required over THIS window only.
+  depth     = mean partial-hit depth in blocks, over this window.
+  d_p50/99  = cache-on minus cache-off TTFT; NEGATIVE is the cache helping.
+  Percentiles come from the artifacts' raw ttft_ms samples at print time,
+  never from a stored scalar (methodology §5, R15).
+
+  A hit rate is meaningless without the structure beside it (§7): the
+  conversational rows are the MOST FAVOURABLE shape for a radix cache and
+  their numbers are not comparable to the system-prompt rows.
+
+### BREAK-EVEN SHARING RATE — where the cache starts paying for itself
+
+  system          only 1 usable point(s); a crossover needs at least 2
+
+  Read this as a curve, not a point. A TTFT improvement quoted at one
+  sharing rate is a choice of workload; the rate at which the sign flips is
+  the number that survives a follow-up question.
+
+summary -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p4_prov_out_11653157/p4_prov_512_system_0.5_summary.json
+  eviction audit: UNKNOWN — no evictions key; audit did NOT run
+
+########## len=512 struct=system share=1.0 ##########
+  up: on_512_system_1.0 (11s)
+  up: off_512_system_1.0 (9s)
+==============================================================================
+PHASE 4 / S4 — radix prefix cache
+------------------------------------------------------------------------------
+allocation   11653157@atl1-1-01-007-7-0
+node/host    atl1-1-01-007-7-0
+gpu          NVIDIA H200 x1
+qos          inferno
+repo         ac5d22736a2518a37029e40cfbe071f0f8ce8437  dirty=False
+engine       v0.2.1
+seed         20260801
+publishable  True
+==============================================================================
+
+### SERVER PRE-FLIGHT
+
+  cache-on   cache_enabled=True   http://127.0.0.1:9401/v1/chat/completions
+  cache-off  cache_enabled=False   http://127.0.0.1:9402/v1/chat/completions
+
+### SWEEP — 2 structures x 1 sharing rates, 182 requests per cell (60s steady state)
+
+  zero            share 0.00  oracle  0.000  measured  0.011  ttft_p50      78.9  delta       1.1  OK
+  system          share 1.00  oracle  0.270  measured  0.272  ttft_p50      70.1  delta      -7.2  OK
+
+### WHAT THE CACHE COSTS WHEN IT NEVER HELPS (the mandatory control, §7)
+
+  zero sharing: block hit rate 0.0110 (expected ~0). Turning the cache on COSTS 1.09 ms at TTFT p50 and 1.63 ms at p99, for zero benefit.
+    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (§7). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive.
+
+### HIT RATE AND TTFT vs SHARING RATE, BY STRUCTURE
+
+structure  share  oracle  hit_rate  req_hits  depth  evict  cow  shared>1  ttft_p50  ttft_p99  d_p50  d_p99    n  valid
+---------  -----  ------  --------  --------  -----  -----  ---  --------  --------  --------  -----  -----  ---  -----
+     zero   0.00   0.000     0.011     0.995   0.99      0    0         0      78.9     164.4    1.1    1.6  118     OK
+   system   1.00   0.270     0.272     1.000  24.62      0    0         0      70.1     124.3   -7.2  -37.1  118     OK
+
+  oracle    = generator's infinite-cache block sharing rate, the UPPER BOUND.
+  hit_rate  = server blocks_reused / blocks_required over THIS window only.
+  depth     = mean partial-hit depth in blocks, over this window.
+  d_p50/99  = cache-on minus cache-off TTFT; NEGATIVE is the cache helping.
+  Percentiles come from the artifacts' raw ttft_ms samples at print time,
+  never from a stored scalar (methodology §5, R15).
+
+  A hit rate is meaningless without the structure beside it (§7): the
+  conversational rows are the MOST FAVOURABLE shape for a radix cache and
+  their numbers are not comparable to the system-prompt rows.
+
+### BREAK-EVEN SHARING RATE — where the cache starts paying for itself
+
+  system          only 1 usable point(s); a crossover needs at least 2
+
+  Read this as a curve, not a point. A TTFT improvement quoted at one
+  sharing rate is a choice of workload; the rate at which the sign flips is
+  the number that survives a follow-up question.
+
+summary -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p4_prov_out_11653157/p4_prov_512_system_1.0_summary.json
+  eviction audit: UNKNOWN — no evictions key; audit did NOT run
+
+########## len=150 struct=conversational share=0.5 ##########
+  up: on_150_conversational_0.5 (11s)
+  up: off_150_conversational_0.5 (9s)
+==============================================================================
+PHASE 4 / S4 — radix prefix cache
+------------------------------------------------------------------------------
+allocation   11653157@atl1-1-01-007-7-0
+node/host    atl1-1-01-007-7-0
+gpu          NVIDIA H200 x1
+qos          inferno
+repo         ac5d22736a2518a37029e40cfbe071f0f8ce8437  dirty=False
+engine       v0.2.1
+seed         20260801
+publishable  True
+==============================================================================
+
+### SERVER PRE-FLIGHT
+
+  cache-on   cache_enabled=True   http://127.0.0.1:9401/v1/chat/completions
+  cache-off  cache_enabled=False   http://127.0.0.1:9402/v1/chat/completions
+
+### SWEEP — 2 structures x 1 sharing rates, 182 requests per cell (60s steady state)
+
+  zero            share 0.00  oracle  0.000  measured  0.035  ttft_p50      58.9  delta       0.6  OK
+  conversational  share 0.50  oracle  0.533  measured  0.536  ttft_p50      59.4  delta      -9.2  OK
+
+### WHAT THE CACHE COSTS WHEN IT NEVER HELPS (the mandatory control, §7)
+
+  zero sharing: block hit rate 0.0354 (expected ~0). Turning the cache on COSTS 0.59 ms at TTFT p50 and 1.69 ms at p99, for zero benefit.
+    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (§7). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive.
+
+### HIT RATE AND TTFT vs SHARING RATE, BY STRUCTURE
+
+     structure  share  oracle  hit_rate  req_hits  depth  evict  cow  shared>1  ttft_p50  ttft_p99  d_p50  d_p99    n  valid
+--------------  -----  ------  --------  --------  -----  -----  ---  --------  --------  --------  -----  -----  ---  -----
+          zero   0.00   0.000     0.035     0.995   0.99      0    0         0      58.9      84.7    0.6   -1.7  118     OK
+conversational   0.50   0.533     0.536     1.000  34.30      0    0         0      59.4      85.1   -9.2  -25.2  118     OK
+
+  oracle    = generator's infinite-cache block sharing rate, the UPPER BOUND.
+  hit_rate  = server blocks_reused / blocks_required over THIS window only.
+  depth     = mean partial-hit depth in blocks, over this window.
+  d_p50/99  = cache-on minus cache-off TTFT; NEGATIVE is the cache helping.
+  Percentiles come from the artifacts' raw ttft_ms samples at print time,
+  never from a stored scalar (methodology §5, R15).
+
+  A hit rate is meaningless without the structure beside it (§7): the
+  conversational rows are the MOST FAVOURABLE shape for a radix cache and
+  their numbers are not comparable to the system-prompt rows.
+
+### BREAK-EVEN SHARING RATE — where the cache starts paying for itself
+
+  conversational  only 1 usable point(s); a crossover needs at least 2
+
+  Read this as a curve, not a point. A TTFT improvement quoted at one
+  sharing rate is a choice of workload; the rate at which the sign flips is
+  the number that survives a follow-up question.
+
+summary -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p4_prov_out_11653157/p4_prov_150_conversational_0.5_summary.json
+  eviction audit: UNKNOWN — no evictions key; audit did NOT run
+
+########## len=150 struct=conversational share=1.0 ##########
+  up: on_150_conversational_1.0 (11s)
+  up: off_150_conversational_1.0 (10s)
+==============================================================================
+PHASE 4 / S4 — radix prefix cache
+------------------------------------------------------------------------------
+allocation   11653157@atl1-1-01-007-7-0
+node/host    atl1-1-01-007-7-0
+gpu          NVIDIA H200 x1
+qos          inferno
+repo         ac5d22736a2518a37029e40cfbe071f0f8ce8437  dirty=False
+engine       v0.2.1
+seed         20260801
+publishable  True
+==============================================================================
+
+### SERVER PRE-FLIGHT
+
+  cache-on   cache_enabled=True   http://127.0.0.1:9401/v1/chat/completions
+  cache-off  cache_enabled=False   http://127.0.0.1:9402/v1/chat/completions
+
+### SWEEP — 2 structures x 1 sharing rates, 182 requests per cell (60s steady state)
+
+  zero            share 0.00  oracle  0.000  measured  0.035  ttft_p50      58.7  delta       1.8  OK
+  conversational  share 1.00  oracle  0.765  measured  0.762  ttft_p50      62.0  delta     -20.7  OK
+
+### WHAT THE CACHE COSTS WHEN IT NEVER HELPS (the mandatory control, §7)
+
+  zero sharing: block hit rate 0.0354 (expected ~0). Turning the cache on COSTS 1.78 ms at TTFT p50 and 6.15 ms at p99, for zero benefit.
+    That is the honest floor: radix walk, insert and refcount bookkeeping on every request with nothing to reuse (§7). It is published here whether or not it flatters, and if it is material it is an argument for making the cache adaptive.
+
+### HIT RATE AND TTFT vs SHARING RATE, BY STRUCTURE
+
+     structure  share  oracle  hit_rate  req_hits   depth  evict  cow  shared>1  ttft_p50  ttft_p99  d_p50   d_p99    n  valid
+--------------  -----  ------  --------  --------  ------  -----  ---  --------  --------  --------  -----  ------  ---  -----
+          zero   0.00   0.000     0.035     0.995    0.99      0    0         0      58.7      84.4    1.8    -6.2  118     OK
+conversational   1.00   0.765     0.762     1.000  100.93      0    0         0      62.0      92.6  -20.7  -103.1  118     OK
+
+  oracle    = generator's infinite-cache block sharing rate, the UPPER BOUND.
+  hit_rate  = server blocks_reused / blocks_required over THIS window only.
+  depth     = mean partial-hit depth in blocks, over this window.
+  d_p50/99  = cache-on minus cache-off TTFT; NEGATIVE is the cache helping.
+  Percentiles come from the artifacts' raw ttft_ms samples at print time,
+  never from a stored scalar (methodology §5, R15).
+
+  A hit rate is meaningless without the structure beside it (§7): the
+  conversational rows are the MOST FAVOURABLE shape for a radix cache and
+  their numbers are not comparable to the system-prompt rows.
+
+### BREAK-EVEN SHARING RATE — where the cache starts paying for itself
+
+  conversational  only 1 usable point(s); a crossover needs at least 2
+
+  Read this as a curve, not a point. A TTFT improvement quoted at one
+  sharing rate is a choice of workload; the rate at which the sign flips is
+  the number that survives a follow-up question.
+
+summary -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p4_prov_out_11653157/p4_prov_150_conversational_1.0_summary.json
+  eviction audit: UNKNOWN — no evictions key; audit did NOT run
+
+=== provenance postflight ===
+  HEAD still: ac5d22736a2518a37029e40cfbe071f0f8ce8437
+  tree during run: CLEAN
+
+=== publishable check ===
+  p4_prov_150_conversational_0.5_summary.json          sha=? dirty=None
+  p4_prov_150_conversational_1.0_summary.json          sha=? dirty=None
+  p4_prov_512_system_0.5_summary.json                  sha=? dirty=None
+  p4_prov_512_system_1.0_summary.json                  sha=? dirty=None
+
+=== artifacts: 20 in results/p4_prov ===
+=== done ===
+---------------------------------------
+Begin Slurm Epilog: Aug-03-2026 12:26:41
+Job ID:        11653157
+User ID:       avijayakumar41
+Account:       paceship-simpliearn
+Job name:      p4_prov
+Resources:     cpu=8,gres/gpu:h200=1,mem=32G,node=1
+Rsrc Used:     cput=03:30:08,vmem=0,walltime=00:26:16,mem=2570740K,energy_used=0
+Partition:     gpu-h200
+QOS:           inferno
+Nodes:         atl1-1-01-007-7-0
+---------------------------------------

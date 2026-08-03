@@ -4,7 +4,7 @@ A from-scratch LLM serving system — paged KV cache, continuous batching, preem
 
 Benchmarked on NVIDIA H100 80GB and H200 (Georgia Tech PACE Phoenix). Every number below resolves to a committed artifact in [`results/`](results/) carrying its Slurm allocation id, GPU, seed, git SHA, and pinned engine tag.
 
-**Five claims were scoped. Four are earned; the fifth is not, and says so.** The routing benchmark never measured its shared-prefix workloads inside their valid range, so prefix-aware routing is *not* claimed to beat a load-aware baseline — see [Routing](#prefix-aware-routing--not-earned-s5). Publishing that is the point, not an apology for it.
+**Five claims were scoped. Four are earned; the fifth is not, and says so.** Prefix-aware routing is *not* claimed to beat a load-aware baseline — it never did, across two attempts. What the re-run measured instead is **where cache-aware routing actively hurts, and by how much** — see [Routing](#prefix-aware-routing--not-earned-s5). Publishing that is the point, not an apology for it.
 
 | | claim | result |
 |---|---|---|
@@ -12,7 +12,7 @@ Benchmarked on NVIDIA H100 80GB and H200 (Georgia Tech PACE Phoenix). Every numb
 | **S2** | continuous batching | **1.8×** peak goodput under SLO; TTFT p99 89–113 ms vs 530–801 ms |
 | **S3** | preemption | **bit-identical** greedy output under forced memory pressure, both policies |
 | **S4** | radix prefix cache | **−23%** TTFT p99 at 27% block reuse; ≤1.3 ms cost at zero sharing |
-| **S5** | prefix-aware routing | **NOT EARNED** — one losing-case prediction confirmed instead |
+| **S5** | prefix-aware routing | **NOT EARNED** — but measured: affinity routing costs **23% goodput** at 8× the saturation knee |
 
 ---
 
@@ -84,7 +84,7 @@ The **correctness** claim above comes from the gate. The **cost** sweep is only 
 
 ### Radix prefix cache — TTFT (S4)
 
-Job `11617299`, H200, **one fresh server pair per cell** (36 pairs). Valid cells only: evictions 0, n = 118/118, steady state verified.
+Job `11617299`, H200, **one fresh server pair per cell** (36 pairs). Valid cells only: evictions 0, n = 118/118, steady state verified. Re-run from a committed tree as job `11653157` — all four earned cells `publishable=True`, `repo_dirty=False`, block hit rates reproducing to three decimals ([`results/p4_prov/`](results/p4_prov/)).
 
 | prompt | structure | sharing | block hit rate | Δ TTFT p50 | Δ TTFT p99 |
 |---|---|---|---|---|---|
@@ -104,13 +104,26 @@ Job `11617299`, H200, **one fresh server pair per cell** (36 pairs). Valid cells
 
 ### Prefix-aware routing — NOT EARNED (S5)
 
-Four replicas on four dedicated H200s, three routers over one fleet. **S5 is not claimed.** Three of four scenarios carry a long shared prefix, saturate below the lowest offered load, and produced no usable point — the loads were derived from a lighter scenario's capacity and never re-derived. That is a workload-design failure, not a routing result, and `untested` is not `confirmed`.
+Four replicas on four dedicated H200s, three routers over one fleet. **Prefix-aware routing was not shown to beat a load-aware baseline on any workload at any load, across two attempts.** That is stated first because it is the honest headline.
 
-What *was* earned is a **losing-case prediction confirmed**: `zero_sharing` was predicted in writing, before measurement, to lose to a load-aware baseline — "there is nothing to be cache-aware about, and any deviation from load-optimal placement is pure loss." It lost, in the predicted direction: **Δgoodput −0.111 at load 4, −0.311 at load 16** vs `least_outstanding`.
+The second attempt measured something more useful than a win. The first swept 4–48 req/s for every scenario, using a ladder derived from the lightest workload's capacity; the heavier scenarios saturate at **≈1 req/s**, so every cell sat 4–48× above the knee and three of four produced no usable point. Re-running with a per-scenario ladder (0.5/1/2/4/8) brackets the knee and yields matched valid pairs at both ends:
 
-Note that prefix-aware *beats* round-robin at load 4 (3.18 vs 3.02) while losing to least-outstanding (3.29). Quoting the round-robin comparison would have produced a win — a win about load balancing, which the real baseline already does, and nothing about prefix awareness.
+| scenario | load | prefix_aware | least_outstanding | Δ goodput | n |
+|---|---|---|---|---|---|
+| hot_prefix_skew | 0.5 (½× knee) | 0.49 | 0.51 | −0.017 | 61 |
+| hot_prefix_skew | **8.0 (8× knee)** | **2.11** | **2.74** | **−0.633 (−23%)** | 946 |
+| system_prompt_sharing | 0.5 | 0.50 | 0.51 | −0.008 | 61 |
+| system_prompt_sharing | 8.0 | 2.88 | 2.85 | +0.025 (+0.9%) | 947 |
 
-*Artifacts: [`results/p5/`](results/p5/) · job `11610306`, 4 × H200.*
+**Routing by cache affinity costs 23% of fleet goodput at 8× the saturation knee**, on the workload with one very hot prefix. The mechanism: that prefix lives on one replica, affinity keeps sending its traffic there, and above the knee that replica is already the busiest in the fleet — so every request affinity routes to it is a request routed *away* from an idle peer. The cache saves prefill work; the queue charges more for it than it saves.
+
+The +0.9% cell is **not** a win and is not claimed as one — one marginal cell against one negative cell does not establish a direction.
+
+Two §10 losing-case predictions confirmed (`uniform_prefix`, `hot_prefix_skew`), one confirmed in the earlier job (`zero_sharing`: −0.111 at load 4, −0.311 at load 16). **And one prediction of mine falsified:** I wrote into the job script that `hot_prefix_skew` would be prefix-aware's *best* case. It was its worst, by the largest margin in the run — and the project's own methodology doc had called it "the most likely place for a genuinely bad result" weeks earlier. Recorded rather than quietly aligned afterwards.
+
+The design consequence is now supported rather than asserted: **affinity must be blended with load, not applied alone.** The router implements exactly that — `score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with `blend=0` asserted in tests to be exactly the load-aware baseline. This run measured the `blend=1` extreme, which is the one worth knowing the cost of. Sweeping `blend` has not been run.
+
+*Artifacts: [`results/p5_knee/`](results/p5_knee/) job `11653158` · [`results/p5/`](results/p5/) job `11610306` · 4 × H200.*
 
 ---
 
@@ -211,11 +224,11 @@ Running on Slurm: see [`scripts/`](scripts/).
 
 Every GPU gate uses `REQUIRE_GPU=1`, which turns an unusable GPU into a **hard failure rather than a skip**. This is not defensive styling: an early run landed on a V100 under a CUDA-13 build, skipped all 16 gate tests, and exited 0 — a skipped gate and a passing gate are indistinguishable in a job log.
 
-That was the first of **six** failures in this project with the same shape: *something reported success while doing nothing.* A fragmentation test that passed without ever fragmenting the pool. A server returning HTTP 200 and well-formed SSE with zero content. An SLO calibration that produced goodput 0.00 at every rate from a negative TTFT. A summary table printing 0.0 in all seven rows because it read scalar keys that don't exist. And an eviction audit that printed `clean` for all 36 cells because the metrics key was absent and the guard classified *absent* as *zero* — a check added in response to the previous instance, failing the same way.
+That was the first of **seven** failures in this project with the same shape: *something reported a verdict that had nothing to do with what it was watching.* A fragmentation test that passed without ever fragmenting the pool. A server returning HTTP 200 and well-formed SSE with zero content. An SLO calibration that produced goodput 0.00 at every rate from a negative TTFT. A summary table printing 0.0 in all seven rows because it read scalar keys that don't exist. An eviction audit that printed `clean` for all 36 cells because the metrics key was absent and the guard classified *absent* as *zero* — a check added in response to the previous instance, failing the same way. And the provenance guard, which stamped **every artifact in the project** `NOT PUBLISHABLE` because `git status --porcelain` counts untracked files and `logs/` was never gitignored, so every run dirtied its own tree by opening a log file.
 
 None raised. Every one was caught by an assertion of a **positive property** — "the GPU is usable", "these pages are non-contiguous", "this response has content", "this latency is physically possible" — never by the absence of an error. It is why [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) orders risks by *detectability* rather than impact, and why the benchmark drivers mark cells `INVALID` and refuse to interpolate rather than reporting a number with a caveat.
 
-All six are written up with their diagnoses in [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) §10.
+All seven are written up with their diagnoses in [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) §10. The last is the instructive one: a guard with a 100% false-positive rate does not fail to detect the problem, it trains you to ignore the stamp.
 
 ## License
 

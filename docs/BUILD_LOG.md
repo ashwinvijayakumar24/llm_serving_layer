@@ -354,7 +354,55 @@ was missing, with the message *"B5 is the real baseline... it is load-aware and
 cache-blind, so the gap between it and prefix-aware is the only thing that
 isolates cache awareness."* I had started four replicas and no routers.
 
-Full write-up: `results/p5/RESULTS.md`.
+### The re-run, and a prediction of mine that was wrong
+
+The ladder was the whole problem, and fixing it produced a better result than a
+win would have been. The heavy scenarios saturate at **~1 req/s**; the original
+sweep started at 4 and went to 48, so every cell sat 4-48x above the knee. A
+per-scenario ladder (0.5/1/2/4/8) brackets it and yields matched valid pairs at
+both ends (job `11653158`):
+
+| scenario | load | prefix_aware | least_outstanding | Δ goodput | n |
+|---|---|---|---|---|---|
+| hot_prefix_skew | 0.5 (½x knee) | 0.49 | 0.51 | −0.017 | 61 |
+| hot_prefix_skew | **8.0 (8x knee)** | **2.11** | **2.74** | **−0.633 (−23%)** | 946 |
+| system_prompt_sharing | 0.5 | 0.50 | 0.51 | −0.008 | 61 |
+| system_prompt_sharing | 8.0 | 2.88 | 2.85 | +0.025 (+0.9%) | 947 |
+
+**Cache-affinity routing costs 23% of fleet goodput at 8x the saturation knee.**
+The mechanism is the finding: the hot prefix lives on one replica, affinity keeps
+sending its traffic there, and above the knee that replica is already the busiest
+in the fleet — so every request affinity routes to it is a request routed *away*
+from an idle peer. The cache saves prefill work; the queue charges more for it
+than it saves. That is methodology §10.3 tested rather than asserted.
+
+The +0.9% cell is not a win and is not claimed as one. One marginal positive cell
+against one negative cell establishes nothing, and quoting it would be exactly
+the move the rest of this project refuses to make.
+
+**And I predicted the wrong sign on the biggest effect in the run.** I wrote into
+`scripts/p5_knee.sbatch`, before submitting: *"A skewed hot prefix is the case
+where cache locality is worth more than perfect load balance. If it loses here it
+loses everywhere."* It lost there, by the largest margin measured.
+
+The project's own benchmark methodology had it right and I contradicted it while
+writing the job script. §10.7, written weeks earlier: *"one very hot prefix sends
+a disproportionate share of traffic to whichever replica owns it. §10 calls this
+the most likely place for a genuinely bad result, and therefore the most valuable
+one to measure."*
+
+I had written that sentence and then predicted its opposite. The reason to record
+predictions before a run is so that being wrong costs something; this one is kept
+in the script header rather than quietly aligned to the outcome afterwards.
+
+The design consequence is now supported rather than asserted: **affinity must be
+blended with load, not applied alone.** The router already implements that —
+`score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with
+`blend=0` asserted in tests to be exactly B5. This run measured the `blend=1`
+extreme, which is the one worth knowing the cost of. Sweeping `blend` is the
+obvious next experiment and has not been run.
+
+Full write-ups: `results/p5/RESULTS.md`, `results/p5_knee/RESULTS.md`.
 
 ## 8. Phase 6 — operability
 
@@ -382,8 +430,8 @@ earned (S5). The one not earned is stated as not earned in the README and here.
 
 ## 10. The pattern worth taking away
 
-Six separate failures this project, all mine, all the same shape: **something
-reported success while doing nothing.**
+Seven separate failures this project, all mine, all the same shape: **something
+reported a verdict that had nothing to do with what it was watching.**
 
 | What | How it looked |
 |---|---|
@@ -393,6 +441,7 @@ reported success while doing nothing.**
 | SLO calibration | completed, produced **goodput 0.00 at every rate** from a negative TTFT |
 | Benchmark summary table | printed **0.0** in all seven rows — read scalar keys that don't exist |
 | P4 per-cell eviction audit | printed **`clean` for all 36 cells** — the metrics key was absent, `find()` returned `None`, and the guard `ev not in (None, 0)` classified *absent* as *zero* |
+| Provenance guard | stamped **every artifact in the project** `NOT PUBLISHABLE: the measured code is not any commit` — `git status --porcelain` counts untracked files, `logs/` was never gitignored, and every sbatch writes `logs/srv_*.log` before provenance is captured |
 
 The sixth is the one to sit with: it was a check **added in response to the
 fifth**, and it failed the same way the thing it was watching for failed. It
@@ -400,6 +449,16 @@ had two outcomes where it needed three — clean, contaminated, and *did not
 look*. Any audit that cannot say "I did not measure" will eventually report a
 missing measurement as a passing one. The evictions it existed to catch were
 caught by the benchmark driver's own summary table instead.
+
+The seventh is the worst of them, and it fired on **every run in the project**.
+The provenance guard exists to answer one question — *is this number tied to a
+commit?* — and it answered "no" every single time, because the harness dirties
+its own tree by opening a log file. A guard with a 100% false-positive rate is
+worse than no guard: it does not fail to detect the problem, it **trains you to
+ignore the stamp**, which is the precise opposite of its purpose. It went
+unexamined for the whole project because a warning that is always present reads
+as background rather than as signal. Both fixes are one line each; noticing was
+the entire cost.
 
 None raised. None showed up as an error. Every one was caught by something
 asserting a **positive property** — "the GPU is usable", "these pages are

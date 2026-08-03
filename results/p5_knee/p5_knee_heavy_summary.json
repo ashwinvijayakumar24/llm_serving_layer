@@ -1,0 +1,1136 @@
+{
+  "allocation_id": "11653158@atl1-1-01-007-7-0",
+  "b5_knee": {
+    "hot_prefix_skew": {
+      "attainment_min": 0.95,
+      "found": true,
+      "knee_load_rps": 0.5,
+      "reason": "goodput tracks offered load up to 0.5 req/s and stops tracking above it",
+      "tracking_tolerance": 0.9
+    },
+    "system_prompt_sharing": {
+      "attainment_min": 0.95,
+      "found": true,
+      "knee_load_rps": 0.5,
+      "reason": "goodput tracks offered load up to 0.5 req/s and stops tracking above it",
+      "tracking_tolerance": 0.9
+    },
+    "uniform_prefix": {
+      "attainment_min": 0.95,
+      "found": true,
+      "knee_load_rps": 0.5,
+      "reason": "goodput tracks offered load up to 0.5 req/s and stops tracking above it",
+      "tracking_tolerance": 0.9
+    }
+  },
+  "blockers": [
+    "Working tree is dirty \u2014 the measured code is not any commit."
+  ],
+  "cells": [
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T172545_atl1-1-01-007-7-0_p5_system_prompt_sharing_prefix_aware_load0.5.json",
+      "goodput_rps": 0.5,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1,
+        "affinity_honoured": 58,
+        "blend": 0.7,
+        "hints": {
+          "entries": 6,
+          "entries_expired_total": 0,
+          "entries_purged_total": 17,
+          "fanout": 1,
+          "hint_hit_rate": 0.7195121951219512,
+          "hint_hits": 59,
+          "hint_misses": 23,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 23,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.9836065573770492,
+      "ttft_p50": 69.39359903299192,
+      "ttft_p99": 194.89116518305278,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T172815_atl1-1-01-007-7-0_p5_system_prompt_sharing_least_outstanding_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 1.0,
+      "ttft_p50": 64.33895075991813,
+      "ttft_p99": 179.36955434782718,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T173046_atl1-1-01-007-7-0_p5_system_prompt_sharing_round_robin_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "round_robin",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 1.0,
+      "ttft_p50": 64.69485870422886,
+      "ttft_p99": 178.8986180731797,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T173316_atl1-1-01-007-7-0_p5_system_prompt_sharing_prefix_aware_load1.json",
+      "goodput_rps": 0.8166666666666667,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 2,
+        "affinity_honoured": 167,
+        "blend": 0.7,
+        "hints": {
+          "entries": 15,
+          "entries_expired_total": 6,
+          "entries_purged_total": 35,
+          "fanout": 1,
+          "hint_hit_rate": 0.7511111111111111,
+          "hint_hits": 169,
+          "hint_misses": 56,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 56,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.9514563106796117,
+      "ttft_p50": 65.63505655238089,
+      "ttft_p99": 178.55182008733914,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T173546_atl1-1-01-007-7-0_p5_system_prompt_sharing_least_outstanding_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 61.789151974650736,
+      "ttft_p99": 99.88932937587631,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T173816_atl1-1-01-007-7-0_p5_system_prompt_sharing_round_robin_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 62.73203796304472,
+      "ttft_p99": 102.94224313923446,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T174051_atl1-1-01-007-7-0_p5_system_prompt_sharing_prefix_aware_load2.json",
+      "goodput_rps": 1.4916666666666667,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 10,
+        "affinity_honoured": 382,
+        "blend": 0.7,
+        "hints": {
+          "entries": 29,
+          "entries_expired_total": 12,
+          "entries_purged_total": 82,
+          "fanout": 1,
+          "hint_hit_rate": 0.7611650485436893,
+          "hint_hits": 392,
+          "hint_misses": 123,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 123,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.8136363636363636,
+      "ttft_p50": 71.81166315056942,
+      "ttft_p99": 182.5824385943661,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T174325_atl1-1-01-007-7-0_p5_system_prompt_sharing_least_outstanding_load2.json",
+      "goodput_rps": 1.65,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.9,
+      "ttft_p50": 63.39730416270051,
+      "ttft_p99": 170.21440616394872,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T174559_atl1-1-01-007-7-0_p5_system_prompt_sharing_round_robin_load2.json",
+      "goodput_rps": 1.625,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.8863636363636364,
+      "ttft_p50": 65.83448599537434,
+      "ttft_p99": 205.4322854367492,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T174831_atl1-1-01-007-7-0_p5_system_prompt_sharing_prefix_aware_load4.json",
+      "goodput_rps": 2.7416666666666667,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 140,
+        "affinity_honoured": 734,
+        "blend": 0.7,
+        "hints": {
+          "entries": 12,
+          "entries_expired_total": 21,
+          "entries_purged_total": 227,
+          "fanout": 1,
+          "hint_hit_rate": 0.7707231040564374,
+          "hint_hits": 874,
+          "hint_misses": 260,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 260,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.6714285714285714,
+      "ttft_p50": 78.70041435407416,
+      "ttft_p99": 207.15654893204766,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T175103_atl1-1-01-007-7-0_p5_system_prompt_sharing_least_outstanding_load4.json",
+      "goodput_rps": 2.7583333333333333,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.6755102040816326,
+      "ttft_p50": 74.47213588581292,
+      "ttft_p99": 198.72324099820383,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T175335_atl1-1-01-007-7-0_p5_system_prompt_sharing_round_robin_load4.json",
+      "goodput_rps": 2.7333333333333334,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.6693877551020408,
+      "ttft_p50": 76.25143369486409,
+      "ttft_p99": 201.6551341992442,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T175609_atl1-1-01-007-7-0_p5_system_prompt_sharing_prefix_aware_load8.json",
+      "goodput_rps": 2.875,
+      "n_ttft_samples": 947,
+      "offered_load_rps": 8.0,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 743,
+        "affinity_honoured": 1070,
+        "blend": 0.7,
+        "hints": {
+          "entries": 23,
+          "entries_expired_total": 25,
+          "entries_purged_total": 467,
+          "fanout": 1,
+          "hint_hit_rate": 0.7787800687285223,
+          "hint_hits": 1813,
+          "hint_misses": 515,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 515,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.3605015673981191,
+      "ttft_p50": 88.15517448576315,
+      "ttft_p99": 226.1942642158271,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T175843_atl1-1-01-007-7-0_p5_system_prompt_sharing_least_outstanding_load8.json",
+      "goodput_rps": 2.85,
+      "n_ttft_samples": 947,
+      "offered_load_rps": 8.0,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.3573667711598746,
+      "ttft_p50": 89.79494706422031,
+      "ttft_p99": 230.20800724887067,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T180116_atl1-1-01-007-7-0_p5_system_prompt_sharing_round_robin_load8.json",
+      "goodput_rps": 1.9833333333333334,
+      "n_ttft_samples": 944,
+      "offered_load_rps": 8.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "system_prompt_sharing",
+      "slo_attainment": 0.24869383490073146,
+      "ttft_p50": 91.96709006954862,
+      "ttft_p99": 230.44310597796138,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T180347_atl1-1-01-007-7-0_p5_uniform_prefix_prefix_aware_load0.5.json",
+      "goodput_rps": 0.4666666666666667,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 743,
+        "affinity_honoured": 1148,
+        "blend": 0.7,
+        "hints": {
+          "entries": 11,
+          "entries_expired_total": 26,
+          "entries_purged_total": 482,
+          "fanout": 1,
+          "hint_hit_rate": 0.7846473029045643,
+          "hint_hits": 1891,
+          "hint_misses": 519,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 519,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.9180327868852459,
+      "ttft_p50": 79.02428965985564,
+      "ttft_p99": 197.9433623935435,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T180618_atl1-1-01-007-7-0_p5_uniform_prefix_least_outstanding_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 1.0,
+      "ttft_p50": 63.36589374100754,
+      "ttft_p99": 184.4196579935989,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T180848_atl1-1-01-007-7-0_p5_uniform_prefix_round_robin_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "round_robin",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 1.0,
+      "ttft_p50": 63.31654508234408,
+      "ttft_p99": 190.22067447811892,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T181119_atl1-1-01-007-7-0_p5_uniform_prefix_prefix_aware_load1.json",
+      "goodput_rps": 0.6583333333333333,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 744,
+        "affinity_honoured": 1286,
+        "blend": 0.7,
+        "hints": {
+          "entries": 1,
+          "entries_expired_total": 27,
+          "entries_purged_total": 495,
+          "fanout": 1,
+          "hint_hit_rate": 0.7951429690560126,
+          "hint_hits": 2030,
+          "hint_misses": 523,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 523,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.7669902912621359,
+      "ttft_p50": 74.66941923930825,
+      "ttft_p99": 204.28304802430094,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T181349_atl1-1-01-007-7-0_p5_uniform_prefix_least_outstanding_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 62.20043585105017,
+      "ttft_p99": 100.09352890000031,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T181619_atl1-1-01-007-7-0_p5_uniform_prefix_round_robin_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 62.79262845536948,
+      "ttft_p99": 101.42787565171459,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T181854_atl1-1-01-007-7-0_p5_uniform_prefix_prefix_aware_load2.json",
+      "goodput_rps": 1.0,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 775,
+        "affinity_honoured": 1538,
+        "blend": 0.7,
+        "hints": {
+          "entries": 1,
+          "entries_expired_total": 28,
+          "entries_purged_total": 501,
+          "fanout": 1,
+          "hint_hit_rate": 0.8135772071755188,
+          "hint_hits": 2313,
+          "hint_misses": 530,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 530,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.5454545454545454,
+      "ttft_p50": 78.79858325802047,
+      "ttft_p99": 199.74996148246518,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T182129_atl1-1-01-007-7-0_p5_uniform_prefix_least_outstanding_load2.json",
+      "goodput_rps": 1.5833333333333333,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.8636363636363636,
+      "ttft_p50": 65.9500810655782,
+      "ttft_p99": 161.95212697823513,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T182404_atl1-1-01-007-7-0_p5_uniform_prefix_round_robin_load2.json",
+      "goodput_rps": 1.575,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.8590909090909091,
+      "ttft_p50": 70.09882936324274,
+      "ttft_p99": 183.98768777958958,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T182636_atl1-1-01-007-7-0_p5_uniform_prefix_prefix_aware_load4.json",
+      "goodput_rps": 2.0833333333333335,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 966,
+        "affinity_honoured": 1947,
+        "blend": 0.7,
+        "hints": {
+          "entries": 1,
+          "entries_expired_total": 29,
+          "entries_purged_total": 519,
+          "fanout": 1,
+          "hint_hit_rate": 0.841421143847487,
+          "hint_hits": 2913,
+          "hint_misses": 549,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 549,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.5102040816326531,
+      "ttft_p50": 83.28163907012254,
+      "ttft_p99": 225.4349978451272,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T182908_atl1-1-01-007-7-0_p5_uniform_prefix_least_outstanding_load4.json",
+      "goodput_rps": 2.8,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.6857142857142857,
+      "ttft_p50": 75.83219813206199,
+      "ttft_p99": 204.00477319436362,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T183140_atl1-1-01-007-7-0_p5_uniform_prefix_round_robin_load4.json",
+      "goodput_rps": 2.7333333333333334,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.6693877551020408,
+      "ttft_p50": 77.16612196432493,
+      "ttft_p99": 204.68961328370764,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T183414_atl1-1-01-007-7-0_p5_uniform_prefix_prefix_aware_load8.json",
+      "goodput_rps": 2.4916666666666667,
+      "n_ttft_samples": 939,
+      "offered_load_rps": 8.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1765,
+        "affinity_honoured": 2310,
+        "blend": 0.7,
+        "hints": {
+          "entries": 1,
+          "entries_expired_total": 30,
+          "entries_purged_total": 542,
+          "fanout": 1,
+          "hint_hit_rate": 0.8767211703958692,
+          "hint_hits": 4075,
+          "hint_misses": 573,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 573,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.3124346917450366,
+      "ttft_p50": 89.37099057222042,
+      "ttft_p99": 230.4433539471556,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T183647_atl1-1-01-007-7-0_p5_uniform_prefix_least_outstanding_load8.json",
+      "goodput_rps": 3.091666666666667,
+      "n_ttft_samples": 946,
+      "offered_load_rps": 8.0,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.3876698014629049,
+      "ttft_p50": 90.16501985973946,
+      "ttft_p99": 253.35531227100006,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T183921_atl1-1-01-007-7-0_p5_uniform_prefix_round_robin_load8.json",
+      "goodput_rps": 1.9916666666666667,
+      "n_ttft_samples": 945,
+      "offered_load_rps": 8.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "uniform_prefix",
+      "slo_attainment": 0.2497387669801463,
+      "ttft_p50": 88.10081727759922,
+      "ttft_p99": 207.3062082963655,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T184152_atl1-1-01-007-7-0_p5_hot_prefix_skew_prefix_aware_load0.5.json",
+      "goodput_rps": 0.49166666666666664,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1765,
+        "affinity_honoured": 2375,
+        "blend": 0.7,
+        "hints": {
+          "entries": 5,
+          "entries_expired_total": 32,
+          "entries_purged_total": 553,
+          "fanout": 1,
+          "hint_hit_rate": 0.8752642706131079,
+          "hint_hits": 4140,
+          "hint_misses": 590,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 590,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.9672131147540983,
+      "ttft_p50": 64.79866389650368,
+      "ttft_p99": 176.62585839210365,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T184422_atl1-1-01-007-7-0_p5_hot_prefix_skew_least_outstanding_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 1.0,
+      "ttft_p50": 63.14979687587652,
+      "ttft_p99": 202.09450449885367,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T184653_atl1-1-01-007-7-0_p5_hot_prefix_skew_round_robin_load0.5.json",
+      "goodput_rps": 0.5083333333333333,
+      "n_ttft_samples": 61,
+      "offered_load_rps": 0.5,
+      "policy": "round_robin",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 1.0,
+      "ttft_p50": 63.07378165445243,
+      "ttft_p99": 183.66686700002782,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T184923_atl1-1-01-007-7-0_p5_hot_prefix_skew_prefix_aware_load1.json",
+      "goodput_rps": 0.8083333333333333,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1765,
+        "affinity_honoured": 2492,
+        "blend": 0.7,
+        "hints": {
+          "entries": 14,
+          "entries_expired_total": 37,
+          "entries_purged_total": 565,
+          "fanout": 1,
+          "hint_hit_rate": 0.873589164785553,
+          "hint_hits": 4257,
+          "hint_misses": 616,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 616,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.941747572815534,
+      "ttft_p50": 63.23945357882366,
+      "ttft_p99": 136.67025522101036,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T185153_atl1-1-01-007-7-0_p5_hot_prefix_skew_least_outstanding_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 61.17312804913411,
+      "ttft_p99": 167.4959075379079,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T185424_atl1-1-01-007-7-0_p5_hot_prefix_skew_round_robin_load1.json",
+      "goodput_rps": 0.85,
+      "n_ttft_samples": 102,
+      "offered_load_rps": 1.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.9902912621359223,
+      "ttft_p50": 64.79383685981333,
+      "ttft_p99": 166.40957529493858,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T185659_atl1-1-01-007-7-0_p5_hot_prefix_skew_prefix_aware_load2.json",
+      "goodput_rps": 1.2666666666666666,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "prefix_aware",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1778,
+        "affinity_honoured": 2720,
+        "blend": 0.7,
+        "hints": {
+          "entries": 20,
+          "entries_expired_total": 47,
+          "entries_purged_total": 598,
+          "fanout": 1,
+          "hint_hit_rate": 0.8711989153592873,
+          "hint_hits": 4498,
+          "hint_misses": 665,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 665,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.6909090909090909,
+      "ttft_p50": 76.18465920874229,
+      "ttft_p99": 208.48495261177467,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T185934_atl1-1-01-007-7-0_p5_hot_prefix_skew_least_outstanding_load2.json",
+      "goodput_rps": 1.6083333333333334,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.8772727272727273,
+      "ttft_p50": 68.86515311576247,
+      "ttft_p99": 211.17676328301474,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T190208_atl1-1-01-007-7-0_p5_hot_prefix_skew_round_robin_load2.json",
+      "goodput_rps": 1.6,
+      "n_ttft_samples": 218,
+      "offered_load_rps": 2.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.8727272727272727,
+      "ttft_p50": 69.50727976846949,
+      "ttft_p99": 205.47688218134928,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T190440_atl1-1-01-007-7-0_p5_hot_prefix_skew_prefix_aware_load4.json",
+      "goodput_rps": 2.4,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 1918,
+        "affinity_honoured": 3080,
+        "blend": 0.7,
+        "hints": {
+          "entries": 14,
+          "entries_expired_total": 56,
+          "entries_purged_total": 714,
+          "fanout": 1,
+          "hint_hit_rate": 0.864406779661017,
+          "hint_hits": 4998,
+          "hint_misses": 784,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 784,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.5877551020408164,
+      "ttft_p50": 80.08932561453719,
+      "ttft_p99": 220.68742129387581,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T190712_atl1-1-01-007-7-0_p5_hot_prefix_skew_least_outstanding_load4.json",
+      "goodput_rps": 2.8,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "least_outstanding",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.6857142857142857,
+      "ttft_p50": 76.21497772287,
+      "ttft_p99": 194.8443240663777,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T190944_atl1-1-01-007-7-0_p5_hot_prefix_skew_round_robin_load4.json",
+      "goodput_rps": 2.7083333333333335,
+      "n_ttft_samples": 485,
+      "offered_load_rps": 4.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.6632653061224489,
+      "ttft_p50": 77.5924361115301,
+      "ttft_p99": 191.3107521792169,
+      "valid": false
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T191218_atl1-1-01-007-7-0_p5_hot_prefix_skew_prefix_aware_load8.json",
+      "goodput_rps": 2.1083333333333334,
+      "n_ttft_samples": 946,
+      "offered_load_rps": 8.0,
+      "policy": "prefix_aware",
+      "reasons": [],
+      "router_policy_stats": {
+        "affinity_declined_load": 0,
+        "affinity_declined_saturated": 2602,
+        "affinity_honoured": 3384,
+        "blend": 0.7,
+        "hints": {
+          "entries": 19,
+          "entries_expired_total": 63,
+          "entries_purged_total": 907,
+          "fanout": 1,
+          "hint_hit_rate": 0.8582078853046595,
+          "hint_hits": 5986,
+          "hint_misses": 989,
+          "note": "A hint hit is NOT a cache hit. It means the router believed a replica held this prefix; only the replica's own block-granularity hit rate says whether it did (BENCHMARK_METHODOLOGY \u00a77).",
+          "ttl_s": 60.0
+        },
+        "policy": "prefix_aware",
+        "requests_without_usable_hint": 989,
+        "saturation_inflight": 8.0
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.26436781609195403,
+      "ttft_p50": 88.9678247716752,
+      "ttft_p99": 265.82418223931865,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T191452_atl1-1-01-007-7-0_p5_hot_prefix_skew_least_outstanding_load8.json",
+      "goodput_rps": 2.7416666666666667,
+      "n_ttft_samples": 946,
+      "offered_load_rps": 8.0,
+      "policy": "least_outstanding",
+      "reasons": [],
+      "router_policy_stats": {
+        "policy": "least_outstanding"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.3437826541274817,
+      "ttft_p50": 87.62777915417175,
+      "ttft_p99": 241.2101929503365,
+      "valid": true
+    },
+    {
+      "artifact": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_knee_out_11653158/20260803T191726_atl1-1-01-007-7-0_p5_hot_prefix_skew_round_robin_load8.json",
+      "goodput_rps": 1.675,
+      "n_ttft_samples": 939,
+      "offered_load_rps": 8.0,
+      "policy": "round_robin",
+      "reasons": [
+        "Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'."
+      ],
+      "router_policy_stats": {
+        "policy": "round_robin"
+      },
+      "scenario": "hot_prefix_skew",
+      "slo_attainment": 0.21003134796238246,
+      "ttft_p50": 88.42608177198485,
+      "ttft_p99": 222.9971514994935,
+      "valid": false
+    }
+  ],
+  "crossovers": {
+    "hot_prefix_skew": {
+      "ahead_at_start": false,
+      "crossed": false,
+      "crossover_x": null,
+      "reason": "never ahead: the advantage is -0.01667 at the lowest x (0.5). There is no crossover to report because there was no lead to lose."
+    },
+    "system_prompt_sharing": {
+      "ahead_at_start": false,
+      "crossed": false,
+      "crossover_x": null,
+      "reason": "never ahead: the advantage is -0.008333 at the lowest x (0.5). There is no crossover to report because there was no lead to lose."
+    },
+    "uniform_prefix": {
+      "crossed": false,
+      "crossover_x": null,
+      "reason": "only 1 usable point(s); a crossover needs at least 2"
+    }
+  },
+  "dropped_losing_cases": [
+    "zero_sharing"
+  ],
+  "loads": [
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0
+  ],
+  "n_replicas": 4,
+  "publishable": false,
+  "replicas": [
+    "http://127.0.0.1:9501",
+    "http://127.0.0.1:9502",
+    "http://127.0.0.1:9503",
+    "http://127.0.0.1:9504"
+  ],
+  "routers": {
+    "least_outstanding": "http://127.0.0.1:9602/v1/chat/completions",
+    "prefix_aware": "http://127.0.0.1:9601/v1/chat/completions",
+    "round_robin": "http://127.0.0.1:9603/v1/chat/completions"
+  },
+  "scenarios": {
+    "hot_prefix_skew": {
+      "losing_case": true,
+      "methodology_ref": "\u00a710.7",
+      "predicted": "prefix_aware LOSES unless affinity is blended with load: one very hot prefix sends a disproportionate share of traffic to whichever replica owns it. \u00a710 calls this the most likely place for a genuinely bad result, and therefore the most valuable one to measure.",
+      "sharing_rate": 0.9,
+      "structure": "system"
+    },
+    "system_prompt_sharing": {
+      "losing_case": false,
+      "methodology_ref": "\u00a74 (the common production shape)",
+      "predicted": "prefix_aware SHOULD beat B5 here: several distinct prefixes, so affinity carries real information and does not collapse onto one replica.",
+      "sharing_rate": 0.8,
+      "structure": "system"
+    },
+    "uniform_prefix": {
+      "losing_case": true,
+      "methodology_ref": "\u00a710.2",
+      "predicted": "B5 WINS. Every request shares the same prefix, so every replica caches it after warmup and prefix awareness degenerates to 'pick any replica'. This is the naive mental model of prefix caching and the case where the clever router is worth nothing.",
+      "sharing_rate": 1.0,
+      "structure": "system"
+    }
+  },
+  "verdicts": [
+    "uniform_prefix: PREDICTION HELD (\u00a710.2). prefix_aware does not beat B5 at any load tested (1 loss(es), 0 tie(s)) \u2014 as predicted before the run.",
+    "hot_prefix_skew: PREDICTION HELD (\u00a710.7). prefix_aware does not beat B5 at any load tested (2 loss(es), 0 tie(s)) \u2014 as predicted before the run.",
+    "system_prompt_sharing: prefix_aware beats B5 at [8.0] and loses at [0.5] req/s. never ahead: the advantage is -0.008333 at the lowest x (0.5). There is no crossover to report because there was no lead to lose."
+  ]
+}
