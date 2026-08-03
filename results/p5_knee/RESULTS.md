@@ -112,13 +112,21 @@ is the wrong choice*, with the mechanism, on real hardware, against the correct
 baseline — plus two §10 losing-case predictions confirmed and one of my own
 falsified.
 
-The design consequence follows directly and is now supported rather than
-asserted: **affinity must be blended with load, not applied on its own.** The
-router already implements this — `score = blend·affinity − (1−blend)·min(1,
-effective_load/load_scale)` — and `blend=0` is asserted in tests to be exactly
-B5. What this run measured is the `blend=1` extreme, which is the one worth
-knowing the cost of. Sweeping `blend` is the obvious next experiment and has not
-been run.
+**The policy that lost was already load-aware, and that is the sharper result.**
+`build_default_router` defaults to `blend=0.7` with `saturation_inflight=8.0`:
+`score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, where
+`blend=0` is asserted in tests to be exactly B5. The −23% is therefore not pure
+affinity being punished for ignoring load. It is a **70/30 affinity-load blend
+losing to a policy that weights load alone.**
+
+An earlier revision of this document said the run "measured the `blend=1`
+extreme." It did not, and the correction matters: "affinity must be blended with
+load" was already true of the thing being measured, so it cannot be the lesson.
+The honest statement is that **0.7 is too much affinity above the knee**, and
+whatever blend is useful there lies below it — possibly at zero, in which case
+cache-aware routing has no operating point on this workload at all.
+
+Finding the crossover means sweeping `blend`, which has not been run.
 
 ## 7. Provenance
 

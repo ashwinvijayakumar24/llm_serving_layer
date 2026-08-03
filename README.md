@@ -121,7 +121,7 @@ The +0.9% cell is **not** a win and is not claimed as one — one marginal cell 
 
 Two §10 losing-case predictions confirmed (`uniform_prefix`, `hot_prefix_skew`), one confirmed in the earlier job (`zero_sharing`: −0.111 at load 4, −0.311 at load 16). **And one prediction of mine falsified:** I wrote into the job script that `hot_prefix_skew` would be prefix-aware's *best* case. It was its worst, by the largest margin in the run — and the project's own methodology doc had called it "the most likely place for a genuinely bad result" weeks earlier. Recorded rather than quietly aligned afterwards.
 
-The design consequence is now supported rather than asserted: **affinity must be blended with load, not applied alone.** The router implements exactly that — `score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with `blend=0` asserted in tests to be exactly the load-aware baseline. This run measured the `blend=1` extreme, which is the one worth knowing the cost of. Sweeping `blend` has not been run.
+**The measured policy was already load-aware and still lost.** `build_default_router` runs `blend=0.7` — `score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with `blend=0` asserted in tests to be exactly the load-aware baseline. So this is not pure affinity being punished for ignoring load; it is a 70/30 affinity-load blend losing 23% to a policy that weights load alone. Whatever blend is useful above the knee is **below 0.7**, and possibly zero. Sweeping `blend` to find the crossover has not been run and is the obvious next experiment.
 
 *Artifacts: [`results/p5_knee/`](results/p5_knee/) job `11653158` · [`results/p5/`](results/p5/) job `11610306` · 4 × H200.*
 

@@ -395,12 +395,19 @@ I had written that sentence and then predicted its opposite. The reason to recor
 predictions before a run is so that being wrong costs something; this one is kept
 in the script header rather than quietly aligned to the outcome afterwards.
 
-The design consequence is now supported rather than asserted: **affinity must be
-blended with load, not applied alone.** The router already implements that —
-`score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with
-`blend=0` asserted in tests to be exactly B5. This run measured the `blend=1`
-extreme, which is the one worth knowing the cost of. Sweeping `blend` is the
-obvious next experiment and has not been run.
+**And the policy that lost was already load-aware.** `build_default_router`
+defaults to `blend=0.7` with `saturation_inflight=8.0`:
+`score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, where
+`blend=0` is asserted in tests to be exactly B5. So the −23% is not pure affinity
+being punished for ignoring load — it is a 70/30 affinity-load blend losing to a
+policy that weights load alone.
+
+That is a sharper result than the one I first wrote down, and it corrects a claim
+I made in the first revision of this section. "Affinity must be blended with load"
+was already true of the thing being measured. The honest statement is that **0.7
+is too much affinity above the knee**, and whatever blend is useful there lies
+below it, possibly at zero. Finding the crossover means sweeping `blend`, which
+has not been run.
 
 Full write-ups: `results/p5/RESULTS.md`, `results/p5_knee/RESULTS.md`.
 
