@@ -123,6 +123,7 @@ Note that prefix-aware *beats* round-robin at load 4 (3.18 vs 3.02) while losing
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Open-loop load generation, goodput under SLO, baselines, **and where prefix-aware routing is predicted to lose** |
 | [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) | 41 risks ordered by **detectability**, because a silent wrong number is worse than a crash |
 | [`docs/ADR.md`](docs/ADR.md) | 24 decision records with alternatives and revisit triggers |
+| [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) | How it was built in the order it happened, including what went wrong and what it cost to find out |
 
 Three decisions worth arguing with:
 
@@ -213,6 +214,8 @@ Every GPU gate uses `REQUIRE_GPU=1`, which turns an unusable GPU into a **hard f
 That was the first of **six** failures in this project with the same shape: *something reported success while doing nothing.* A fragmentation test that passed without ever fragmenting the pool. A server returning HTTP 200 and well-formed SSE with zero content. An SLO calibration that produced goodput 0.00 at every rate from a negative TTFT. A summary table printing 0.0 in all seven rows because it read scalar keys that don't exist. And an eviction audit that printed `clean` for all 36 cells because the metrics key was absent and the guard classified *absent* as *zero* — a check added in response to the previous instance, failing the same way.
 
 None raised. Every one was caught by an assertion of a **positive property** — "the GPU is usable", "these pages are non-contiguous", "this response has content", "this latency is physically possible" — never by the absence of an error. It is why [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) orders risks by *detectability* rather than impact, and why the benchmark drivers mark cells `INVALID` and refuse to interpolate rather than reporting a number with a caveat.
+
+All six are written up with their diagnoses in [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) §10.
 
 ## License
 

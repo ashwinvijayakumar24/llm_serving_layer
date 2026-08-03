@@ -50,7 +50,6 @@ logs/
 
 # Private working docs — planning, learning notes, and claim drafts.
 # Kept locally, never published.
-docs/BUILD_LOG.md
 docs/LEARNING_MAP.md
 docs/PHASE_PLAN.md
 docs/RESUME_BULLETS.md
