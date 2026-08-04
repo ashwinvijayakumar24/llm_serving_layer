@@ -60,7 +60,7 @@ Same settings, same seed, clean tree. `11617299` → `11653157`:
 
 | cell | block hit rate | Δ TTFT p50 | Δ TTFT p99 | evictions | n |
 |---|---|---|---|---|---|
-| 512 tok, system prefix, 50% share | 0.137 → **0.137** | −6.3 → **−4.8** | −37.7 → **−38.1 (−23.1%)** | 0 | 118 |
+| 512 tok, system prefix, 50% share | 0.137 → **0.137** | −6.3 → **−4.8** | −37.7 → **−38.1 (−23.4%)** | 0 | 118 |
 | 512 tok, system prefix, 100% share | 0.272 → **0.272** | −5.1 → **−7.2** | −38.0 → **−37.1 (−22.6%)** | 0 | 118 |
 | 150 tok, conversational, 50% share | 0.536 → **0.536** | −8.5 → **−9.2** | — | 0 | 118 |
 | 150 tok, conversational, 100% share | 0.762 → **0.762** | −17.3 → **−20.7** | — | 0 | 118 |
