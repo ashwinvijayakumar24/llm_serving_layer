@@ -1,0 +1,187 @@
+---------------------------------------
+Begin Slurm Prolog: Aug-03-2026 22:18:47
+Job ID:    11660337
+User ID:   avijayakumar41
+Account:   paceship-simpliearn
+Job name:  p5_blend
+Partition: gpu-h200
+QOS:       inferno
+---------------------------------------
+=== node: atl1-1-01-007-7-0.pace.gatech.edu  job: 11660337  qos: inferno ===
+name, compute_cap, memory.total [MiB]
+NVIDIA H200, 9.0, 143771 MiB
+NVIDIA H200, 9.0, 143771 MiB
+NVIDIA H200, 9.0, 143771 MiB
+NVIDIA H200, 9.0, 143771 MiB
+=== provenance preflight ===
+  HEAD: e7c681fee3fa4be3dcee752b5f6808bbdb319942
+  tree: CLEAN
+  up: p5b_replica1 :9501 (13s)
+  up: p5b_replica2 :9502 (10s)
+  up: p5b_replica3 :9503 (10s)
+  up: p5b_replica4 :9504 (10s)
+  router up: prefix_aware@blend0.00 :9610 (2s)
+  router up: prefix_aware@blend0.25 :9611 (2s)
+  router up: prefix_aware@blend0.50 :9612 (2s)
+  router up: prefix_aware :9613 (2s)
+  router up: prefix_aware@blend1.00 :9614 (2s)
+  router up: least_outstanding :9615 (2s)
+
+################ BLEND SWEEP: hot_prefix_skew ################
+==============================================================================
+PHASE 5 / S5 — prefix-aware routing across N replicas
+------------------------------------------------------------------------------
+allocation   11660337@atl1-1-01-007-7-0
+node/host    atl1-1-01-007-7-0
+gpu          NVIDIA H200 x4
+qos          inferno
+repo         e7c681fee3fa4be3dcee752b5f6808bbdb319942  dirty=False
+engine       v0.2.1
+seed         20260803
+publishable  True
+==============================================================================
+
+### FLEET PRE-FLIGHT
+
+  router prefix_aware@blend0.00 reports policy=prefix_aware   http://127.0.0.1:9610/v1/chat/completions
+  router prefix_aware@blend0.25 reports policy=prefix_aware   http://127.0.0.1:9611/v1/chat/completions
+  router prefix_aware@blend0.50 reports policy=prefix_aware   http://127.0.0.1:9612/v1/chat/completions
+  router prefix_aware           reports policy=prefix_aware   http://127.0.0.1:9613/v1/chat/completions
+  router prefix_aware@blend1.00 reports policy=prefix_aware   http://127.0.0.1:9614/v1/chat/completions
+  router least_outstanding      reports policy=least_outstanding   http://127.0.0.1:9615/v1/chat/completions
+  replica 0  ok   http://127.0.0.1:9501
+  replica 1  ok   http://127.0.0.1:9502
+  replica 2  ok   http://127.0.0.1:9503
+  replica 3  ok   http://127.0.0.1:9504
+
+  N = 4 replicas. §10.6: routing benefit is expected to GROW with N,
+  so this N is part of every number below and not a footnote. At N<=2 there
+  is little routing freedom and a small benefit understates the design.
+
+  §10.3 (above-the-knee load) is measured by the LOAD SWEEP itself, not by a separate workload: affinity and load balance conflict directly near saturation, so the prediction is that prefix_aware wins at low-to-moderate load and loses above the knee unless the policy blends affinity with load. The crossover column below is that prediction's test.
+
+  !! LOSING CASES DROPPED FROM THIS RUN: ['zero_sharing', 'uniform_prefix']
+     §10 commits to publishing cases 1, 2, 3 and 7 whether or not they
+     flatter. A table missing them is evidence of workload selection.
+
+### SWEEP — 1 scenarios x 3 loads x 6 policies
+
+  hot_prefix_skew  (§10.7, PREDICTED LOSING CASE)
+    load    0.5  prefix_aware@blend0.00 goodput    0.41  attain  100.0%  ttft_p50      71.7  ttft_p99      143.0  OK
+    load    0.5  prefix_aware@blend0.25 goodput    0.37  attain   89.8%  ttft_p50      68.6  ttft_p99      138.7  OK
+    load    0.5  prefix_aware@blend0.50 goodput    0.35  attain   85.7%  ttft_p50      63.7  ttft_p99      107.8  INVALID
+    load    0.5  prefix_aware       goodput    0.36  attain   87.8%  ttft_p50      63.2  ttft_p99       88.7  INVALID
+    load    0.5  prefix_aware@blend1.00 goodput    0.34  attain   83.7%  ttft_p50      63.3  ttft_p99       89.9  INVALID
+    load    0.5  least_outstanding  goodput    0.41  attain  100.0%  ttft_p50      61.9  ttft_p99       70.3  OK
+    load    2.0  prefix_aware@blend0.00 goodput    1.70  attain   93.2%  ttft_p50      65.2  ttft_p99      179.8  INVALID
+    load    2.0  prefix_aware@blend0.25 goodput    1.52  attain   83.6%  ttft_p50      71.3  ttft_p99      185.4  INVALID
+    load    2.0  prefix_aware@blend0.50 goodput    1.51  attain   82.6%  ttft_p50      71.2  ttft_p99      195.1  INVALID
+    load    2.0  prefix_aware       goodput    1.49  attain   81.7%  ttft_p50      66.9  ttft_p99       95.5  INVALID
+    load    2.0  prefix_aware@blend1.00 goodput    1.38  attain   75.3%  ttft_p50      73.4  ttft_p99      188.6  INVALID
+    load    2.0  least_outstanding  goodput    1.68  attain   92.2%  ttft_p50      65.3  ttft_p99      101.6  INVALID
+    load    8.0  prefix_aware@blend0.00 goodput    2.74  attain   35.1%  ttft_p50      90.0  ttft_p99      222.5  INVALID
+    load    8.0  prefix_aware@blend0.25 goodput    2.79  attain   35.7%  ttft_p50      90.1  ttft_p99      219.6  INVALID
+    load    8.0  prefix_aware@blend0.50 goodput    2.57  attain   32.8%  ttft_p50      91.2  ttft_p99      227.7  INVALID
+    load    8.0  prefix_aware       goodput    2.29  attain   29.3%  ttft_p50      90.4  ttft_p99      185.5  INVALID
+    load    8.0  prefix_aware@blend1.00 goodput    2.27  attain   29.1%  ttft_p50      92.1  ttft_p99      228.9  OK
+    load    8.0  least_outstanding  goodput    2.71  attain   34.6%  ttft_p50      91.0  ttft_p99      160.3  OK
+
+==============================================================================
+### THE LOSING CASES (methodology §10) — PUBLISHED FIRST, NOT AS FOOTNOTES
+==============================================================================
+
+  hot_prefix_skew  [§10.7]
+  predicted in advance: prefix_aware LOSES unless affinity is blended with load: one very hot prefix sends a disproportionate share of traffic to whichever replica owns it. §10 calls this the most likely place for a genuinely bad result, and therefore the most valuable one to measure.
+
+load                  policy  goodput  attain%  ttft_p50  ttft_p99  d_goodput_vs_B5    n    valid
+----  ----------------------  -------  -------  --------  --------  ---------------  ---  -------
+ 0.5  prefix_aware@blend0.00     0.41    100.0      71.7     143.0            0.000   49       OK
+ 0.5  prefix_aware@blend0.25     0.37     89.8      68.6     138.7           -0.042   49       OK
+ 0.5  prefix_aware@blend0.50     0.35     85.7      63.7     107.8              n/a   49  INVALID
+ 0.5            prefix_aware     0.36     87.8      63.2      88.7              n/a   49  INVALID
+ 0.5  prefix_aware@blend1.00     0.34     83.7      63.3      89.9              n/a   49  INVALID
+ 0.5       least_outstanding     0.41    100.0      61.9      70.3            0.000   49       OK
+ 2.0  prefix_aware@blend0.00     1.70     93.2      65.2     179.8              n/a  218  INVALID
+ 2.0  prefix_aware@blend0.25     1.52     83.6      71.3     185.4              n/a  218  INVALID
+ 2.0  prefix_aware@blend0.50     1.51     82.6      71.2     195.1              n/a  218  INVALID
+ 2.0            prefix_aware     1.49     81.7      66.9      95.5              n/a  218  INVALID
+ 2.0  prefix_aware@blend1.00     1.38     75.3      73.4     188.6              n/a  218  INVALID
+ 2.0       least_outstanding     1.68     92.2      65.3     101.6              n/a  218  INVALID
+ 8.0  prefix_aware@blend0.00     2.74     35.1      90.0     222.5              n/a  932  INVALID
+ 8.0  prefix_aware@blend0.25     2.79     35.7      90.1     219.6              n/a  932  INVALID
+ 8.0  prefix_aware@blend0.50     2.57     32.8      91.2     227.7              n/a  932  INVALID
+ 8.0            prefix_aware     2.29     29.3      90.4     185.5              n/a  932  INVALID
+ 8.0  prefix_aware@blend1.00     2.27     29.1      92.1     228.9           -0.433  932       OK
+ 8.0       least_outstanding     2.71     34.6      91.0     160.3            0.000  932       OK
+
+  -> hot_prefix_skew: NOT MEASURED — no offered load produced a valid prefix_aware cell and a valid least_outstanding cell. The prediction (§10.7) is untested, which is not the same as confirmed.
+
+==============================================================================
+### THE REMAINING WORKLOADS
+==============================================================================
+
+### CROSSOVER — the offered load at which prefix_aware stops beating B5
+
+       scenario  losing_case  crossover_rps                                                 basis
+---------------  -----------  -------------  ----------------------------------------------------
+hot_prefix_skew          yes            n/a  only 0 usable point(s); a crossover needs at least 2
+
+### KNEE OF THE B5 BASELINE (the capacity the crossover should be read against)
+
+       scenario  b5_knee_rps                                                                                                                              basis
+---------------  -----------  ---------------------------------------------------------------------------------------------------------------------------------
+hot_prefix_skew         0.50  even the lowest offered load 0.5 req/s failed the tracking test; the system is already above its knee at the bottom of this sweep
+
+### VERDICTS
+
+  - hot_prefix_skew: NOT MEASURED — no offered load produced a valid prefix_aware cell and a valid least_outstanding cell. The prediction (§10.7) is untested, which is not the same as confirmed.
+
+  A table containing only wins is evidence of workload selection. The
+  losing cases above were named in docs/BENCHMARK_METHODOLOGY.md §10 BEFORE
+  this run and are printed ahead of every win for that reason.
+
+!! 13 cell(s) INVALID and excluded from every claim and every difference:
+   hot_prefix_skew load=0.5 prefix_aware@blend0.50:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=0.5 prefix_aware:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=0.5 prefix_aware@blend1.00:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 prefix_aware@blend0.00:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 prefix_aware@blend0.25:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 prefix_aware@blend0.50:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 prefix_aware:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 prefix_aware@blend1.00:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=2 least_outstanding:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=8 prefix_aware@blend0.00:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=8 prefix_aware@blend0.25:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=8 prefix_aware@blend0.50:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+   hot_prefix_skew load=8 prefix_aware:
+      - Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.
+
+summary -> /storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/../p5_blend_out_11660337/p5_blend_sweep_summary.json
+  sweep exit: 2
+
+=== artifacts: 19 in results/p5_blend ===
+=== done ===
+---------------------------------------
+Begin Slurm Epilog: Aug-03-2026 23:05:31
+Job ID:        11660337
+User ID:       avijayakumar41
+Account:       paceship-simpliearn
+Job name:      p5_blend
+Resources:     cpu=32,gres/gpu:h200=4,mem=128G,node=1
+Rsrc Used:     cput=1-00:56:00,vmem=0,walltime=00:46:45,mem=5826500K,energy_used=0
+Partition:     gpu-h200
+QOS:           inferno
+Nodes:         atl1-1-01-007-7-0
+---------------------------------------

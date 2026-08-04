@@ -121,7 +121,14 @@ The +0.9% cell is **not** a win and is not claimed as one — one marginal cell 
 
 Two §10 losing-case predictions confirmed (`uniform_prefix`, `hot_prefix_skew`), one confirmed in the earlier job (`zero_sharing`: −0.111 at load 4, −0.311 at load 16). **And one prediction of mine falsified:** I wrote into the job script that `hot_prefix_skew` would be prefix-aware's *best* case. It was its worst, by the largest margin in the run — and the project's own methodology doc had called it "the most likely place for a genuinely bad result" weeks earlier. Recorded rather than quietly aligned afterwards.
 
-**The measured policy was already load-aware and still lost.** `build_default_router` runs `blend=0.7` — `score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`, with `blend=0` asserted in tests to be exactly the load-aware baseline. So this is not pure affinity being punished for ignoring load; it is a 70/30 affinity-load blend losing 23% to a policy that weights load alone. Whatever blend is useful above the knee is **below 0.7**, and possibly zero. Sweeping `blend` to find the crossover has not been run and is the obvious next experiment.
+**The measured policy was already load-aware and still lost.** `build_default_router` runs `blend=0.7` — `score = blend·affinity − (1−blend)·min(1, effective_load/load_scale)`. So this is not pure affinity being punished for ignoring load; it is a 70/30 affinity-load blend losing 23% to a policy that weights load alone.
+
+A follow-up sweep across `blend` ∈ {0, 0.25, 0.5, 0.7, 1.0} (job `11653158`'s successor, `11660337`) **did not produce the crossover curve**: the driver's knee analysis reported the fleet already above its knee at the bottom of the ladder, and 13 of 18 cells failed the steady-state check. Two things survived it, both from matched valid pairs:
+
+- **`blend=0` is behaviourally identical to the load-aware baseline in a live fleet** — 0.41 goodput and 100.0% attainment for both, which is what licenses describing the baseline as "the same policy with affinity switched off". Previously this was asserted only by a unit test on the scoring function.
+- **Pure affinity (`blend=1.0`) costs 16% of goodput at 8× the knee** (2.27 vs 2.71 req/s, n=932) — the extreme case, measured for the first time.
+
+**The crossover itself remains unmeasured**, and the reason is published rather than the number estimated: the knee for this workload is ≤0.5 req/s, so the region where a small affinity weight might pay sits below any load yet swept. Details and the invalid cells: [`results/p5_blend/`](results/p5_blend/).
 
 *Artifacts: [`results/p5_knee/`](results/p5_knee/) job `11653158` · [`results/p5/`](results/p5/) job `11610306` · 4 × H200.*
 

@@ -409,7 +409,46 @@ is too much affinity above the knee**, and whatever blend is useful there lies
 below it, possibly at zero. Finding the crossover means sweeping `blend`, which
 has not been run.
 
-Full write-ups: `results/p5/RESULTS.md`, `results/p5_knee/RESULTS.md`.
+### The blend sweep, and using the wrong column to find a knee
+
+Sweeping `blend` was the obvious next experiment and it mostly failed (job
+`11660337`). Six arms, one fleet, `blend` from 0 to 1 on `hot_prefix_skew` —
+13 of 18 cells failed the steady-state check, because the whole ladder sat above
+saturation. The driver said so directly: *"even the lowest offered load 0.5 req/s
+failed the tracking test; the system is already above its knee at the bottom of
+this sweep."*
+
+**Third time this benchmark has failed the same way, and the mistake this time
+was subtler than the last two.** I read "knee ~ 1 req/s" off the previous job's
+SLO-attainment column, where the 0.5 cells showed 96-100% and looked comfortable.
+Attainment is not the tracking test. The fleet delivered 0.41 goodput against 0.5
+offered — 82%, under the 90% tracking tolerance — so it was **already saturated
+while still meeting its latency target**. A workload can hit its SLO and be past
+its knee, and I picked the column that flattered the ladder I wanted.
+
+Two things survived, both on matched valid pairs:
+
+- **`blend=0` is behaviourally identical to B5 in a live fleet** — 0.41 goodput
+  and 100.0% attainment for both arms. That equivalence had only ever been
+  asserted by a unit test on the scoring function; this exercises it through the
+  router process, hint table, HTTP and four replicas. It is also the check that
+  gates every advantage-vs-B5 number in this project, so it was worth the run on
+  its own.
+- **Pure affinity costs 16% at 8x the knee** (2.27 vs 2.71 req/s, n=932). The
+  `blend=1.0` extreme, never measured before.
+
+The crossover is **unmeasured**, and the write-up publishes the reason rather
+than estimating the number. The interior of the curve is invalid, including one
+cell at `blend=0.25` that came out above B5 — a single invalid cell,
+contradicted by the valid 0.25 cell at low load, and recorded as a place for a
+future run to look rather than as evidence.
+
+No claim changed. Bullet 5 still rests on `11653158`, whose `blend=0.7` arm this
+run could not re-measure validly — and comparing across allocations is forbidden
+by R12 for exactly this reason.
+
+Full write-ups: `results/p5/RESULTS.md`, `results/p5_knee/RESULTS.md`,
+`results/p5_blend/RESULTS.md`.
 
 ## 8. Phase 6 — operability
 
