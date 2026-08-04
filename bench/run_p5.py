@@ -450,8 +450,19 @@ async def _amain(argv: list[str] | None = None) -> int:
     for policy, url in routers.items():
         h = await require_healthy(url, policy)
         reported = str((h.get("policy") or {}).get("policy", "")).lower()
-        print(f"  router {policy:18} reports policy={reported or 'unreported'}   {url}")
-        if reported and reported != policy:
+        # An arm may be named `<policy>@<variant>` to sweep one policy's
+        # configuration -- e.g. prefix_aware@blend0.25. Only the part before '@'
+        # is a policy claim; the suffix is a label for the tables.
+        #
+        # This does NOT weaken the guard, which exists to catch an artifact
+        # saying prefix_aware while B5 is actually serving. That check compares
+        # the BASE name, so prefix_aware@blend0.00 pointed at a least_outstanding
+        # router still raises. What it now permits is the honest case the guard
+        # had no vocabulary for: several arms that really are the same policy,
+        # differing only in how it is configured.
+        base = policy.split("@", 1)[0]
+        print(f"  router {policy:22} reports policy={reported or 'unreported'}   {url}")
+        if reported and reported != base:
             raise SystemExit(
                 f"FATAL: the {policy!r} arm points at a router running "
                 f"{reported!r}. Benchmarking B5 while the artifact says "

@@ -98,7 +98,7 @@ start_router () {   # $1=port $2=policy $3=blend-or-empty $4=label
     ROUTER_POLICY=$2 ROUTER_BLEND=$3 ROUTER_REPLICAS="$REPLICAS" \
     python3 -m uvicorn scripts._router_entry:app --factory \
         --host 127.0.0.1 --port "$1" --log-level warning \
-        > "logs/router_${4}_${SLURM_JOB_ID}.log" 2>&1 &
+        > "logs/router_$(echo "$4" | tr "@." "__")_${SLURM_JOB_ID}.log" 2>&1 &
     PIDS+=($!)
     for i in $(seq 1 60); do
         curl -sf "http://127.0.0.1:$1/health" >/dev/null 2>&1 && { echo "  router up: $4 :$1 (${i}s)"; return 0; }
@@ -121,22 +121,29 @@ REPLICAS="http://127.0.0.1:9501,http://127.0.0.1:9502,http://127.0.0.1:9503,http
 # as "the system under test" is exactly the configuration that produced the
 # -23% in 11653158. The other blends ride alongside as extra named policies.
 #
-# blend_0.00 is B5 by construction and by test;
+# Arms are named `<policy>@<variant>`: run_p5's fleet pre-flight compares the
+# part before '@' against the policy each router reports, so a sweep of one
+# policy's configuration is expressible without weakening the check that catches
+# an artifact saying prefix_aware while B5 is actually serving. The first
+# attempt at this job (11660263) named them `blend_0.00` and the pre-flight
+# correctly refused to run.
+#
+# blend 0.00 is B5 by construction and by test;
 # least_outstanding is ALSO started, as a check that the assertion holds in a
 # live fleet and not only in a unit test. If those two arms disagree materially,
 # the blend=0 equivalence is broken and every advantage in this run is suspect.
-start_router 9610 prefix_aware      0.00 blend_0.00
-start_router 9611 prefix_aware      0.25 blend_0.25
-start_router 9612 prefix_aware      0.50 blend_0.50
+start_router 9610 prefix_aware      0.00 "prefix_aware@blend0.00"
+start_router 9611 prefix_aware      0.25 "prefix_aware@blend0.25"
+start_router 9612 prefix_aware      0.50 "prefix_aware@blend0.50"
 start_router 9613 prefix_aware      0.70 prefix_aware   # 0.70 IS the library default
-start_router 9614 prefix_aware      1.00 blend_1.00
+start_router 9614 prefix_aware      1.00 "prefix_aware@blend1.00"
 start_router 9615 least_outstanding ""   least_outstanding
 C () { echo "http://127.0.0.1:$1/v1/chat/completions"; }
-R_ARGS="--router blend_0.00=$(C 9610) \
-        --router blend_0.25=$(C 9611) \
-        --router blend_0.50=$(C 9612) \
+R_ARGS="--router prefix_aware@blend0.00=$(C 9610) \
+        --router prefix_aware@blend0.25=$(C 9611) \
+        --router prefix_aware@blend0.50=$(C 9612) \
         --router prefix_aware=$(C 9613) \
-        --router blend_1.00=$(C 9614) \
+        --router prefix_aware@blend1.00=$(C 9614) \
         --router least_outstanding=$(C 9615)"
 
 # hot_prefix_skew only. It produced the largest effect in 11653158 (-0.633
