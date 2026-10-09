@@ -18,14 +18,20 @@ after it; if either scrape lacks the metric, the value is `None`. The raw
 scrapes travel in `raw` so a reader can audit the derivation.
 
 The three engines do not measure the same thing under the same name, so each
-normalized value carries its definition in `raw["definitions"]`:
+normalized value carries its definition and unit in `raw`:
 
-  prefix_hit_rate  ours: block granularity (blocks_reused / blocks_required)
-                   vLLM: token granularity (prefix-cache hits / queries)
-                   SGLang: its own `cache_hit_rate` gauge (not a delta)
-  preemptions      ours: Scheduler preemptions_total; vLLM: num_preemptions;
-                   SGLang: request retractions, if exposed as a counter
-  evictions        ours: radix-cache block evictions; vLLM/SGLang: not exposed
+  prefix_hit_rate  ours: BLOCK granularity (delta cache_blocks_reused /
+                   delta cache_blocks_required, JSON scheduler snapshot)
+                   vLLM: TOKENS (delta prefix_cache_hits / delta queries)
+                   SGLang: TOKENS (delta prefill_effective_tokens with
+                   mode in {device,host,storage}_hit / delta over all modes)
+  preemptions      ours: scheduler preemptions_total; vLLM: num_preemptions;
+                   SGLang: num_retracted_requests (its name for preemption)
+  evictions        ours: radix-cache block evictions (BLOCKS); SGLang:
+                   evicted_tokens (TOKENS); vLLM: not exposed -> None
+
+Flag and metric names are verified against the pinned sources
+(docs/xengine/ENGINE_FLAGS.md); they live in one block below.
 
 ATTENTION BACKEND (ours) — docs/xengine/FINDINGS_OURS.md F-002
 ---------------------------------------------------------------
@@ -81,77 +87,106 @@ from bench.xengine.ours_factory import BACKEND_LOG_PREFIX
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # ===========================================================================
-# VERIFY against pinned version source — see docs/xengine/SOURCE_NOTES.md
+# ENGINE FLAGS AND METRIC NAMES — verified against source at the pinned
+# versions, vLLM 0.31.0 (db9527a4) and SGLang 0.5.21 (e00930c5). See
+# docs/xengine/ENGINE_FLAGS.md (path:line citations) and SOURCE_NOTES.md.
 #
 # Every vLLM / SGLang CLI flag and Prometheus metric name the harness depends
-# on is in this block and nowhere else. They are written from best knowledge of
-# recent releases, NOT read from the pinned source tree. Each list of metric
-# candidates is tried in order and the first one present wins; the one actually
-# used is recorded in the artifact, so a wrong guess shows up as `None` plus a
-# raw dump, never as a silently wrong number.
+# on is in this block and nowhere else. Still UNVERIFIED until a live scrape on
+# the study node (ENGINE_FLAGS.md §4): the exact label sets in /metrics. A
+# missing metric shows up as `None` plus the raw dump, never as a wrong number.
 # ===========================================================================
 
 # --- shared ----------------------------------------------------------------
 # A capability limit, not a performance knob. Applied identically to vLLM and
 # SGLang so the longest W2 request (4096 prompt + 4096 output + chat template)
 # fits, and so vLLM does not refuse to start when W4 caps the KV pool below the
-# model's native 131072-token context (vLLM checks max_model_len <= pool).
+# model's native 131072-token context (vLLM requires max_model_len to fit in
+# the pool).
 MAX_MODEL_LEN = 16384
 KV_BLOCK_SIZE = 16  # ours (build_default_app default) and vLLM --block-size
 
-# --- vLLM ------------------------------------------------------------------
-# Launched as `$XENGINE_SERVER_PY -m <module> --model <path>`, not via a `vllm`
-# binary on PATH: each engine lives in its own env (Makefile, server_py).
+# Request-body extras (stream_options) live in bench/xengine/config.py:
+# STREAM_OPTIONS, because they are part of the request stream's identity.
+
+# --- vLLM 0.31.0 -----------------------------------------------------------
+# Launched as `$XENGINE_SERVER_PY -m <module> --model <path>` rather than via a
+# `vllm` binary on PATH, because each engine lives in its own env (Makefile).
+# ENGINE_FLAGS.md documents `vllm serve <model>`; the module form is the
+# OpenAI server entry point it dispatches to. UNVERIFIED that the module still
+# accepts `--model` identically at 0.31.0 — check on first launch.
 VLLM_MODULE = "vllm.entrypoints.openai.api_server"
 VLLM_FLAG_MODEL = "--model"
-VLLM_FLAG_DTYPE = "--dtype"
+VLLM_FLAG_DTYPE = "--dtype"  # arg_utils.py:937
 VLLM_FLAG_HOST = "--host"
 VLLM_FLAG_PORT = "--port"
 VLLM_FLAG_SERVED_NAME = "--served-model-name"
-VLLM_FLAG_SEED = "--seed"
+VLLM_FLAG_SEED = "--seed"  # arg_utils.py:938
 VLLM_FLAG_MAX_MODEL_LEN = "--max-model-len"
-VLLM_FLAG_ENFORCE_EAGER = "--enforce-eager"
-VLLM_FLAG_NO_PREFIX_CACHING = "--no-enable-prefix-caching"
-VLLM_FLAG_MAX_NUM_SEQS = "--max-num-seqs"
-VLLM_FLAG_NUM_GPU_BLOCKS = "--num-gpu-blocks-override"
-VLLM_FLAG_BLOCK_SIZE = "--block-size"
+VLLM_FLAG_ENFORCE_EAGER = "--enforce-eager"  # arg_utils.py:960 (graphs AND compile)
+VLLM_FLAG_COMPILATION_CONFIG = "--compilation-config"  # arg_utils.py:1818 (-cc)
+VLLM_NO_CUDAGRAPH = '{"cudagraph_mode": "NONE"}'  # compilation.py:53-63
+VLLM_FLAG_NO_ASYNC_SCHED = "--no-async-scheduling"  # arg_utils.py:1739
+VLLM_FLAG_NO_PREFIX_CACHING = "--no-enable-prefix-caching"  # arg_utils.py:1339
+VLLM_FLAG_MAX_NUM_SEQS = "--max-num-seqs"  # arg_utils.py:1682
+VLLM_FLAG_NUM_GPU_BLOCKS = "--num-gpu-blocks-override"  # arg_utils.py:1336 (blocks)
+VLLM_FLAG_BLOCK_SIZE = "--block-size"  # arg_utils.py:1324
+VLLM_FLAG_PROMPT_TOKENS_DETAILS = "--enable-prompt-tokens-details"  # cli_args.py:145
 VLLM_HEALTH_PATH = "/health"
 VLLM_VERSION_PATH = "/version"  # -> {"version": "x.y.z"}
-VLLM_METRICS_PATH = "/metrics"  # Prometheus text
-VLLM_METRIC_PREEMPTIONS = ["vllm:num_preemptions_total", "vllm:num_preemptions"]
-# (hits, queries) counter pairs in tokens; V1 engine names first, then older.
-VLLM_METRIC_PREFIX_PAIRS = [
-    ("vllm:prefix_cache_hits_total", "vllm:prefix_cache_queries_total"),
-    ("vllm:gpu_prefix_cache_hits_total", "vllm:gpu_prefix_cache_queries_total"),
-]
-VLLM_METRIC_PREFIX_GAUGE = ["vllm:gpu_prefix_cache_hit_rate"]  # V0 engine gauge
-VLLM_METRIC_EVICTIONS: list[str] = []  # not exposed
+VLLM_METRICS_PATH = "/metrics"  # always mounted; do not pass --disable-log-stats
+VLLM_METRIC_PREEMPTIONS = "vllm:num_preemptions_total"  # loggers.py:677
+VLLM_METRIC_PREFIX_HITS = "vllm:prefix_cache_hits_total"  # loggers.py:611 (tokens)
+VLLM_METRIC_PREFIX_QUERIES = "vllm:prefix_cache_queries_total"  # loggers.py:600 (tokens)
+# Evictions: no counter in vLLM 0.31.0 (only opt-in histograms) -> None.
 VLLM_BACKEND_LOG_RE = re.compile(r"Using ([A-Za-z0-9_ ]+?) backend", re.IGNORECASE)
+# Resolved defaults vLLM prints at startup (non-default args dump, chunked
+# prefill notice, KV cache size). Grepped into engine.flags.resolved.
+VLLM_RESOLVED_RES = {
+    "max_num_seqs": re.compile(r"max_num_seqs['\"]?\s*[=:]\s*(\d+)"),
+    "max_num_batched_tokens": re.compile(r"max_num_batched_tokens['\"]?\s*[=:]\s*(\d+)"),
+    "max_model_len": re.compile(r"max_model_len['\"]?\s*[=:]\s*(\d+)"),
+    "kv_cache_tokens": re.compile(r"GPU KV cache size:\s*([\d,]+)\s*tokens"),
+    "num_gpu_blocks": re.compile(r"#\s*GPU blocks:\s*([\d,]+)"),
+}
 
-# --- SGLang ----------------------------------------------------------------
+# --- SGLang 0.5.21 ---------------------------------------------------------
 SGLANG_MODULE = "sglang.launch_server"
 SGLANG_FLAG_MODEL = "--model-path"
-SGLANG_FLAG_DTYPE = "--dtype"
+SGLANG_FLAG_DTYPE = "--dtype"  # fields/model.py:152-168
 SGLANG_FLAG_HOST = "--host"
 SGLANG_FLAG_PORT = "--port"
 SGLANG_FLAG_SERVED_NAME = "--served-model-name"
-SGLANG_FLAG_SEED = "--random-seed"
+SGLANG_FLAG_SEED = "--random-seed"  # fields/device.py:47 (default: random)
 SGLANG_FLAG_CONTEXT_LEN = "--context-length"
-SGLANG_FLAG_ENABLE_METRICS = "--enable-metrics"  # /metrics is off without it
-SGLANG_FLAG_DISABLE_RADIX = "--disable-radix-cache"
-SGLANG_FLAG_DISABLE_OVERLAP = "--disable-overlap-schedule"
-SGLANG_FLAG_DISABLE_CUDA_GRAPH = "--disable-cuda-graph"
-SGLANG_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens"
-SGLANG_FLAG_MAX_RUNNING = "--max-running-requests"
+SGLANG_FLAG_ENABLE_METRICS = "--enable-metrics"  # observability.py:70; no counters without
+SGLANG_FLAG_CACHE_REPORT = "--enable-cache-report"  # fields/serving.py:189
+SGLANG_FLAG_DISABLE_RADIX = "--disable-radix-cache"  # fields/memory.py:64
+SGLANG_FLAG_DISABLE_OVERLAP = "--disable-overlap-schedule"  # fields/schedule.py:187
+SGLANG_FLAG_DISABLE_DECODE_GRAPH = "--disable-decode-cuda-graph"  # exec_.py:537-544
+SGLANG_FLAG_DISABLE_PREFILL_GRAPH = "--disable-prefill-cuda-graph"  # exec_.py:537-544
+SGLANG_FLAG_SCHEDULE_POLICY = "--schedule-policy"  # schedule.py:82-98 (default fcfs)
+SGLANG_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens"  # schedule.py:39 (tokens; lowers only)
+SGLANG_FLAG_MAX_RUNNING = "--max-running-requests"  # schedule.py:31
 SGLANG_HEALTH_PATH = "/health"
 SGLANG_VERSION_PATHS = ["/version", "/get_server_info"]  # look for "version"
 SGLANG_METRICS_PATH = "/metrics"
-SGLANG_METRIC_PREEMPTIONS = ["sglang:num_retracted_reqs_total", "sglang:num_retractions_total"]
-SGLANG_METRIC_PREFIX_GAUGE = ["sglang:cache_hit_rate"]
-SGLANG_METRIC_EVICTIONS: list[str] = []  # not exposed
+SGLANG_METRIC_PREEMPTIONS = "sglang:num_retracted_requests_total"  # collector.py:474-479
+SGLANG_METRIC_PREFILL_TOKENS = "sglang:prefill_effective_tokens_total"  # :913-921, by `mode`
+SGLANG_PREFIX_HIT_MODES = ("device_hit", "host_hit", "storage_hit")
+SGLANG_METRIC_EVICTIONS = "sglang:evicted_tokens_total"  # collector.py:2213-2220 (tokens)
+# NOT used: sglang:cache_hit_rate is the last prefill batch only (:305-310).
 SGLANG_BACKEND_LOG_RE = re.compile(r"attention_backend='?([A-Za-z0-9_]+)'?")
+SGLANG_RESOLVED_RES = {
+    "max_running_requests": re.compile(r"max_running_requests=(\d+)"),
+    "chunked_prefill_size": re.compile(r"chunked_prefill_size=(-?\d+)"),
+    "max_total_num_tokens": re.compile(r"max_total_num_tokens=(\d+)"),
+    "max_prefill_tokens": re.compile(r"max_prefill_tokens=(\d+)"),
+    "schedule_policy": re.compile(r"schedule_policy='?([a-z_-]+)'?"),
+    "page_size": re.compile(r"page_size=(\d+)"),
+}
 # ===========================================================================
-# end VERIFY block
+# end ENGINE FLAGS block
 # ===========================================================================
 
 # --- ours (read from this repo, not guessed) --------------------------------
@@ -176,8 +211,19 @@ def server_python() -> str:
     return os.environ.get("XENGINE_SERVER_PY") or sys.executable
 
 
+def grep_resolved(log_text: str, patterns: dict[str, re.Pattern[str]]) -> dict[str, Any]:
+    """Last match of each pattern in the server log; ints where they parse."""
+    out: dict[str, Any] = {}
+    for key, rx in patterns.items():
+        found = rx.findall(log_text)
+        if found:
+            v = found[-1].replace(",", "")
+            out[key] = int(v) if re.fullmatch(r"-?\d+", v) else v
+    return out
+
+
 # ---------------------------------------------------------------------------
-# Arms
+# Arms (docs/xengine/SPEC.md "Engines and arms")
 # ---------------------------------------------------------------------------
 
 
@@ -200,17 +246,43 @@ ARMS: dict[str, ArmSpec] = {
         ArmSpec(
             "ours-noprefix",
             "ours",
-            False,
+            True,
             "ours with the radix prefix cache off",
             env=(("SERVING_PREFIX_CACHE", "0"),),
+        ),
+        # W5 appendix. The fp16 side reuses the `ours` cells.
+        ArmSpec(
+            "ours-int8",
+            "ours",
+            True,
+            "ours with int8 weight-only quantization (W5 appendix)",
+            blocked_reason=(
+                "build_default_app (serving/server/app.py) has no int8 / quantization "
+                "knob, and serving/ may not be modified in this study (SPEC rule 4). "
+                "Refusing rather than running fp16 under an int8 label."
+            ),
         ),
         ArmSpec("vllm", "vllm", False, "vLLM defaults, fp16"),
         ArmSpec(
             "vllm-eager",
             "vllm",
             True,
-            "CUDA graphs off (diagnostic)",
+            "CUDA graphs AND torch.compile off (diagnostic)",
             extra_args=(VLLM_FLAG_ENFORCE_EAGER,),
+        ),
+        ArmSpec(
+            "vllm-nograph",
+            "vllm",
+            True,
+            "CUDA graphs off, torch.compile kept (diagnostic)",
+            extra_args=(VLLM_FLAG_COMPILATION_CONFIG, VLLM_NO_CUDAGRAPH),
+        ),
+        ArmSpec(
+            "vllm-noasync",
+            "vllm",
+            True,
+            "async (CPU/GPU-overlapped) scheduling off (diagnostic)",
+            extra_args=(VLLM_FLAG_NO_ASYNC_SCHED,),
         ),
         ArmSpec(
             "vllm-noprefix",
@@ -227,7 +299,7 @@ ARMS: dict[str, ArmSpec] = {
             extra_args=(VLLM_FLAG_MAX_NUM_SEQS, str(OURS_MAX_BATCH_SIZE)),
             matched=True,
         ),
-        ArmSpec("sglang", "sglang", False, "SGLang defaults, fp16"),
+        ArmSpec("sglang", "sglang", False, "SGLang defaults, fp16 (FCFS schedule policy)"),
         ArmSpec(
             "sglang-noradix",
             "sglang",
@@ -246,20 +318,15 @@ ARMS: dict[str, ArmSpec] = {
             "sglang-eager",
             "sglang",
             True,
-            "CUDA graphs off (diagnostic)",
-            extra_args=(SGLANG_FLAG_DISABLE_CUDA_GRAPH,),
+            "decode and prefill CUDA graphs off (diagnostic)",
+            extra_args=(SGLANG_FLAG_DISABLE_DECODE_GRAPH, SGLANG_FLAG_DISABLE_PREFILL_GRAPH),
         ),
-        # W5 appendix. The fp16 side reuses the `ours` cells.
         ArmSpec(
-            "ours-int8",
-            "ours",
+            "sglang-lpm",
+            "sglang",
             True,
-            "ours with int8 weights (W5 appendix)",
-            blocked_reason=(
-                "build_default_app (serving/server/app.py) has no int8 / quantization "
-                "knob, and serving/ may not be modified in this study (SPEC rule 4). "
-                "Refusing rather than running fp16 under an int8 label."
-            ),
+            "longest-prefix-match schedule policy ON (diagnostic, W3)",
+            extra_args=(SGLANG_FLAG_SCHEDULE_POLICY, "lpm"),
         ),
     ]
 }
@@ -278,13 +345,21 @@ def get_arm(arm_id: str) -> ArmSpec:
 _PROM_LINE = re.compile(
     r"^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([-+]?[0-9.eE+-]+|NaN|[+-]?Inf)(\s+\d+)?$"
 )
+_PROM_LABEL = re.compile(r'([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\.)*)"')
 
 
 def parse_prometheus(text: str) -> dict[str, float]:
     """
-    Metric name -> value SUMMED over label sets (one model per server, so the
-    sum is the single series in practice). Histogram buckets are dropped to keep
-    the raw dump small; `_sum` and `_count` are kept.
+    Flatten Prometheus exposition text into `{key: value}`:
+
+      name                  value summed over every label set (one model per
+                            server, so usually the single series)
+      name{label="value"}   value summed over series carrying that one label
+                            pair — how SGLang's per-`mode` prefill counter is
+                            split into hits and queries
+
+    Histogram `_bucket` series and prometheus_client's `_created` timestamps are
+    dropped; `_sum` and `_count` are kept.
     """
     out: dict[str, float] = {}
     for line in text.splitlines():
@@ -294,22 +369,20 @@ def parse_prometheus(text: str) -> dict[str, float]:
         m = _PROM_LINE.match(line)
         if not m:
             continue
-        name, _labels, val = m.group(1), m.group(2), m.group(3)
-        if name.endswith("_bucket"):
+        name, labels, val = m.group(1), m.group(2), m.group(3)
+        if name.endswith("_bucket") or name.endswith("_created"):
             continue
         try:
             v = float(val)
         except ValueError:
             continue
         out[name] = out.get(name, 0.0) + v
+        for k, lv in _PROM_LABEL.findall(labels or ""):
+            if k in ("model_name", "engine"):
+                continue
+            key = f'{name}{{{k}="{lv}"}}'
+            out[key] = out.get(key, 0.0) + v
     return out
-
-
-def _first_present(d: dict[str, Any], names: list[str]) -> str | None:
-    for n in names:
-        if isinstance(d.get(n), (int, float)) and not isinstance(d.get(n), bool):
-            return n
-    return None
 
 
 def _delta(before: dict[str, Any], after: dict[str, Any], name: str | None) -> float | None:
@@ -576,6 +649,10 @@ class EngineAdapter:
     def detect_attention_backend(self, log_text: str) -> str | None:
         return None
 
+    def resolved_defaults(self, log_text: str) -> dict[str, Any]:
+        """Engine defaults as RESOLVED at startup, grepped from its log."""
+        return {}
+
 
 class OursAdapter(EngineAdapter):
     name = "ours"
@@ -720,6 +797,9 @@ class OursAdapter(EngineAdapter):
         )
         return {"LLM_WEIGHTS_PATH": model_path, "HF_HUB_OFFLINE": "1", "PYTHONPATH": pythonpath}
 
+    def resolved_defaults(self, log_text: str) -> dict[str, Any]:
+        return self.config_from_log(log_text) or {}
+
     @staticmethod
     def config_from_log(log_text: str) -> dict[str, Any] | None:
         """Parse the startup `config:` line (serving/server/app.py:1263-1269)."""
@@ -752,29 +832,27 @@ class VLLMAdapter(EngineAdapter):
 
     def launch_spec(self, arm, model_path, host="127.0.0.1", port=8000, kv_pool_tokens=None):
         cmd = [
-            self.python,
-            "-m",
-            VLLM_MODULE,
-            VLLM_FLAG_MODEL,
-            model_path,
-            VLLM_FLAG_DTYPE,
-            "float16",
-            VLLM_FLAG_HOST,
-            host,
-            VLLM_FLAG_PORT,
-            str(port),
-            VLLM_FLAG_SERVED_NAME,
-            self.model_name,
-            VLLM_FLAG_SEED,
-            "0",
-            VLLM_FLAG_MAX_MODEL_LEN,
-            str(MAX_MODEL_LEN),
+            self.python, "-m", VLLM_MODULE,
+            VLLM_FLAG_MODEL, model_path,
+            VLLM_FLAG_DTYPE, "float16",
+            VLLM_FLAG_HOST, host,
+            VLLM_FLAG_PORT, str(port),
+            VLLM_FLAG_SERVED_NAME, self.model_name,
+            VLLM_FLAG_SEED, "0",
+            VLLM_FLAG_MAX_MODEL_LEN, str(MAX_MODEL_LEN),
+            VLLM_FLAG_PROMPT_TOKENS_DETAILS,
             *arm.extra_args,
-        ]
+        ]  # fmt: skip
         flags: dict[str, Any] = {
             "dtype": "float16",
+            "seed": 0,
             "max_model_len": MAX_MODEL_LEN,
             "enforce_eager": VLLM_FLAG_ENFORCE_EAGER in arm.extra_args,
+            "cuda_graphs": not (
+                VLLM_FLAG_ENFORCE_EAGER in arm.extra_args or VLLM_NO_CUDAGRAPH in arm.extra_args
+            ),
+            "torch_compile": VLLM_FLAG_ENFORCE_EAGER not in arm.extra_args,
+            "async_scheduling": VLLM_FLAG_NO_ASYNC_SCHED not in arm.extra_args,
             "prefix_caching": VLLM_FLAG_NO_PREFIX_CACHING not in arm.extra_args,
             "kv_pool_tokens": None,
         }
@@ -816,31 +894,32 @@ class VLLMAdapter(EngineAdapter):
 
     def server_counters(self, before, after):
         before, after = before or {}, after or {}
-        pre_name = _first_present(after, VLLM_METRIC_PREEMPTIONS)
-        hit_rate, used = None, None
-        for hits, queries in VLLM_METRIC_PREFIX_PAIRS:
-            if hits in after and queries in after:
-                hit_rate = _ratio(_delta(before, after, hits), _delta(before, after, queries))
-                used = f"delta {hits} / delta {queries} (TOKEN granularity)"
-                break
-        if used is None:
-            g = _first_present(after, VLLM_METRIC_PREFIX_GAUGE)
-            if g is not None:
-                hit_rate, used = float(after[g]), f"{g} gauge after the run (not a delta)"
+        hits = _delta(before, after, VLLM_METRIC_PREFIX_HITS)
+        queries = _delta(before, after, VLLM_METRIC_PREFIX_QUERIES)
         return {
-            "preemptions": _delta(before, after, pre_name),
+            "preemptions": _delta(before, after, VLLM_METRIC_PREEMPTIONS),
             "evictions": None,
-            "prefix_hit_rate": hit_rate,
+            "prefix_hit_rate": _ratio(hits, queries),
             "raw": {
                 "before": before,
                 "after": after,
+                "prefix_hits_delta": hits,
+                "prefix_queries_delta": queries,
+                "units": {"prefix_hit_rate": "tokens", "preemptions": "requests"},
                 "definitions": {
-                    "preemptions": f"delta {pre_name}" if pre_name else "not exposed",
-                    "evictions": "not exposed by vLLM",
-                    "prefix_hit_rate": used or "not exposed",
+                    "preemptions": f"delta {VLLM_METRIC_PREEMPTIONS}",
+                    "evictions": "not exposed by vLLM 0.31.0 (no eviction counter)",
+                    "prefix_hit_rate": (
+                        f"delta {VLLM_METRIC_PREFIX_HITS} / delta {VLLM_METRIC_PREFIX_QUERIES} "
+                        "(TOKEN granularity; preempted requests' re-lookups are not "
+                        "exported, so under preemption this understates reuse)"
+                    ),
                 },
             },
         }
+
+    def resolved_defaults(self, log_text: str) -> dict[str, Any]:
+        return grep_resolved(log_text, VLLM_RESOLVED_RES)
 
     def detect_attention_backend(self, log_text: str) -> str | None:
         found = VLLM_BACKEND_LOG_RE.findall(log_text)
@@ -857,37 +936,43 @@ class SGLangAdapter(EngineAdapter):
 
     def launch_spec(self, arm, model_path, host="127.0.0.1", port=8000, kv_pool_tokens=None):
         cmd = [
-            self.python,
-            "-m",
-            SGLANG_MODULE,
-            SGLANG_FLAG_MODEL,
-            model_path,
-            SGLANG_FLAG_DTYPE,
-            "float16",
-            SGLANG_FLAG_HOST,
-            host,
-            SGLANG_FLAG_PORT,
-            str(port),
-            SGLANG_FLAG_SERVED_NAME,
-            self.model_name,
-            SGLANG_FLAG_SEED,
-            "0",
-            SGLANG_FLAG_CONTEXT_LEN,
-            str(MAX_MODEL_LEN),
+            self.python, "-m", SGLANG_MODULE,
+            SGLANG_FLAG_MODEL, model_path,
+            SGLANG_FLAG_DTYPE, "float16",
+            SGLANG_FLAG_HOST, host,
+            SGLANG_FLAG_PORT, str(port),
+            SGLANG_FLAG_SERVED_NAME, self.model_name,
+            SGLANG_FLAG_SEED, "0",
+            SGLANG_FLAG_CONTEXT_LEN, str(MAX_MODEL_LEN),
             SGLANG_FLAG_ENABLE_METRICS,
+            SGLANG_FLAG_CACHE_REPORT,
             *arm.extra_args,
-        ]
+        ]  # fmt: skip
+        ea = arm.extra_args
         flags: dict[str, Any] = {
             "dtype": "float16",
+            "random_seed": 0,
             "context_length": MAX_MODEL_LEN,
-            "radix_cache": SGLANG_FLAG_DISABLE_RADIX not in arm.extra_args,
-            "overlap_schedule": SGLANG_FLAG_DISABLE_OVERLAP not in arm.extra_args,
-            "cuda_graph": SGLANG_FLAG_DISABLE_CUDA_GRAPH not in arm.extra_args,
+            "radix_cache": SGLANG_FLAG_DISABLE_RADIX not in ea,
+            "overlap_schedule": SGLANG_FLAG_DISABLE_OVERLAP not in ea,
+            "decode_cuda_graph": SGLANG_FLAG_DISABLE_DECODE_GRAPH not in ea,
+            "prefill_cuda_graph": SGLANG_FLAG_DISABLE_PREFILL_GRAPH not in ea,
+            "schedule_policy": (
+                ea[ea.index(SGLANG_FLAG_SCHEDULE_POLICY) + 1]
+                if SGLANG_FLAG_SCHEDULE_POLICY in ea
+                else "fcfs (default)"
+            ),
             "kv_pool_tokens": None,
         }
         if kv_pool_tokens:
-            cmd += [SGLANG_FLAG_MAX_TOTAL_TOKENS, str(kv_pool_tokens)]
-            flags["kv_pool_tokens"] = kv_pool_tokens
+            # Same 16-token granularity as ours/vLLM so the three pools are equal.
+            tokens = (kv_pool_tokens // KV_BLOCK_SIZE) * KV_BLOCK_SIZE
+            cmd += [SGLANG_FLAG_MAX_TOTAL_TOKENS, str(tokens)]
+            flags["kv_pool_tokens"] = tokens
+            flags["kv_pool_note"] = (
+                "--max-total-tokens can only LOWER the profiled pool; the actual size is "
+                "in flags.resolved.max_total_num_tokens when the log reports it"
+            )
         return LaunchSpec(cmd=cmd, env={}, flags=flags)
 
     def query_version(self, base_url, client=None):
@@ -910,30 +995,44 @@ class SGLangAdapter(EngineAdapter):
 
     def server_counters(self, before, after):
         before, after = before or {}, after or {}
-        pre_name = _first_present(after, SGLANG_METRIC_PREEMPTIONS)
-        g = _first_present(after, SGLANG_METRIC_PREFIX_GAUGE)
+        base = SGLANG_METRIC_PREFILL_TOKENS
+        queries = _delta(before, after, base)
+        hits: float | None = None
+        if queries is not None:
+            parts = [
+                _delta(before, after, f'{base}{{mode="{m}"}}') for m in SGLANG_PREFIX_HIT_MODES
+            ]
+            # A mode never seen has no series yet: that is 0 hits of that kind,
+            # but only once the counter family itself is known to exist.
+            hits = sum(p for p in parts if p is not None)
         return {
-            "preemptions": _delta(before, after, pre_name),
-            "evictions": None,
-            "prefix_hit_rate": float(after[g]) if g is not None else None,
+            "preemptions": _delta(before, after, SGLANG_METRIC_PREEMPTIONS),
+            "evictions": _delta(before, after, SGLANG_METRIC_EVICTIONS),
+            "prefix_hit_rate": _ratio(hits, queries),
             "raw": {
                 "before": before,
                 "after": after,
+                "prefix_hits_delta": hits,
+                "prefix_queries_delta": queries,
+                "units": {
+                    "prefix_hit_rate": "tokens",
+                    "evictions": "tokens",
+                    "preemptions": "requests (retractions)",
+                },
                 "definitions": {
-                    "preemptions": (
-                        f"delta {pre_name} (retractions)"
-                        if pre_name
-                        else "no retraction COUNTER exposed"
-                    ),
-                    "evictions": "not exposed by SGLang",
+                    "preemptions": f"delta {SGLANG_METRIC_PREEMPTIONS}",
+                    "evictions": f"delta {SGLANG_METRIC_EVICTIONS} (TOKENS, not blocks)",
                     "prefix_hit_rate": (
-                        f"{g} gauge after the run (SGLang's own window, not a delta)"
-                        if g
-                        else "not exposed"
+                        f"delta {base} with mode in {list(SGLANG_PREFIX_HIT_MODES)} / delta "
+                        f"{base} over all modes (TOKEN granularity). sglang:cache_hit_rate is "
+                        "NOT used: it covers the last prefill batch only"
                     ),
                 },
             },
         }
+
+    def resolved_defaults(self, log_text: str) -> dict[str, Any]:
+        return grep_resolved(log_text, SGLANG_RESOLVED_RES)
 
     def detect_attention_backend(self, log_text: str) -> str | None:
         found = [b for b in SGLANG_BACKEND_LOG_RE.findall(log_text) if b != "None"]

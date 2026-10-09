@@ -76,6 +76,13 @@ SLO_PATH = CONFIG_DIR / "slo.yaml"
 # byte-identical across engines.
 SERVED_MODEL_NAME = "llama-3.2-1b-instruct"
 
+# Sent to EVERY engine, so request bodies stay byte-identical across arms. vLLM
+# and SGLang answer with a final `choices: []` chunk carrying `usage`
+# (prompt_tokens, and cached tokens with --enable-prompt-tokens-details /
+# --enable-cache-report). Ours ignores the field (docs/xengine/ENGINE_FLAGS.md
+# §3), so its server-side prompt token count is recorded as null.
+STREAM_OPTIONS: dict[str, Any] = {"stream_options": {"include_usage": True}}
+
 
 # ---------------------------------------------------------------------------
 # YAML
@@ -329,7 +336,14 @@ def stream_sha256(specs: list[RequestSpec], cfg: LoadGenConfig) -> str:
     h = hashlib.sha256()
     h.update(
         json.dumps(
-            {"model": cfg.model, "ignore_eos": cfg.ignore_eos, "temperature": 0.0}, sort_keys=True
+            {
+                "model": cfg.model,
+                "ignore_eos": cfg.ignore_eos,
+                "temperature": 0.0,
+                "stream": True,
+                "extra_body": cfg.extra_body,
+            },
+            sort_keys=True,
         ).encode()
     )
     for s in specs:
@@ -371,6 +385,7 @@ def build_loadgen_config(
         max_dispatch_drift_ms=float(ol.get("max_dispatch_drift_ms", 50.0)),
         ignore_eos=True,
         name=f"xengine_{spec.id}",
+        extra_body=json.loads(json.dumps(STREAM_OPTIONS)),
     )
 
 

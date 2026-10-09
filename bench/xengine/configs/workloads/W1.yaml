@@ -31,5 +31,6 @@ closed_loop:
   drain_per_worker: 2          # keeps N in flight while the last measured finish
 request_timeout_s: 300
 kv_pool_tokens: null
-arms: [ours, ours-noprefix, vllm, vllm-eager, vllm-noprefix, vllm-matched,
-       sglang, sglang-noradix, sglang-nooverlap, sglang-eager]
+# Arm x workload matrix: docs/xengine/SPEC.md (source of truth: Makefile ARMS_W*).
+arms: [ours, vllm, sglang, vllm-eager, vllm-nograph, vllm-noasync, vllm-matched,
+       sglang-eager, sglang-nooverlap]

@@ -31,5 +31,5 @@ open_loop:                     # -> bench.loadgen.LoadGenConfig
   process: poisson
 request_timeout_s: 300
 kv_pool_tokens: null
-arms: [ours, vllm, vllm-eager, vllm-noprefix, vllm-matched,
-       sglang, sglang-noradix, sglang-nooverlap, sglang-eager]
+# Arm x workload matrix: docs/xengine/SPEC.md (source of truth: Makefile ARMS_W*).
+arms: [ours, vllm, sglang]

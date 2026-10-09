@@ -32,4 +32,5 @@ open_loop:
   process: poisson
 request_timeout_s: 600
 kv_pool_tokens: 32768          # ~10 sequences of ~3k tokens: preemption is certain
-arms: [ours, vllm, sglang]
+# Arm x workload matrix: docs/xengine/SPEC.md (source of truth: Makefile ARMS_W*).
+arms: [ours, vllm, sglang, vllm-matched]

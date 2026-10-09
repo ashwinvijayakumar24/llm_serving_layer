@@ -29,5 +29,5 @@ open_loop:
   process: poisson
 request_timeout_s: 300
 kv_pool_tokens: null
-# Every engine appears with its cache on AND off.
-arms: [ours, ours-noprefix, vllm, vllm-noprefix, sglang, sglang-noradix]
+# Arm x workload matrix: docs/xengine/SPEC.md (source of truth: Makefile ARMS_W*).
+arms: [ours, vllm, sglang, ours-noprefix, vllm-noprefix, sglang-noradix, sglang-lpm]
