@@ -531,6 +531,48 @@ def render_w5(grid: Grid, cv_threshold: float) -> str:
     return "\n".join(parts).rstrip()
 
 
+DERIVED_NOTE = (
+    "**DERIVED, not measured.** Each cell is `mean(output tok/s at c) / "
+    "mean(output tok/s at c=1)` for the same arm, both means aggregated from W1 "
+    "artifacts in the tables above. It is a ratio of two measured cells and nothing "
+    "else: no interpolation, no fitting. `TODO` = either source cell has no valid "
+    "artifact. Flags from either source cell are carried over."
+)
+
+
+def render_w1_scaling(grid: Grid, cv_threshold: float) -> str:
+    """Finding (e): each arm's W1 throughput divided by its own batch-1 throughput.
+
+    Normalizing by the engine's own concurrency-1 cell cancels kernel quality and
+    leaves scheduling: does each curve bend at the same relative load (ADR-013's
+    retained scaling-shape comparison, ADR-025)?
+    """
+    pts = points_for("W1", grid)
+    base_key = point_key({"concurrency": 1})
+    header = ["point"] + BASELINE_ARMS
+    rows: list[list[str]] = []
+    for p in pts:
+        pk = point_key(p)
+        row = [point_label(p)]
+        for arm in BASELINE_ARMS:
+            base = grid.get(("W1", arm, base_key))
+            cell = grid.get(("W1", arm, pk))
+            bs = base.stat("output_tok_s") if base is not None and base.n_reps else None
+            cs = cell.stat("output_tok_s") if cell is not None and cell.n_reps else None
+            if bs is None or cs is None or bs.mean == 0:
+                row.append(TODO)
+                continue
+            body = f"{cs.mean / bs.mean:.2f}x"
+            flags = cell_flags(cell, cs, cv_threshold)
+            if pk != base_key:
+                flags += [f"base: {f}" for f in cell_flags(base, bs, cv_threshold)]
+            if flags:
+                body += " **[" + "; ".join(flags) + "]**"
+            row.append(body)
+        rows.append(row)
+    return DERIVED_NOTE + "\n\n" + _md_table(header, rows)
+
+
 def render_inventory(runs: list[Run]) -> str:
     if not runs:
         return f"{TODO}: no artifacts under `results/xengine/` yet."
@@ -850,6 +892,7 @@ def build_regions(
         "metadata": render_metadata(runs),
         "inventory": render_inventory(runs),
         "w5_table": render_w5(grid, cv_threshold),
+        "w1_scaling": render_w1_scaling(grid, cv_threshold),
     }
     for wl in WORKLOADS:
         regions[f"{wl.lower()}_table"] = render_workload(wl, grid, cv_threshold)

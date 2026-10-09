@@ -360,3 +360,38 @@ def test_validate_artifact_rejects_wrong_schema():
     c["metrics"]["ttft_ms"]["p99"] = float("nan")
     assert any("ttft_ms.p99" in e for e in R.validate_artifact(c))
     assert R.validate_artifact([]) == ["artifact is not a JSON object"]
+
+
+def _scaling_grid(tmp_path: Path, base_vals, c16_vals):
+    for rep, v in enumerate(base_vals, 1):
+        write(tmp_path, make_artifact(point={"concurrency": 1}, rep=rep, tok_s=v))
+    for rep, v in enumerate(c16_vals, 1):
+        write(tmp_path, make_artifact(point={"concurrency": 16}, rep=rep, tok_s=v))
+    return R.aggregate(R.load_runs(tmp_path))
+
+
+def test_w1_scaling_is_ratio_of_measured_means(tmp_path):
+    grid = _scaling_grid(tmp_path, [100.0, 100.0, 100.0], [700.0, 800.0, 900.0])
+    out = R.render_w1_scaling(grid, R.DEFAULT_CV_THRESHOLD)
+    assert "DERIVED, not measured" in out
+    row16 = next(line for line in out.splitlines() if line.startswith("| concurrency=16"))
+    # ours = 800/100; vllm and sglang have no artifacts -> TODO, never a value
+    assert row16.split("|")[2].strip().startswith("8.00x")
+    assert row16.split("|")[3].strip() == "TODO"
+    assert row16.split("|")[4].strip() == "TODO"
+
+
+def test_w1_scaling_todo_without_batch1_base(tmp_path):
+    for rep in (1, 2, 3):
+        write(tmp_path, make_artifact(point={"concurrency": 16}, rep=rep, tok_s=800.0))
+    grid = R.aggregate(R.load_runs(tmp_path))
+    out = R.render_w1_scaling(grid, R.DEFAULT_CV_THRESHOLD)
+    row16 = next(line for line in out.splitlines() if line.startswith("| concurrency=16"))
+    assert row16.split("|")[2].strip() == "TODO"
+
+
+def test_w1_scaling_carries_base_flags(tmp_path):
+    grid = _scaling_grid(tmp_path, [100.0], [800.0, 800.0, 800.0])
+    out = R.render_w1_scaling(grid, R.DEFAULT_CV_THRESHOLD)
+    row16 = next(line for line in out.splitlines() if line.startswith("| concurrency=16"))
+    assert "base: n=1<3" in row16

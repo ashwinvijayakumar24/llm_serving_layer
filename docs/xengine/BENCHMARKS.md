@@ -448,14 +448,28 @@ budget, SGLang overlap event loop).
 
 ### (e) Scaling shape normalized to each engine's own batch-1 capacity
 
-**Observation.** TODO — fill from the W1 throughput table once artifacts exist.
+<!-- BEGIN GENERATED: w1_scaling -->
+**DERIVED, not measured.** Each cell is `mean(output tok/s at c) / mean(output tok/s at c=1)` for the same arm, both means aggregated from W1 artifacts in the tables above. It is a ratio of two measured cells and nothing else: no interpolation, no fitting. `TODO` = either source cell has no valid artifact. Flags from either source cell are carried over.
+
+| point | ours | vllm | sglang |
+|---|---|---|---|
+| concurrency=1 | TODO | TODO | TODO |
+| concurrency=2 | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO |
+| concurrency=8 | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO |
+| concurrency=64 | TODO | TODO | TODO |
+<!-- END GENERATED: w1_scaling -->
+
+**Observation.** TODO — fill from the derived table above once artifacts exist.
 
 **Mechanistic hypothesis.** This comparison is retained from ADR-013. Dividing
 each engine's throughput by its own batch-1 throughput removes kernel quality
 from the comparison and leaves the scheduling design: does each engine's curve
-bend at the same relative load? The renderer does not compute this ratio today
-(it only prints aggregates of measured values); the normalized view must be
-added as an explicit, labelled derived table before this finding is written.
+bend at the same relative load? The table above is the one place in this
+document where a value is derived rather than aggregated; it is labelled as such
+and is a plain ratio of two measured cells.
 
 **Source evidence.** TODO: cite (ADR-013 in `docs/ADR.md`; `SOURCE_NOTES.md`
 for each engine's batch-size limits).
