@@ -939,7 +939,7 @@ def rewrite_generated(text: str, regions: dict[str, str]) -> tuple[str, list[str
 
 
 def build_regions(
-    runs: list[Run], grid: Grid, made: dict[str, bool], fig_rel: str, cv_threshold: float
+    runs: list[Run], grid: Grid, made: dict[str, bool] | None, fig_rel: str, cv_threshold: float
 ) -> dict[str, str]:
     regions = {
         "metadata": render_metadata(runs),
@@ -949,8 +949,9 @@ def build_regions(
     }
     for wl in WORKLOADS:
         regions[f"{wl.lower()}_table"] = render_workload(wl, grid, cv_threshold)
-    for name in FIGURES:
-        regions[f"fig_{name}"] = figure_region(name, made.get(name, False), fig_rel)
+    if made is not None:  # None = figures not drawn this run: leave fig regions as they are
+        for name in FIGURES:
+            regions[f"fig_{name}"] = figure_region(name, made.get(name, False), fig_rel)
     return regions
 
 
@@ -964,7 +965,17 @@ def render(
     """Run the whole pipeline. Returns region names missing from the doc."""
     runs = load_runs(results)
     grid = aggregate(runs)
-    made = render_figures(grid, figures) if draw else {}
+    made: dict[str, bool] | None = None
+    if draw:
+        try:
+            _plt()
+        except ImportError:
+            # e.g. the PACE `llm` env has no matplotlib. Tables still render;
+            # figure regions and files are left untouched rather than replaced
+            # with "no data", which would be false.
+            print("WARNING: matplotlib not installed; figures not redrawn", file=sys.stderr)
+        else:
+            made = render_figures(grid, figures)
     try:
         fig_rel = figures.resolve().relative_to(doc.resolve().parent).as_posix()
     except ValueError:

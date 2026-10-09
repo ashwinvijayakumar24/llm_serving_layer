@@ -51,7 +51,7 @@ means a new request starts only when one finishes, so this measures raw
 throughput and latency at a given level of parallelism.
 
 <!-- BEGIN GENERATED: w1_table -->
-Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
+Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few samples to be stable, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
 
 **W1 — output tok/s — baseline arms**
 
@@ -146,55 +146,95 @@ the server answers (open loop), swept across rates. This is the workload where
 goodput (requests per second that meet the frozen SLO) is the headline metric.
 
 <!-- BEGIN GENERATED: w2_table -->
-Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
+Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few samples to be stable, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
 
 **W2 — goodput rps — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO |
 
 **W2 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — SLO attainment (fraction) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO |
 
 **W2 — SLO attainment (fraction) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — TTFT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO |
 
 **W2 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — TPOT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO |
 
 **W2 — TPOT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w2_table -->
 
 ## W3 — shared system prefix
@@ -204,43 +244,67 @@ runs once with its prefix cache on and once with it off, so the cache's effect
 is measured inside each engine rather than across engines.
 
 <!-- BEGIN GENERATED: w3_table -->
-Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
+Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few samples to be stable, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
 
 **W3 — TTFT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
 
 **W3 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W3 — goodput rps — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
 
 **W3 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W3 — prefix hit rate — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO |
 
 **W3 — prefix hit rate — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w3_table -->
 
 **Figure W3: TTFT p99 with the prefix cache on vs off, per engine.**
@@ -257,55 +321,79 @@ so each engine must preempt (pause and evict) some sequences. This isolates the
 preemption policy and its cost.
 
 <!-- BEGIN GENERATED: w4_table -->
-Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
+Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few samples to be stable, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
 
 **W4 — goodput rps — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
 
 **W4 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — preemptions — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
 
 **W4 — preemptions — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — failed requests — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO |
 
 **W4 — failed requests — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w4_table -->
 
 **Figure W4: goodput and preemption count vs offered load.**
@@ -320,9 +408,9 @@ This appendix is about our engine only. It is not part of the cross-engine
 comparison.
 
 <!-- BEGIN GENERATED: w5_table -->
-Arm ids assumed: `ours` (fp16) vs `ours-int8` (int8), run on W1 and W2. SPEC does not yet name the int8 arm; if the harness uses another id, update `INT8_ARM` in `bench/xengine/render.py`.
+`ours` (fp16) vs `ours-int8` (int8 weight-only, KV pool pinned to the fp16 pool), both on W1 and W2 (`make bench-w5`).
 
-Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
+Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, `CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few samples to be stable, `k invalid excluded` runs dropped from the aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. `n/a (not exposed)` = the engine reported `null` for that counter.
 
 **W5 on W1 — output tok/s**
 
@@ -352,7 +440,12 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 | point | ours | ours-int8 |
 |---|---|---|
-| TODO | TODO | TODO |
+| rate=1 | TODO | TODO |
+| rate=2 | TODO | TODO |
+| rate=4 | TODO | TODO |
+| rate=8 | TODO | TODO |
+| rate=16 | TODO | TODO |
+| rate=32 | TODO | TODO |
 <!-- END GENERATED: w5_table -->
 
 ## Run inventory
