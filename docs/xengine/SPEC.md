@@ -44,14 +44,30 @@ then the code.
 |---|---|---|
 | `ours` | this serving layer | FlashInfer backend required; the active attention backend MUST be recorded and a PagedTorch fallback marks the run invalid |
 | `ours-noprefix` | ours | `SERVING_PREFIX_CACHE=0` |
+| `ours-int8` | ours | W5 appendix only: int8 weight-only quantization |
 | `vllm` | vLLM default | fp16, pinned version |
-| `vllm-eager` | vLLM | `--enforce-eager` (diagnostic: CUDA-graph contribution) |
-| `vllm-noprefix` | vLLM | prefix caching disabled (diagnostic) |
-| `vllm-matched` | vLLM | max-num-seqs and KV pool matched to ours (diagnostic) |
-| `sglang` | SGLang default | fp16, pinned version |
-| `sglang-noradix` | SGLang | `--disable-radix-cache` (diagnostic) |
-| `sglang-nooverlap` | SGLang | overlap scheduler disabled (diagnostic) |
-| `sglang-eager` | SGLang | CUDA graphs disabled (diagnostic) |
+| `vllm-eager` | vLLM | `--enforce-eager` — disables CUDA graphs **and torch.compile** |
+| `vllm-nograph` | vLLM | `-cc '{"cudagraph_mode":"NONE"}'` — CUDA graphs only; `vllm-eager` minus this isolates torch.compile |
+| `vllm-noasync` | vLLM | `--no-async-scheduling` — vLLM's CPU/GPU overlap (on by default), pairs with `sglang-nooverlap` |
+| `vllm-noprefix` | vLLM | `--no-enable-prefix-caching` |
+| `vllm-matched` | vLLM | `--max-num-seqs 32 --num-gpu-blocks-override N --block-size 16` matched to ours |
+| `sglang` | SGLang default | fp16, pinned version (default schedule policy is FCFS) |
+| `sglang-noradix` | SGLang | `--disable-radix-cache` |
+| `sglang-nooverlap` | SGLang | `--disable-overlap-schedule` |
+| `sglang-eager` | SGLang | `--disable-decode-cuda-graph --disable-prefill-cuda-graph` |
+| `sglang-lpm` | SGLang | `--schedule-policy lpm` — turns ON longest-prefix-match ordering (not default); W3 only |
+
+Versions (2026-10-08, latest stable): vLLM 0.31.0 (`db9527a4`), SGLang 0.5.21
+(`e00930c5`). Exact flags and metric names: `docs/xengine/ENGINE_FLAGS.md`.
+
+### Arm × workload
+
+Baseline arms (`ours`, `vllm`, `sglang`) run on every workload. Each diagnostic
+arm runs only where its mechanism is exercised: W1 — `vllm-eager`,
+`vllm-nograph`, `vllm-noasync`, `vllm-matched`, `sglang-eager`,
+`sglang-nooverlap`; W3 — `ours-noprefix`, `vllm-noprefix`, `sglang-noradix`,
+`sglang-lpm`; W4 — `vllm-matched`. Source of truth: the `ARMS_W*` lists in the
+`Makefile`.
 
 ## Workloads (`bench/xengine/configs/workloads/*.yaml`)
 

@@ -41,3 +41,17 @@ Line numbers are as of base commit `e391b50`.
 - **What:** every JSON under `results/p1/` carries `"gpu_name": "NVIDIA H100 80GB HBM3"` (e.g. `results/p1/20260801T030324_atl1-1-01-006-19-0_capacity_s1.json:191`); `results/p1/RESULTS.md:20` and `README.md:49` both say H100. P2/P4/P5 did run on H200, the likely source of the slip.
 - **Why it matters:** ADR-018 requires every published claim to resolve to an artifact; a hardware claim contradicting its own artifact is the kind of detail an interviewer checks.
 - **Status:** fixed 2026-10-08 (`H200` → `H100`). The file is gitignored (private), so the fix is local-only and has no commit.
+
+## F-004 — Preemption may fire while evictable prefix-cache blocks are still held (UNREPRODUCED)
+
+- **Where:** found while reading source for `docs/xengine/SOURCE_NOTES.md` (see its "Ours" section for the file:line trail).
+- **What:** the scheduler's preemption check counts only free blocks; radix-cache eviction runs only at admission; and the server builds the cache with no `max_cached_blocks` bound. So a running sequence could be preempted while unreferenced cached blocks that could have been evicted are still resident.
+- **Why it matters:** if real, W4 with the prefix cache on would show more preemptions than necessary, which would be a policy cost to attribute to us rather than to memory pressure.
+- **In-study handling:** W4 records preemption and eviction counters per run; an `ours` vs `ours-noprefix` preemption gap on W4 is the reproduction. Not fixed in-study.
+- **Status:** open, unreproduced.
+
+## F-005 — No streaming `usage` and no Prometheus eviction counter
+
+- **What:** our server ignores `stream_options.include_usage`, so prompt-token counts cannot be read from the stream as they are for vLLM/SGLang; and cache evictions are only in the JSON scheduler snapshot (`cache_evictions`), not in `/metrics/prometheus`.
+- **In-study handling:** the harness counts prompt tokens with the tokenizer (or records null with a note) and reads evictions from the JSON snapshot.
+- **Status:** open.

@@ -25,12 +25,20 @@ WORKLOAD ?=
 REPS     ?= 3
 OUT      ?= results/xengine
 
-# The matrix from SPEC.md "Engines and arms" x W1-W4. Override to run a subset,
-# e.g. make bench-all ARMS="ours vllm sglang" WORKLOADS=W1.
-ARMS      ?= ours ours-noprefix \
-             vllm vllm-eager vllm-noprefix vllm-matched \
-             sglang sglang-noradix sglang-nooverlap sglang-eager
+# The matrix from SPEC.md "Engines and arms". Baseline arms run on every
+# workload; each diagnostic arm runs only on the workload whose mechanism it
+# attributes (SPEC "Arm x workload"), which keeps the allocation affordable.
+# Override ARMS to run the same arm list on every workload, e.g.
+#   make bench-all ARMS="ours vllm sglang" WORKLOADS=W1
+BASELINE_ARMS ?= ours vllm sglang
+ARMS_W1 ?= $(BASELINE_ARMS) vllm-eager vllm-nograph vllm-noasync vllm-matched \
+           sglang-eager sglang-nooverlap
+ARMS_W2 ?= $(BASELINE_ARMS)
+ARMS_W3 ?= $(BASELINE_ARMS) ours-noprefix vllm-noprefix sglang-noradix sglang-lpm
+ARMS_W4 ?= $(BASELINE_ARMS) vllm-matched
+ARMS      ?=
 WORKLOADS ?= W1 W2 W3 W4
+CELLS = $(foreach wl,$(WORKLOADS),$(foreach a,$(if $(ARMS),$(ARMS),$(ARMS_$(wl))),$(a)/$(wl)))
 
 # W5 appendix: our engine int8 vs fp16 on W1/W2. The fp16 side is the `ours`
 # cells bench-all already produced (re-running them here would write extra reps
@@ -50,7 +58,7 @@ FORMAT_PATHS   ?= bench/xengine tests/test_xengine_render.py
 
 help:
 	@echo "make bench ARM=<arm> WORKLOAD=<W1..W4> [REPS=3]   one cell of the matrix"
-	@echo "make bench-all                                    every arm x W1-W4 (sequential)"
+	@echo "make bench-all                                    full matrix from SPEC (sequential)"
 	@echo "make bench-w5                                     W5 appendix (ours int8 vs fp16)"
 	@echo "make render                                       refresh docs/xengine/BENCHMARKS.md"
 	@echo "make test | make lint"
@@ -68,12 +76,11 @@ bench:
 # exits non-zero at the end.
 bench-all:
 	@failed=""; \
-	for wl in $(WORKLOADS); do \
-		for arm in $(ARMS); do \
-			echo "=== bench $$arm $$wl ==="; \
-			$(MAKE) --no-print-directory bench ARM=$$arm WORKLOAD=$$wl REPS=$(REPS) OUT=$(OUT) \
-				|| failed="$$failed $$arm/$$wl"; \
-		done; \
+	for cell in $(CELLS); do \
+		arm=$${cell%/*}; wl=$${cell#*/}; \
+		echo "=== bench $$arm $$wl ==="; \
+		$(MAKE) --no-print-directory bench ARM=$$arm WORKLOAD=$$wl REPS=$(REPS) OUT=$(OUT) \
+			|| failed="$$failed $$cell"; \
 	done; \
 	if [ -n "$$failed" ]; then echo "FAILED cells:$$failed"; exit 1; fi
 

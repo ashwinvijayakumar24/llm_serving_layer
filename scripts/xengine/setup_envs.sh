@@ -21,19 +21,18 @@
 
 set -euo pipefail
 
-# PIN: confirm latest stable — see docs/xengine/SOURCE_NOTES.md
-# These values have NOT been checked against the current releases. The source
-# citations in SOURCE_NOTES.md are only valid for the exact version they were
-# read at, so these must match it. Set XENGINE_PINS_CONFIRMED=1 once they do.
-VLLM_VERSION="${VLLM_VERSION:-0.11.0}"
-# PIN: confirm latest stable — see docs/xengine/SOURCE_NOTES.md
-SGLANG_VERSION="${SGLANG_VERSION:-0.5.3}"
+# PIN: the versions docs/xengine/SOURCE_NOTES.md and ENGINE_FLAGS.md were read
+# at (latest stable on PyPI, 2026-10-08): vLLM v0.31.0 @ db9527a4, SGLang
+# v0.5.21 @ e00930c5. The source citations are only valid at these versions;
+# changing a pin means re-verifying ENGINE_FLAGS.md.
+VLLM_VERSION="${VLLM_VERSION:-0.31.0}"
+SGLANG_VERSION="${SGLANG_VERSION:-0.5.21}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 
 ENV_ROOT="${ENV_ROOT:-$HOME/ps-simpliearn-0/xengine_envs}"
 VERSIONS_FILE="${VERSIONS_FILE:-results/xengine/_env/engine_versions.txt}"
 
-if [ "${XENGINE_PINS_CONFIRMED:-0}" != "1" ]; then
+if [ "${XENGINE_PINS_CONFIRMED:-1}" != "1" ]; then
     echo "WARNING: engine version pins are UNCONFIRMED (vllm ${VLLM_VERSION}, sglang ${SGLANG_VERSION})."
     echo "         Check them against docs/xengine/SOURCE_NOTES.md, then rerun with"
     echo "         XENGINE_PINS_CONFIRMED=1 (or set VLLM_VERSION / SGLANG_VERSION)."

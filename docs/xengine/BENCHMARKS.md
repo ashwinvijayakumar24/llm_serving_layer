@@ -67,15 +67,15 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W1 — output tok/s — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W1 — TTFT p99 (ms) — baseline arms**
 
@@ -91,15 +91,15 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W1 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W1 — TPOT p99 (ms) — baseline arms**
 
@@ -115,15 +115,15 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W1 — TPOT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| concurrency=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=64 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w1_table -->
 
 **Figure W1-a: output tokens per second vs concurrency.**
@@ -156,9 +156,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W2 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — SLO attainment (fraction) — baseline arms**
 
@@ -168,9 +168,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W2 — SLO attainment (fraction) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — TTFT p99 (ms) — baseline arms**
 
@@ -180,9 +180,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W2 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W2 — TPOT p99 (ms) — baseline arms**
 
@@ -192,9 +192,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W2 — TPOT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w2_table -->
 
 ## W3 — shared system prefix
@@ -214,9 +214,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W3 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W3 — goodput rps — baseline arms**
 
@@ -226,9 +226,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W3 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W3 — prefix hit rate — baseline arms**
 
@@ -238,9 +238,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W3 — prefix hit rate — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w3_table -->
 
 **Figure W3: TTFT p99 with the prefix cache on vs off, per engine.**
@@ -267,9 +267,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W4 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — preemptions — baseline arms**
 
@@ -279,9 +279,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W4 — preemptions — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — baseline arms**
 
@@ -291,9 +291,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W4 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — failed requests — baseline arms**
 
@@ -303,9 +303,9 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 **W4 — failed requests — diagnostic arms** (attribution only; never a competitor baseline)
 
-| point | ours-noprefix | vllm-eager | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager |
-|---|---|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w4_table -->
 
 **Figure W4: goodput and preemption count vs offered load.**

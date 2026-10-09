@@ -45,11 +45,14 @@ BASELINE_ARMS = ["ours", "vllm", "sglang"]
 DIAGNOSTIC_ARMS = [
     "ours-noprefix",
     "vllm-eager",
+    "vllm-nograph",
+    "vllm-noasync",
     "vllm-noprefix",
     "vllm-matched",
     "sglang-noradix",
     "sglang-nooverlap",
     "sglang-eager",
+    "sglang-lpm",
 ]
 ALL_ARMS = BASELINE_ARMS + DIAGNOSTIC_ARMS
 # W5 appendix arm. SPEC names W5 ("our engine int8 vs fp16 on W1/W2") but does
