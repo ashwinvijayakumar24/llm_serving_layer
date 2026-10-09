@@ -1,0 +1,14 @@
+# The ONE frozen SLO for every engine in the study (docs/xengine/SPEC.md,
+# "Fixed parameters"). Taken from our engine's Phase 2 calibration and never
+# re-calibrated per engine. If it is re-calibrated on the study GPU, replace
+# both numbers AND `source` with the new calibration artifact path, in one
+# commit, before any cross-engine run.
+#
+# Verified against results/p2/RESULTS.md (job 11608159, NVIDIA H200, 2026-08-01):
+#   TTFT p50 unloaded 43.4 ms x 10 -> < 434 ms
+#   TPOT p50 unloaded  9.3 ms x  3 -> < 27.8 ms
+# Judged with bench/loadgen.py:meets_slo semantics: COMPLETED and TTFT (from
+# intended dispatch) < ttft_ms and the request's own TPOT < tpot_ms.
+ttft_ms: 434.0
+tpot_ms: 27.8
+source: "results/p2/RESULTS.md (job 11608159, H200; TTFT p50 43.4ms x10, TPOT p50 9.3ms x3)"
