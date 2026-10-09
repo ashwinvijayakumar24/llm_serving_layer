@@ -628,7 +628,10 @@ def render_metadata(runs: list[Run]) -> str:
         parts.append(">")
         parts.extend(f"> - **{w}**" for w in warnings)
         parts.append("")
-    parts.append("Values as recorded in the artifacts (all distinct values listed).")
+    parts.append(
+        "Values as recorded in the artifacts, invalid runs included "
+        "(every distinct value is listed)."
+    )
     parts.append("")
     parts.append(_md_table(["field", "recorded value(s)"], [[k, ", ".join(v)] for k, v in rows]))
     return "\n".join(parts)
@@ -749,6 +752,8 @@ def _w4_chart(grid: Grid, out: Path) -> bool:
     pre = {a: _series(grid, "W4", a, "preemptions") for a in arms}
     if not any(s[0] for s in good.values()) and not any(s[0] for s in pre.values()):
         return False
+    keys = sorted({k for p in points_for("W4", grid) for k in p})
+    xname = ", ".join(keys) or "W4 point"
     plt = _plt()
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.8))
     for ax, data, metric in [(a1, good, "goodput_rps"), (a2, pre, "preemptions")]:
@@ -757,7 +762,7 @@ def _w4_chart(grid: Grid, out: Path) -> bool:
                 continue
             style = "-" if arm in BASELINE_ARMS else "--"
             ax.errorbar(xs, ys, yerr=[lo, hi], label=arm, marker="o", linestyle=style, capsize=3)
-        ax.set_xlabel("offered load (W4 point)")
+        ax.set_xlabel(f"offered load ({xname})")
         ax.set_ylabel(METRIC_LABELS[metric])
         ax.grid(True, alpha=0.3)
         if ax.get_legend_handles_labels()[0]:
