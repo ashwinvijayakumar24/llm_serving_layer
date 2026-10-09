@@ -42,7 +42,8 @@ vLLM docs say 12.9).
 scripts/xengine/submit.sh pilot
 ```
 
-Runs only the three default engines (`ours`, `vllm`, `sglang`) on W1 at
+Runs on the free, preemptible `embers` QOS (it is a setup check, not a
+measurement). Runs only the three default engines (`ours`, `vllm`, `sglang`) on W1 at
 concurrency 1 and 16, with 1 repetition, into `results/xengine_pilot/`. That
 directory is never rendered into `BENCHMARKS.md`.
 

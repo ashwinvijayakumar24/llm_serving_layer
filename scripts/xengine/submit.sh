@@ -1,8 +1,8 @@
 #!/bin/bash
 # Submit the cross-engine study to PACE (docs/xengine/RUNBOOK.md).
 #
-#   scripts/xengine/submit.sh pilot     one short job: 3 baseline arms, W1 points 1,16, 1 rep,
-#                                       into results/xengine_pilot (never mixed with real results)
+#   scripts/xengine/submit.sh pilot     one short job on embers (free): 3 baseline arms, W1 points
+#                                       1,16, 1 rep, into results/xengine_pilot (never rendered)
 #   scripts/xengine/submit.sh all       one job per workload W1..W4 (+ W5 appendix with W1/W2's job)
 #   scripts/xengine/submit.sh W3        one workload
 #
@@ -20,14 +20,20 @@ mkdir -p logs
 
 SB=scripts/xengine/xengine.sbatch
 
+# Extra sbatch options for every submission (e.g. QOS override), set by a case below.
+SBATCH_EXTRA=()
+
 submit() {  # name time env...
     local name=$1 time=$2; shift 2
-    echo "+ sbatch --job-name=$name --time=$time  ($*)"
-    env "$@" sbatch --job-name="$name" --time="$time" --export=ALL "$SB"
+    echo "+ sbatch --job-name=$name --time=$time ${SBATCH_EXTRA[*]:-} ($*)"
+    env "$@" sbatch --job-name="$name" --time="$time" "${SBATCH_EXTRA[@]}" --export=ALL "$SB"
 }
 
 case "${1:-}" in
     pilot)
+        # Setup check, not a measurement: free preemptible QOS, any Hopper GPU.
+        # The real matrix stays on inferno (non-preemptible, one H200).
+        SBATCH_EXTRA=(--qos=embers --partition=gpu-h200,gpu-h100 --gres=gpu:1)
         submit xengine-pilot 02:00:00 \
             WORKLOADS=W1 ARMS="ours vllm sglang" REPS=1 POINTS=1,16 OUT=results/xengine_pilot
         ;;
