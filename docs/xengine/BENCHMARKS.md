@@ -379,21 +379,38 @@ exist. State the gap between `ours` and each baseline at each concurrency.
 
 **Mechanistic hypothesis.** The gap is attributed with an ablation ladder: each
 diagnostic arm turns off one feature of a baseline engine, and the change in
-throughput is that feature's contribution. Three causes are expected:
+throughput is that feature's contribution to *that engine's* speed. Expected
+causes:
 
 1. **CUDA graphs.** A CUDA graph records a sequence of GPU kernel launches once
-   and replays it, removing per-step CPU launch overhead. Measured by `vllm` vs
-   `vllm-eager` and `sglang` vs `sglang-eager`.
-2. **Fused kernels.** vLLM and SGLang combine several operations (for example,
-   normalization plus a matrix multiply) into one kernel. Our forward pass uses
-   separate PyTorch ops. There is no off-switch for this, so it is estimated
-   only as the residual gap after the other causes are removed, and labelled as
-   such.
-3. **Python overhead in our forward pass.** Per-step scheduling and tensor
-   bookkeeping in Python add CPU time that is visible at small batch sizes.
+   and replays it, removing per-step CPU launch overhead. `vllm` vs
+   `vllm-nograph` isolates graphs alone; `sglang` vs `sglang-eager` does the
+   same for SGLang.
+2. **torch.compile fusions (vLLM).** `--enforce-eager` turns off compile *and*
+   graphs together, so `vllm-nograph` vs `vllm-eager` isolates the compiled
+   fusions.
+3. **Hand-fused kernels.** SGLang ships fused RMSNorm and activation kernels;
+   ours runs separate PyTorch ops with separate Q/K/V and gate/up matmuls. There
+   is no off-switch, so this is only the residual after the measured causes, and
+   is labelled as a residual, not a measurement.
+4. **Python and synchronization overhead in ours.** A per-layer Python loop, a
+   blocking `.tolist()` every step, and the step running synchronously on the
+   server's event loop. Expected to matter most at low concurrency.
+5. **CPU/GPU overlap.** Both vLLM (async scheduling) and SGLang (overlap loop)
+   prepare step N+1 on the CPU while the GPU runs step N; ours does not.
+   `vllm-noasync` and `sglang-nooverlap` measure it.
 
-**Source evidence.** TODO: cite (`SOURCE_NOTES.md` — vLLM CUDA-graph capture,
-SGLang CUDA-graph runner, fused kernel entry points).
+**Source evidence.** `SOURCE_NOTES.md` §6(a), §2.5, §3.6, §4.5. Ours: no graphs
+(`serving/backends/flashinfer_backend.py:148`), unfused ops
+(`engine/components_gpu.py:27-31`, `:140-147`, `:214-223` in the vendored
+engine), Python layer loop (`engine/model_gpu.py:102-170`), blocking
+`.tolist()` (`serving/scheduler/scheduler.py:757`), synchronous step
+(`serving/server/app.py:498`). vLLM 0.31.0: compile and graphs on by default,
+and `--enforce-eager` disables both (`vllm/config/vllm.py:316`, `:1694-1696`,
+`:1774-1778`). SGLang 0.5.21: graphs for decode and prefill
+(`cuda_graph_config.py:157-161`), fused ops (`layernorm.py:102`,
+`activation.py:62`). The *mechanism differences* are verified in source; that
+they *account for* the gap is what the arms measure.
 
 **Status: UNVERIFIED — Ashwin to confirm.**
 
@@ -401,17 +418,29 @@ SGLang CUDA-graph runner, fused kernel entry points).
 
 **Observation.** TODO — fill from the W3 tables and Figure W3.
 
-**Mechanistic hypothesis.** All three engines reuse the KV cache of a shared
-prefix, but they index it differently. Our engine and SGLang's RadixAttention
-both keep a radix trie (a tree keyed by token sequences, where shared prefixes
-share nodes). vLLM hashes fixed-size blocks of tokens, so a prefix is reusable
-only in whole blocks. The expected consequence is that the trie can match at
-token granularity while the hash scheme matches at block granularity; on W3's
-single long prefix this difference may be small, and the larger effect may come
-from eviction policy under memory pressure.
+**Mechanistic hypothesis.** All three engines reuse a shared prefix's KV cache
+by default, but at different granularity. Ours (a trie with one 16-token block
+per edge) and vLLM (a chained hash per full 16-token block) both match only
+whole blocks; SGLang's radix tree uses page size 1 and matches single tokens.
+On W3's single long system prefix, block alignment wastes at most 15 tokens per
+request, so granularity should matter little. The larger differences are
+expected from (1) **when eviction runs** — ours only at admission, vLLM on every
+block allocation, SGLang on demand including before retraction — and (2)
+**schedule order**: SGLang's longest-prefix-match ordering is *off by default*
+(FCFS); `sglang-lpm` turns it on to measure it separately.
 
-**Source evidence.** TODO: cite (`SOURCE_NOTES.md` — SGLang radix cache, vLLM
-block hashing and prefix-cache lookup; our trie in `serving/`).
+A correction to the original plan: "SGLang's radix cache plus longest-prefix
+scheduling beats both" assumed LPM is the default. Source shows it is not, so
+the default-vs-default comparison is FCFS everywhere.
+
+**Source evidence.** `SOURCE_NOTES.md` §6(b), §2.3, §3.3, §3.4, §4.3, §5.
+SGLang default policy FCFS (`fields/schedule.py:82-98`); LPM sort and its
+fallback to FCFS above 128 waiting requests (`schedule_policy.py:331-342`,
+`:373-431`); token granularity (`overrides.py:1278-1302`). vLLM block hashing
+(`v1/core/kv_cache_utils.py:684-714`) and FCFS queue (`request_queue.py:75`).
+Ours: `serving/cache/radix.py` (LRU eviction `_evict_one` at `:546`). Caveat on
+the hit-rate column: vLLM and SGLang count tokens, ours counts blocks, and
+vLLM's counters skip re-lookups by resumed (preempted) requests.
 
 **Status: UNVERIFIED — Ashwin to confirm.**
 
@@ -419,30 +448,44 @@ block hashing and prefix-cache lookup; our trie in `serving/`).
 
 **Observation.** TODO — fill from the W4 tables and Figure W4.
 
-**Mechanistic hypothesis.** When the KV pool is full, an engine must choose a
-victim sequence and either discard its KV cache (recompute it later) or copy it
-out (swap). The choice of victim and the recompute-vs-swap decision determine
-how much work is thrown away. The cost shows up as lower goodput and a heavier
-TTFT tail as preemption count rises.
+**Mechanistic hypothesis.** When the KV pool is full an engine picks a victim
+and discards its KV cache to recompute later (all three default to recompute;
+only ours also offers swap). Victim choice differs: ours takes the newest
+arrival with a starvation guard, vLLM the last-admitted running request, SGLang
+the request with the fewest generated tokens. Discarded work, and therefore
+goodput loss, should scale with how much KV the victim had built. A second
+expected effect is specific to ours (F-004, unreproduced): preemption may fire
+while unreferenced cached blocks could have been evicted instead, which W4 would
+show as more preemptions for `ours` than `ours-noprefix` would need.
 
-**Source evidence.** TODO: cite (`SOURCE_NOTES.md` — vLLM scheduler preemption
-path, SGLang retraction policy; our preemption in `serving/`).
+**Source evidence.** `SOURCE_NOTES.md` §6(c), §2.4, §3.5, §4.2. vLLM victim
+selection (`v1/core/sched/scheduler.py:763-771`) and recompute-only preemption
+(`:1538-1581`; no swap mode exists in V1) — **verified**. SGLang retraction
+(`schedule_batch.py:2239-2274`). Ours: LIFO with starvation guard (ADR-024,
+`serving/scheduler/preemption.py:130`).
 
-**Status: UNVERIFIED — Ashwin to confirm.**
+**Status: UNVERIFIED — Ashwin to confirm** (vLLM's victim rule is verified in
+source; the cost comparison is not).
 
-### (d) Scheduler and batching policy effects on the TTFT tail
+### (d) Scheduler and batching policy effects on latency tails
 
-**Observation.** TODO — fill from the TTFT p99 tables for W1 and W2.
+**Observation.** TODO — fill from the TTFT p99 and TPOT p99 tables for W1 and W2.
 
-**Mechanistic hypothesis.** Two scheduling features are expected to shape the
-TTFT tail. **Chunked prefill** splits a long prompt into pieces processed
-alongside ongoing decodes, so one long prompt does not stall everyone else.
-**SGLang's overlap scheduler** prepares the next batch on the CPU while the GPU
-runs the current one, hiding scheduling time. The `sglang-nooverlap` arm
-measures the second directly.
+**Mechanistic hypothesis.** **Chunked prefill** splits a long prompt into
+pieces processed alongside ongoing decodes. All three engines use it, with very
+different budgets: ours 512 tokens, vLLM 2048–16384, SGLang 4096–16384. Its
+main effect is expected on *decode* latency (TPOT/ITL), not TTFT — vLLM's own
+docs say smaller budgets can worsen TTFT. So the prediction is that ours shows a
+tighter TPOT tail but a heavier TTFT tail under long prompts than its raw speed
+alone would suggest. SGLang also runs prefill and decode as separate batches by
+default, while ours and vLLM mix them in one step.
 
-**Source evidence.** TODO: cite (`SOURCE_NOTES.md` — vLLM chunked prefill
-budget, SGLang overlap event loop).
+**Source evidence.** `SOURCE_NOTES.md` §6(d), §2.1, §3.7, §4.1. vLLM running
+requests first and chunk sizing (`v1/core/sched/scheduler.py:629-630`, `:1110`,
+`:1123`); SGLang prefill-first and one chunked request at a time
+(`scheduler.py:3746-3748`, `schedule_policy.py:1516`); ours decodes first with a
+512-token prefill budget (`serving/scheduler/scheduler.py:612-694`). Mechanisms
+verified; effect on tails unverified.
 
 **Status: UNVERIFIED — Ashwin to confirm.**
 
@@ -471,8 +514,12 @@ bend at the same relative load? The table above is the one place in this
 document where a value is derived rather than aggregated; it is labelled as such
 and is a plain ratio of two measured cells.
 
-**Source evidence.** TODO: cite (ADR-013 in `docs/ADR.md`; `SOURCE_NOTES.md`
-for each engine's batch-size limits).
+**Source evidence.** ADR-013 and ADR-025 in `docs/ADR.md`. Each engine's
+batch ceiling bounds where its curve can bend: ours `max_batch_size=32`
+(`serving/scheduler/scheduler.py:209`); vLLM and SGLang derive `max_num_seqs` /
+`max_running_requests` from GPU memory (`SOURCE_NOTES.md` §2.7, §3.8), so the
+resolved values recorded per run are needed to read this table. Ours capping at
+32 means its curve must flatten by concurrency 32 regardless of kernel speed.
 
 **Status: UNVERIFIED — Ashwin to confirm.**
 
