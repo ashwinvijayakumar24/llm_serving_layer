@@ -287,6 +287,10 @@ class RequestResult:
     error: str | None = None
     text_chars: int = 0
     concurrency_capped: bool = False
+    # Server-reported `usage` from the stream, when the server sends one (a final
+    # `choices: []` chunk under `stream_options.include_usage`). None otherwise —
+    # never a client-side guess.
+    usage: dict[str, Any] | None = None
 
     # -- latencies, all from INTENDED dispatch --------------------------------
 
@@ -412,6 +416,10 @@ class LoadGenConfig:
 
     name: str = "loadgen_open_loop"
     extra_config: dict[str, Any] = field(default_factory=dict)
+    # Extra top-level fields merged into every request body (e.g. the
+    # cross-engine harness's `stream_options`). Empty by default, so the body is
+    # unchanged for every existing driver.
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
     @property
     def horizon_s(self) -> float:
@@ -427,6 +435,8 @@ class LoadGenConfig:
 
     def as_dict(self) -> dict[str, Any]:
         d = {k: v for k, v in self.__dict__.items() if k != "extra_config"}
+        if not d.get("extra_body"):
+            d.pop("extra_body", None)      # absent by default: artifacts unchanged
         d.update(self.extra_config)
         d["loop_model"] = "OPEN — dispatch schedule is independent of responses"
         return d
@@ -818,6 +828,8 @@ async def stream_one(
         # being about scheduling at all.
         "ignore_eos": cfg.ignore_eos,
     }
+    if cfg.extra_body:
+        payload.update(cfg.extra_body)
 
     if inflight is not None:
         inflight[0] += 1
@@ -850,6 +862,8 @@ async def stream_one(
                     res.stream_end_time = now
                     return res
                 res.chunk_times.append(now)
+                if isinstance(obj.get("usage"), dict):
+                    res.usage = obj["usage"]
                 choices = obj.get("choices") or [{}]
                 choice = choices[0] if choices else {}
                 delta = choice.get("delta") or {}
