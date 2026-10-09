@@ -31,9 +31,11 @@ submit() {  # name time env...
 
 case "${1:-}" in
     pilot)
-        # Setup check, not a measurement: free preemptible QOS, any Hopper GPU.
-        # The real matrix stays on inferno (non-preemptible, one H200).
-        SBATCH_EXTRA=(--qos=embers --partition=gpu-h200,gpu-h100 --gres=gpu:1)
+        # Setup check, not a measurement: free preemptible QOS, same H200 as the
+        # real matrix (which stays on inferno, non-preemptible). Only the QOS is
+        # overridden: an untyped --gres=gpu:1 let embers place job 13910146 on a
+        # V100 (sm_70), which the sbatch preflight correctly rejected.
+        SBATCH_EXTRA=(--qos=embers)
         submit xengine-pilot 02:00:00 \
             WORKLOADS=W1 ARMS="ours vllm sglang" REPS=1 POINTS=1,16 OUT=results/xengine_pilot
         ;;
