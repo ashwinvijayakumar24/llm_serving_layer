@@ -61,11 +61,15 @@ install_engine () {   # $1 = vllm|sglang
     case "$name" in
         vllm)
             py=$(make_env "$ENV_ROOT/xengine-vllm")
-            "$py" -m pip install "vllm==${VLLM_VERSION}"
+            # Full install output is kept: errors and warnings here are the raw
+            # material for bench/oss-pr-candidates.md.
+            "$py" -m pip install "vllm==${VLLM_VERSION}" 2>&1 \
+                | tee "$(dirname "$VERSIONS_FILE")/pip_install_vllm.log"
             ;;
         sglang)
             py=$(make_env "$ENV_ROOT/xengine-sglang")
-            "$py" -m pip install "sglang[all]==${SGLANG_VERSION}"
+            "$py" -m pip install "sglang[all]==${SGLANG_VERSION}" 2>&1 \
+                | tee "$(dirname "$VERSIONS_FILE")/pip_install_sglang.log"
             ;;
         *) echo "unknown engine: $name (expected vllm or sglang)"; exit 2 ;;
     esac

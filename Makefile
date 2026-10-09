@@ -24,6 +24,8 @@ ARM      ?= $(ENGINE)
 WORKLOAD ?=
 REPS     ?= 3
 OUT      ?= results/xengine
+# Optional subset of point values, e.g. POINTS=1,16 (pilot runs only).
+POINTS   ?=
 
 # The matrix from SPEC.md "Engines and arms". Baseline arms run on every
 # workload; each diagnostic arm runs only on the workload whose mechanism it
@@ -68,7 +70,7 @@ bench:
 		echo "usage: make bench ARM=<arm> WORKLOAD=<id> [REPS=3]  (ENGINE= works too)"; exit 2; fi
 	XENGINE_SERVER_PY="$(call server_py,$(ARM))" \
 		$(OURS_PY) -m bench.xengine.run --arm $(ARM) --workload $(WORKLOAD) \
-		--reps $(REPS) --out $(OUT)
+		--reps $(REPS) --out $(OUT) $(if $(POINTS),--points $(POINTS))
 
 # Workload-outer, arm-inner: each workload's arms run back to back, so slow drift
 # over a long allocation spreads across engines instead of landing on one.
@@ -80,7 +82,7 @@ bench-all:
 		arm=$${cell%/*}; wl=$${cell#*/}; \
 		echo "=== bench $$arm $$wl ==="; \
 		$(MAKE) --no-print-directory bench ARM=$$arm WORKLOAD=$$wl REPS=$(REPS) OUT=$(OUT) \
-			|| failed="$$failed $$cell"; \
+			POINTS=$(POINTS) || failed="$$failed $$cell"; \
 	done; \
 	if [ -n "$$failed" ]; then echo "FAILED cells:$$failed"; exit 1; fi
 

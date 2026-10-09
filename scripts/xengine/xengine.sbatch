@@ -14,8 +14,8 @@
 # Prerequisite: scripts/xengine/setup_envs.sh has created the vLLM and SGLang
 # envs under $ENV_ROOT. Our server and the harness client run in conda `llm`.
 #
-# Submit from the repo root:   sbatch scripts/xengine/xengine.sbatch
-# Subset:                      ARMS="ours vllm sglang" WORKLOADS=W1 sbatch scripts/xengine/xengine.sbatch
+# Submit via scripts/xengine/submit.sh (pilot | all | W1..W4), which sets
+# WORKLOADS / ARMS / REPS / POINTS / OUT / RUN_W5 and the wall-clock limit.
 #
 #SBATCH --job-name=xengine
 #SBATCH --account=paceship-simpliearn
@@ -24,9 +24,8 @@
 #SBATCH --gres=gpu:h200:1
 # PACE enforces a max 8:1 CPU:GPU ratio; 16 CPUs with one GPU is rejected.
 #SBATCH --cpus-per-task=8
-# 10 arms x 4 workloads x 3 reps, plus one server start per cell. Not yet
-# measured: shorten once one real run gives the per-cell time.
-#SBATCH --time=12:00:00
+# Default only; submit.sh passes a per-workload --time.
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/xengine_%j.out
 #SBATCH --error=logs/xengine_%j.out
 
@@ -83,9 +82,12 @@ PREFLIGHT
 # returns non-zero at the end, and render still runs so the document shows what
 # exists (missing cells render as TODO, never as a guess).
 # ---------------------------------------------------------------------------
-MAKEVARS=(OURS_PY="$OURS_PY" VLLM_PY="$VLLM_PY" SGLANG_PY="$SGLANG_PY" REPS="${REPS:-3}")
-[ -n "${ARMS:-}" ]      && MAKEVARS+=(ARMS="$ARMS")
-[ -n "${WORKLOADS:-}" ] && MAKEVARS+=(WORKLOADS="$WORKLOADS")
+OUT="${OUT:-results/xengine}"
+MAKEVARS=(OURS_PY="$OURS_PY" VLLM_PY="$VLLM_PY" SGLANG_PY="$SGLANG_PY" REPS="${REPS:-3}" OUT="$OUT")
+[ -n "${ARMS:-}" ]         && MAKEVARS+=(ARMS="$ARMS")
+[ -n "${WORKLOADS:-}" ]    && MAKEVARS+=(WORKLOADS="$WORKLOADS")
+[ -n "${POINTS:-}" ]       && MAKEVARS+=(POINTS="$POINTS")
+[ -n "${W5_WORKLOADS:-}" ] && MAKEVARS+=(W5_WORKLOADS="$W5_WORKLOADS")
 
 set +e
 make bench-all "${MAKEVARS[@]}"
@@ -97,10 +99,16 @@ set -e
 
 nvidia-smi --query-gpu="$GPU_Q" --format=csv | tee "${ENVDIR}/gpu_${SLURM_JOB_ID}_end.csv"
 
-make render OURS_PY="$OURS_PY"
+# Only the real results directory is rendered into BENCHMARKS.md. A pilot
+# (OUT=results/xengine_pilot) is a setup check and must never reach the doc.
+if [ "$OUT" = "results/xengine" ]; then
+    make render OURS_PY="$OURS_PY"
+else
+    echo "OUT=$OUT is not results/xengine: skipping render (pilot/scratch run)"
+fi
 
 echo
 echo "=== artifacts ==="
-find results/xengine -name '*.json' | wc -l
+find "$OUT" -name '*.json' | wc -l
 echo "=== done (bench rc=${BENCH_RC}) ==="
 exit "$BENCH_RC"
