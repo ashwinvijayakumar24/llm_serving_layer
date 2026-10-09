@@ -110,12 +110,15 @@ KV_BLOCK_SIZE = 16  # ours (build_default_app default) and vLLM --block-size
 # STREAM_OPTIONS, because they are part of the request stream's identity.
 
 # --- vLLM 0.31.0 -----------------------------------------------------------
-# Launched as `$XENGINE_SERVER_PY -m <module> --model <path>` rather than via a
-# `vllm` binary on PATH, because each engine lives in its own env (Makefile).
-# ENGINE_FLAGS.md documents `vllm serve <model>`; the module form is the
-# OpenAI server entry point it dispatches to. UNVERIFIED that the module still
-# accepts `--model` identically at 0.31.0 — check on first launch.
-VLLM_MODULE = "vllm.entrypoints.openai.api_server"
+# Launched as `$XENGINE_SERVER_PY -m vllm.entrypoints.cli.main serve --model
+# <path>`: that module is the `vllm` console script (pyproject.toml:44), run
+# under the arm's interpreter instead of a binary on PATH because each engine
+# lives in its own env (Makefile). `vllm.entrypoints.openai.api_server` is
+# deprecated at 0.31.0 (api_server.py:24-30, :50-58). `serve` copies a
+# positional model tag into args.model (cli/serve.py) and the shared engine
+# parser also registers `--model` (arg_utils.py:929), so either form works.
+VLLM_MODULE = "vllm.entrypoints.cli.main"
+VLLM_SUBCOMMAND = "serve"  # cli/serve.py:49
 VLLM_FLAG_MODEL = "--model"
 VLLM_FLAG_DTYPE = "--dtype"  # arg_utils.py:937
 VLLM_FLAG_HOST = "--host"
@@ -139,15 +142,23 @@ VLLM_METRIC_PREEMPTIONS = "vllm:num_preemptions_total"  # loggers.py:677
 VLLM_METRIC_PREFIX_HITS = "vllm:prefix_cache_hits_total"  # loggers.py:611 (tokens)
 VLLM_METRIC_PREFIX_QUERIES = "vllm:prefix_cache_queries_total"  # loggers.py:600 (tokens)
 # Evictions: no counter in vLLM 0.31.0 (only opt-in histograms) -> None.
-VLLM_BACKEND_LOG_RE = re.compile(r"Using ([A-Za-z0-9_ ]+?) backend", re.IGNORECASE)
-# Resolved defaults vLLM prints at startup (non-default args dump, chunked
-# prefill notice, KV cache size). Grepped into engine.flags.resolved.
+# platforms/cuda.py:526-534 logs "Using FLASH_ATTN attention backend out of
+# potential backends: [...]"; :466 logs "Using <name> backend." on the explicit
+# path. The name is one identifier either way.
+VLLM_BACKEND_LOG_RE = re.compile(r"Using (\w+)(?: attention)? backend")
+# Resolved values vLLM prints at startup, grepped into engine.flags.resolved.
+# Verified log sources: "GPU KV cache size: N tokens" (kv_cache_utils.py:2464),
+# "max_seq_len=N" in the engine-config line (core.py:130, config/vllm.py:2851),
+# and the "non-default args: {...}" dict (api_utils.py:286), which carries
+# max_num_seqs / max_num_batched_tokens ONLY when they were passed explicitly.
+# vLLM does not log the auto-derived values of those two, so they are null
+# unless set by the arm; a null here means "not logged", not "unlimited".
+_KV = r"['\"]?\s*[=:]\s*['\"]?"
 VLLM_RESOLVED_RES = {
-    "max_num_seqs": re.compile(r"max_num_seqs['\"]?\s*[=:]\s*(\d+)"),
-    "max_num_batched_tokens": re.compile(r"max_num_batched_tokens['\"]?\s*[=:]\s*(\d+)"),
-    "max_model_len": re.compile(r"max_model_len['\"]?\s*[=:]\s*(\d+)"),
+    "max_num_seqs": re.compile(r"max_num_seqs" + _KV + r"(\d+)"),
+    "max_num_batched_tokens": re.compile(r"max_num_batched_tokens" + _KV + r"(\d+)"),
+    "max_model_len": re.compile(r"(?:max_model_len|max_seq_len)" + _KV + r"(\d+)"),
     "kv_cache_tokens": re.compile(r"GPU KV cache size:\s*([\d,]+)\s*tokens"),
-    "num_gpu_blocks": re.compile(r"#\s*GPU blocks:\s*([\d,]+)"),
 }
 
 # --- SGLang 0.5.21 ---------------------------------------------------------
@@ -176,14 +187,19 @@ SGLANG_METRIC_PREFILL_TOKENS = "sglang:prefill_effective_tokens_total"  # :913-9
 SGLANG_PREFIX_HIT_MODES = ("device_hit", "host_hit", "storage_hit")
 SGLANG_METRIC_EVICTIONS = "sglang:evicted_tokens_total"  # collector.py:2213-2220 (tokens)
 # NOT used: sglang:cache_hit_rate is the last prefill batch only (:305-310).
-SGLANG_BACKEND_LOG_RE = re.compile(r"attention_backend='?([A-Za-z0-9_]+)'?")
+# Two verified log sources: the scheduler's startup line, written as key=value
+# (managers/scheduler.py:1229-1237: max_total_num_tokens, chunked_prefill_size,
+# max_prefill_tokens, max_running_requests), and the
+# "server_args={...}" dump, which is a Python dict repr ('key': value)
+# (entrypoints/engine.py:289, server_args.py:260). Patterns accept both forms.
+SGLANG_BACKEND_LOG_RE = re.compile(r"""attention_backend['"]?\s*[=:]\s*['"]?(\w+)""")
 SGLANG_RESOLVED_RES = {
-    "max_running_requests": re.compile(r"max_running_requests=(\d+)"),
-    "chunked_prefill_size": re.compile(r"chunked_prefill_size=(-?\d+)"),
-    "max_total_num_tokens": re.compile(r"max_total_num_tokens=(\d+)"),
-    "max_prefill_tokens": re.compile(r"max_prefill_tokens=(\d+)"),
-    "schedule_policy": re.compile(r"schedule_policy='?([a-z_-]+)'?"),
-    "page_size": re.compile(r"page_size=(\d+)"),
+    "max_running_requests": re.compile(r"max_running_requests" + _KV + r"(\d+)"),
+    "chunked_prefill_size": re.compile(r"chunked_prefill_size" + _KV + r"(-?\d+)"),
+    "max_total_num_tokens": re.compile(r"max_total_num_tokens" + _KV + r"(\d+)"),
+    "max_prefill_tokens": re.compile(r"max_prefill_tokens" + _KV + r"(\d+)"),
+    "schedule_policy": re.compile(r"schedule_policy" + _KV + r"([a-z_-]+)"),
+    "page_size": re.compile(r"page_size" + _KV + r"(\d+)"),
 }
 # ===========================================================================
 # end ENGINE FLAGS block
@@ -841,7 +857,7 @@ class VLLMAdapter(EngineAdapter):
 
     def launch_spec(self, arm, model_path, host="127.0.0.1", port=8000, kv_pool_tokens=None):
         cmd = [
-            self.python, "-m", VLLM_MODULE,
+            self.python, "-m", VLLM_MODULE, VLLM_SUBCOMMAND,
             VLLM_FLAG_MODEL, model_path,
             VLLM_FLAG_DTYPE, "float16",
             VLLM_FLAG_HOST, host,

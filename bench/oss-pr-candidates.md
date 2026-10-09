@@ -60,5 +60,49 @@ Category definitions:
 
 ## Entries
 
-*None yet.* Entries are added only from friction actually encountered during
-the study.
+Entries OSS-001..003 were hit while wiring the harness's vLLM launch command
+and startup-log parsing (2026-10-08), before any GPU run. Their evidence is the
+source at the pinned commit; the runtime log line will be captured on the first
+PACE launch and the status moved to "repro confirmed" only then.
+
+### OSS-001 — Deprecation message tells users to run `vllm server`; the subcommand is `vllm serve`
+
+- **Engine + version:** vLLM 0.31.0 — commit `db9527a4`
+- **Category:** confusing error
+- **Found while:** choosing how the harness launches vLLM under a per-engine interpreter (`python -m ...`); the obvious module is deprecated, and its warning names a command that does not exist.
+- **Repro steps:**
+  1. `python -m vllm.entrypoints.openai.api_server --model <path>`
+- **Expected:** a DeprecationWarning pointing at the replacement, `vllm serve`.
+- **Actual:** the warning says "Please use `vllm server` instead." (`vllm/entrypoints/openai/api_server.py:51-55`). The CLI subcommand is named `serve` (`vllm/entrypoints/cli/serve.py:49`); `vllm server` would fail with an invalid-choice error. Elsewhere vLLM's own messages use the correct name (`vllm/entrypoints/grpc_server.py:22`).
+- **Evidence:** source at the pinned commit (lines above); runtime warning to be captured on first PACE launch.
+- **Upstream search done?** no — to do before filing.
+- **Proposed fix:** one-word change, `vllm server` → `vllm serve`.
+- **Status:** candidate
+
+### OSS-002 — Missing space in the module-level deprecation warning ("will likely beunsupported")
+
+- **Engine + version:** vLLM 0.31.0 — commit `db9527a4`
+- **Category:** doc gap (message text)
+- **Found while:** same as OSS-001; importing the module emits this warning.
+- **Repro steps:**
+  1. `python -W always -c "import vllm.entrypoints.openai.api_server"`
+- **Expected:** "...is deprecated and will likely be unsupported in a future version..."
+- **Actual:** two adjacent string literals concatenate without a space: `"...will likely be"` + `"unsupported in a future version..."` (`vllm/entrypoints/openai/api_server.py:24-30`) → "will likely beunsupported".
+- **Evidence:** source at the pinned commit; runtime warning to be captured on first PACE launch.
+- **Upstream search done?** no — to do before filing.
+- **Proposed fix:** add the trailing space to the first literal. Can ride in the same PR as OSS-001.
+- **Status:** candidate
+
+### OSS-003 — Auto-derived `max_num_seqs` / `max_num_batched_tokens` are never logged
+
+- **Engine + version:** vLLM 0.31.0 — commit `db9527a4`
+- **Category:** doc gap (observability)
+- **Found while:** making the harness record each engine's *resolved* scheduling limits per run, which this study needs because vLLM derives them from GPU memory (`docs/xengine/SOURCE_NOTES.md` §2.7).
+- **Repro steps:**
+  1. `vllm serve <path>` with neither flag set; read the startup log.
+- **Expected:** the values the scheduler actually uses appear somewhere in the startup log (as SGLang does for `max_running_requests` and `chunked_prefill_size`, `managers/scheduler.py:1229-1237`).
+- **Actual:** the startup logs that exist are the "non-default args" dict (`entrypoints/serve/utils/api_utils.py:286`), which only lists flags the user passed; the engine-config line (`v1/engine/core.py:130`, built at `config/vllm.py:2840+`) carries `max_seq_len` but not these two; and the KV-capacity line (`v1/core/kv_cache_utils.py:2464`) gives tokens and max concurrency only. Reproducing a benchmark therefore requires knowing GPU memory and re-deriving the defaults by hand.
+- **Evidence:** source at the pinned commit; harness consequence in `bench/xengine/engines.py` (`VLLM_RESOLVED_RES` comment).
+- **Upstream search done?** no — to do before filing.
+- **Proposed fix:** add both resolved values to the engine-config log line, or log them once after scheduler-config resolution.
+- **Status:** candidate

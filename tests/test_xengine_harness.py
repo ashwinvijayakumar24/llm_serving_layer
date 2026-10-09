@@ -183,7 +183,7 @@ def _flag_value(cmd: list[str], flag: str) -> str:
 
 def test_vllm_launch_flags():
     base = _cmd("vllm")
-    assert base[:3] == ["PY", "-m", "vllm.entrypoints.openai.api_server"]
+    assert base[:4] == ["PY", "-m", "vllm.entrypoints.cli.main", "serve"]
     assert _flag_value(base, "--model") == "/w"
     assert _flag_value(base, "--dtype") == "float16"
     assert _flag_value(base, "--seed") == "0"
