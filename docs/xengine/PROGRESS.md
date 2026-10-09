@@ -11,7 +11,7 @@ is that a result recorded here never has to be re-run just to remember it.
 |---|---|
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
-| 2 — vLLM/SGLang env setup on PACE | in progress (install running on login node) |
+| 2 — vLLM/SGLang env setup on PACE | envs done 2026-10-09; pilot job 13910146 (embers) submitted |
 | 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | not started |
 | 4 — analysis + BENCHMARKS.md | not started |
 
@@ -68,6 +68,15 @@ is that a result recorded here never has to be re-run just to remember it.
   `~/ps-simpliearn-0/p5_blend_untracked_backup_20261008`, not deleted).
   `llm` env has every harness dependency except matplotlib, so charts are drawn
   locally after syncing results.
+
+### 2026-10-09
+- PACE envs installed cleanly (no pip errors or conflicts):
+  vLLM 0.31.0 + torch 2.13.0+cu130 + flashinfer 0.7.0.post1;
+  SGLang 0.5.21 + torch 2.13.0+cu130 + flashinfer 0.6.18. Record:
+  `results/xengine/_env/engine_versions.txt` on PACE.
+- Pilot submitted: job 13910146, embers QOS, H200/H100, W1 points 1 and 16,
+  arms ours/vllm/sglang, 1 rep, into `results/xengine_pilot/` (setup check only,
+  not reported as results).
 
 ## Measured results
 
