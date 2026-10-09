@@ -15,3 +15,7 @@ QOS:
 Calibrate SU burn with one instrumented job (pace-quota before/after) before
 budgeting a multi-GPU campaign. The ~0.28 SU/A100-GPU-hr figure in the PRD is a
 two-sample inference and should not be planned against.
+
+Cross-engine study (docs/xengine/SPEC.md), UNTESTED on PACE:
+  xengine/setup_envs.sh   one env each for vLLM and SGLang at pinned versions
+  xengine/xengine.sbatch  every arm on one GPU in one allocation, then render
