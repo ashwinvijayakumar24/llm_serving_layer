@@ -52,7 +52,7 @@ server_py = $(if $(filter vllm%,$(1)),$(VLLM_PY),$(if $(filter sglang%,$(1)),$(S
 
 PYTEST_MARKERS ?= not gpu and not slow and not engine
 # The repo predates `ruff format`; only files written for this study are held to it.
-FORMAT_PATHS   ?= bench/xengine tests/test_xengine_render.py
+FORMAT_PATHS   ?= bench/xengine tests/test_xengine_render.py tests/test_xengine_harness.py tests/test_xengine_anomalies.py tests/xengine_mock.py
 
 .PHONY: bench bench-all bench-w5 render test lint help
 

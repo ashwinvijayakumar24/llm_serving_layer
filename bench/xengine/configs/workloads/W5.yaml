@@ -1,24 +1,19 @@
 # W5 — appendix: our engine, int8 vs fp16, on the W1 and W2 shapes.
 #
-# BLOCKED. serving/server/app.py:build_default_app has no quantization knob:
-# there is no environment variable or config field that loads int8 weights, and
-# docs/xengine/SPEC.md rule 4 forbids modifying serving/ in this study. The
-# fp16 half of this appendix is simply the `ours` arm of W1/W2. The runner
-# refuses W5 with this reason rather than measuring fp16 twice under two labels.
+# W5 is not a workload of its own: it is the `ours-int8` arm run on W1 and W2
+# (`make bench-w5`), compared with the `ours` cells of the same workloads.
+# int8 weights are loaded by bench/xengine/ours_factory.py substituting the
+# engine's own quantizing loader (serving/ unmodified), with the KV pool pinned
+# to the fp16 `ours` pool. Running `--workload W5` directly is refused with a
+# pointer to that target.
 id: W5
 title: "Appendix: ours int8 vs fp16 on W1/W2"
 loop: derived
 seed: 20261012
 base_workloads: [W1, W2]
-variants:
-  fp16: {env: {}}
-  int8: null
 blocked: true
 blocked_reason: >-
-  no int8 path in build_default_app (serving/server/app.py) and serving/ may not
-  be modified in this study (SPEC rule 4); to be logged in
-  docs/xengine/FINDINGS_OURS.md
-# Arm ids: the int8 side is `ours-int8`; the fp16 side reuses the `ours`
-# cells of W1/W2. Points are those of the base workloads.
+  W5 is the ours-int8 arm on W1 and W2; run `make bench-w5` (or
+  `--arm ours-int8 --workload W1|W2`) instead of --workload W5
 arms: [ours-int8]
 points: []

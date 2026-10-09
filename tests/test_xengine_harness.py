@@ -67,14 +67,27 @@ def test_w1_grid_and_w4_pool():
     assert w3.requests["sharing_rate"] == 0.8 and w3.requests["n_shared_prefixes"] == 1
 
 
-def test_w5_and_int8_arm_are_blocked():
+def test_w5_points_to_int8_arm_and_int8_needs_pool():
     w5 = xc.load_workload("W5")
-    assert w5.blocked and "int8" in w5.blocked_reason
+    assert w5.blocked and "bench-w5" in w5.blocked_reason
+    arm = xe.get_arm("ours-int8")
+    assert arm.blocked_reason is None and arm.matched
+    assert dict(arm.env)["XENGINE_OURS_QUANT"] == "int8"
+    adapter = xe.OursAdapter(probe_backend=True, python="py")
     with pytest.raises(ValueError):
-        xc.build_stream(w5, {"concurrency": 1}, 1, SLO, URL)
-    assert xe.get_arm("ours-int8").blocked_reason
-    assert xr.main(["--arm", "ours-int8", "--workload", "W1", "--url", "http://x"]) == 3
-    assert xr.main(["--arm", "ours", "--workload", "W5", "--url", "http://x"]) == 3
+        adapter.launch_spec(arm, "/w")
+    spec = adapter.launch_spec(arm, "/w", kv_pool_tokens=32768)
+    assert spec.env["SERVING_KV_BLOCKS"] == "2048"
+    assert spec.flags["weight_quant"] == "int8"
+
+
+def test_weight_quant_reason():
+    ok = "xengine: weight_quant=int8 quantized_linears=112\n"
+    assert xr.weight_quant_reason("int8", ok) is None
+    assert "unverified" in xr.weight_quant_reason("int8", "")
+    assert "unverified" in xr.weight_quant_reason(
+        "int8", "xengine: weight_quant=int8 quantized_linears=0"
+    )
 
 
 def test_bad_point_shape_rejected(tmp_path):

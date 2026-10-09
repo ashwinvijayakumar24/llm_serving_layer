@@ -131,10 +131,34 @@ def healthy(adapter: EngineAdapter, base_url: str) -> bool:
         return False
 
 
+def weight_quant_reason(mode: str, log_text: str) -> str | None:
+    """Invalidate a quantized arm unless the server log proves weights were quantized.
+
+    bench/xengine/ours_factory.py prints ``xengine: weight_quant=<mode>
+    quantized_linears=<n>``. No line, a different mode, or n == 0 means the run
+    may be fp16 under a quantized label.
+    """
+    import re
+
+    from bench.xengine.ours_factory import QUANT_LOG_PREFIX
+
+    pattern = re.escape(QUANT_LOG_PREFIX) + r"(\w+) quantized_linears=(\d+)"
+    matches = list(re.finditer(pattern, log_text))
+    if not matches:
+        return f"weight_quant_unverified: no '{QUANT_LOG_PREFIX}' line in the server log"
+    m = matches[-1]
+    if m.group(1) != mode or int(m.group(2)) == 0:
+        return (
+            f"weight_quant_unverified: log reports {m.group(1)} with "
+            f"{m.group(2)} quantized linears, expected {mode} with > 0"
+        )
+    return None
+
+
 def resolve_kv_pool_tokens(
     cli: int | None, spec: WorkloadSpec, arm: ArmSpec, out: Path
 ) -> tuple[int | None, str | None]:
-    """CLI > workload YAML > (vllm-matched only) ours' recorded pool capacity."""
+    """CLI > workload YAML > (matched arms only) ours' recorded pool capacity."""
     if cli:
         return cli, "--kv-pool-tokens"
     if spec.kv_pool_tokens:
@@ -377,6 +401,10 @@ def _run_points(
     static_reasons = backend_reasons + (
         ours_config_reasons(flags, log_cfg) if arm.engine == "ours" else []
     )
+    if flags.get("weight_quant"):
+        quant_reason = weight_quant_reason(flags["weight_quant"], log_text)
+        if quant_reason:
+            static_reasons.append(quant_reason)
     if renderer.name == "words":
         static_reasons.append(
             "prompt_render_words_fallback: no tokenizer available; prompts were rendered "

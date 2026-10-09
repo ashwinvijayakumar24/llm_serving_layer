@@ -250,17 +250,18 @@ ARMS: dict[str, ArmSpec] = {
             "ours with the radix prefix cache off",
             env=(("SERVING_PREFIX_CACHE", "0"),),
         ),
-        # W5 appendix. The fp16 side reuses the `ours` cells.
+        # W5 appendix. The fp16 side reuses the `ours` cells. int8 is loaded by
+        # bench/xengine/ours_factory.py substituting the engine's own
+        # load_weights_gpu_quant (serving/ unmodified). matched=True: the KV pool
+        # is pinned to the fp16 `ours` pool, because build_default_app sizes the
+        # pool from tensor weights only and would not count QuantWeight objects.
         ArmSpec(
             "ours-int8",
             "ours",
             True,
-            "ours with int8 weight-only quantization (W5 appendix)",
-            blocked_reason=(
-                "build_default_app (serving/server/app.py) has no int8 / quantization "
-                "knob, and serving/ may not be modified in this study (SPEC rule 4). "
-                "Refusing rather than running fp16 under an int8 label."
-            ),
+            "ours with int8 weight-only quantization, KV pool pinned to fp16 ours (W5)",
+            env=(("XENGINE_OURS_QUANT", "int8"),),
+            matched=True,
         ),
         ArmSpec("vllm", "vllm", False, "vLLM defaults, fp16"),
         ArmSpec(
@@ -695,9 +696,17 @@ class OursAdapter(EngineAdapter):
             "block_size": KV_BLOCK_SIZE,
             "max_batch_size": OURS_MAX_BATCH_SIZE,
             "watermark_blocks": OURS_MAX_BATCH_SIZE,
-            "dtype": "engine loader default (no dtype knob in build_default_app)",
+            # engine/loader.py load_weights_gpu converts to fp16 (.half()).
+            "dtype": "float16",
+            "weight_quant": env.get("XENGINE_OURS_QUANT") or None,
             "kv_pool_tokens": None,
         }
+        if arm.matched and not kv_pool_tokens:
+            raise ValueError(
+                f"{arm.id} needs the fp16 `ours` KV pool size in tokens: pass "
+                "--kv-pool-tokens, or run the `ours` arm on this workload first so its "
+                "allocator capacity can be read back"
+            )
         if kv_pool_tokens:
             blocks = kv_pool_tokens // KV_BLOCK_SIZE
             env["SERVING_KV_BLOCKS"] = str(blocks)
