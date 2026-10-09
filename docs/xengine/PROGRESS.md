@@ -10,7 +10,7 @@ is that a result recorded here never has to be re-run just to remember it.
 | phase | state |
 |---|---|
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
-| 1 — harness, renderer, docs, source notes (local, CPU-tested) | in progress |
+| 1 — harness, renderer, docs, source notes (local, CPU-tested) | docs, renderer, source notes merged; harness in progress |
 | 2 — vLLM/SGLang env setup on PACE | not started |
 | 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | not started |
 | 4 — analysis + BENCHMARKS.md | not started |
@@ -29,6 +29,26 @@ is that a result recorded here never has to be re-run just to remember it.
   `/health` reports stale feature flags; FlashInfer → PagedTorch fallback is
   silent, so the harness must verify the active backend per run.
 
+- Merged ADR-025 (supersedes ADR-013), methodology/risk amendments, OSS
+  candidates template, FINDINGS_OURS.md (F-001..F-005).
+- Merged renderer + BENCHMARKS.md skeleton + Makefile + env/sbatch scripts.
+  Added a labelled DERIVED table (throughput ÷ own batch-1) for finding (e).
+- Source research at vLLM 0.31.0 (`db9527a4`) and SGLang 0.5.21 (`e00930c5`),
+  latest stable on 2026-10-08. Verified flags and metric names in
+  `ENGINE_FLAGS.md`. Findings that changed the plan:
+  - `--enforce-eager` disables torch.compile too → added `vllm-nograph`.
+  - vLLM overlaps CPU scheduling by default → added `vllm-noasync`.
+  - SGLang defaults to FCFS, not longest-prefix-match → added opt-in `sglang-lpm`;
+    hypothesis (b) restated.
+  - Our prefix cache matches whole 16-token blocks (like vLLM); SGLang matches
+    single tokens.
+  - Preemption victims differ: ours newest arrival, vLLM last admitted, SGLang
+    fewest generated tokens. vLLM V1 has no swap.
+- Matrix cut to 23 cells: diagnostic arms run only on the workload they
+  attribute.
+- Ten candidate doc/source discrepancies in vLLM/SGLang noted in
+  SOURCE_NOTES.md §8 — not yet reproduced, so not yet in oss-pr-candidates.md.
+
 ## Measured results
 
 None yet. (Each entry: date, workload, arms, headline number with condition,
@@ -40,5 +60,6 @@ None yet — draft bullets stay as placeholders until the rows above exist.
 
 ## Open questions / decisions pending
 
-- Pinned vLLM / SGLang versions (source-research agent choosing latest stable).
-- Whether our engine exposes a KV-pool-size knob for W4 without modifying `serving/`.
+- vLLM 0.31.0 targets CUDA 13.0 in source (docs say 12.9); PACE module is
+  cuda/12.9.1 — may need a cu129 wheel. Resolve at env setup.
+- Our KV pool knob for W4 is `SERVING_KV_BLOCKS` (no `serving/` change needed).
