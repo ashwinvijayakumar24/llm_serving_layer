@@ -41,7 +41,7 @@ def make_artifact(
         "workload": {
             "id": workload,
             "config_path": "c.yaml",
-            "config_sha256": "abc",
+            "config_sha256": "a" * 64,
             "seed": 0,
             "point": point,
         },
@@ -85,7 +85,7 @@ def make_artifact(
             "raw": {},
         },
         "anomalies": anomalies or [],
-        "samples": {"ttft_ms": [], "itl_ms": [], "tpot_ms": []},
+        "samples": {k: [1.0] * 10 for k in ("ttft_ms", "itl_ms", "tpot_ms")},
     }
 
 
@@ -395,3 +395,12 @@ def test_w1_scaling_carries_base_flags(tmp_path):
     out = R.render_w1_scaling(grid, R.DEFAULT_CV_THRESHOLD)
     row16 = next(line for line in out.splitlines() if line.startswith("| concurrency=16"))
     assert "base: n=1<3" in row16
+
+
+def test_tail_percentile_flagged_when_samples_few(tmp_path):
+    for rep in (1, 2, 3):
+        write(tmp_path, make_artifact(rep=rep))  # fixture: ttft n = 10
+    grid = R.aggregate(R.load_runs(tmp_path))
+    c = cell(grid)
+    assert "p99 from n=10<100" in R.fmt_cell(c, "ttft_p99", 0.1)
+    assert "p99 from n=" not in R.fmt_cell(c, "output_tok_s", 0.1)

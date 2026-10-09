@@ -55,18 +55,30 @@ DIAGNOSTIC_ARMS = [
     "sglang-lpm",
 ]
 ALL_ARMS = BASELINE_ARMS + DIAGNOSTIC_ARMS
-# W5 appendix arm. SPEC names W5 ("our engine int8 vs fp16 on W1/W2") but does
-# not name its arm id; "ours-int8" is this renderer's assumption.
+# W5 appendix arm (SPEC "Engines and arms").
 INT8_ARM = "ours-int8"
 
 WORKLOADS = ["W1", "W2", "W3", "W4"]
-# Points SPEC fixes in advance. W2-W4 rate grids live in the harness configs and
-# are taken from whatever artifacts exist; with none, the table shows a TODO row.
-# TODO: read the expected W2-W4 grids from bench/xengine/configs/workloads/*.yaml
-# once the harness branch lands, so a missing point shows as TODO, not absent.
-EXPECTED_POINTS: dict[str, list[dict[str, Any]]] = {
-    "W1": [{"concurrency": c} for c in (1, 2, 4, 8, 16, 32, 64)],
-}
+
+
+# Expected point grid per workload, read from the harness's workload YAMLs
+# (bench/xengine/configs/workloads/W*.yaml `points:`), so a point that was never
+# run shows as a TODO row rather than being silently absent.
+def _expected_points() -> dict[str, list[dict[str, Any]]]:
+    out: dict[str, list[dict[str, Any]]] = {}
+    try:
+        from bench.xengine.config import load_workload
+    except Exception:  # renderer must still work without the harness deps
+        return {"W1": [{"concurrency": c} for c in (1, 2, 4, 8, 16, 32, 64)]}
+    for wl in WORKLOADS:
+        try:
+            out[wl] = load_workload(wl).points()
+        except Exception:
+            out[wl] = []
+    return out
+
+
+EXPECTED_POINTS: dict[str, list[dict[str, Any]]] = _expected_points()
 
 # Prefix-cache on/off pairs for W3 (on-arm, off-arm).
 PREFIX_PAIRS = [
@@ -94,6 +106,16 @@ METRICS = {
     "prefix_hit_rate": ("server_counters", "prefix_hit_rate"),
 }
 NULLABLE_METRICS = {"preemptions", "evictions", "prefix_hit_rate"}
+# Tail percentiles and the distribution whose sample count backs them. With
+# fewer than MIN_TAIL_SAMPLES samples, p99 is essentially the maximum, so the
+# cell is flagged rather than presented as a stable tail.
+TAIL_SOURCE = {
+    "ttft_p99": "ttft_ms",
+    "tpot_p99": "tpot_ms",
+    "itl_p99": "itl_ms",
+    "e2e_p99": "e2e_ms",
+}
+MIN_TAIL_SAMPLES = 100
 
 METRIC_LABELS = {
     "output_tok_s": "output tok/s",
@@ -131,9 +153,8 @@ FIGURES = {
 # --------------------------------------------------------------------------
 # Validation
 # --------------------------------------------------------------------------
-# TODO: switch to the harness's validate_artifact (bench/xengine) once that
-# branch lands, so there is one definition of a well-formed artifact. This copy
-# is deliberately minimal: schema tag, required keys, numeric types.
+# Minimal local check (schema tag, required keys, numeric types). When the
+# harness is importable, load_runs also applies its stricter validate_artifact.
 REQUIRED_TOP = [
     "schema",
     "arm",
@@ -260,6 +281,14 @@ class Run:
         return self.get("rep", default="?")
 
 
+def _harness_validate(data: dict[str, Any]) -> list[str]:
+    try:
+        from bench.xengine.artifact import validate_artifact as strict
+    except Exception:
+        return []
+    return [f"harness validator: {e}" for e in strict(data)]
+
+
 def load_runs(root: Path) -> list[Run]:
     """Load every ``*.json`` under ``root``. Unreadable files become invalid runs."""
     runs: list[Run] = []
@@ -273,6 +302,12 @@ def load_runs(root: Path) -> list[Run]:
             continue
         errors = validate_artifact(data)
         reasons = list(errors)
+        if not errors:
+            # The harness's stricter validator (types, null-vs-number, sample
+            # counts, the ours backend rule) when importable. Its findings make a
+            # run invalid but keep its cell identity, so the cell shows
+            # "k invalid excluded" instead of the run vanishing.
+            reasons.extend(_harness_validate(data))
         if not errors:
             data_valid = data["validity"]["valid"]
             run_reasons = data["validity"].get("reasons") or []
@@ -429,10 +464,25 @@ def cell_flags(cell: Cell | None, stat: Stat | None, cv_threshold: float) -> lis
     return flags
 
 
+def tail_flag(cell: Cell | None, metric: str) -> str | None:
+    """Flag a p99 cell whose smallest per-rep sample count is below MIN_TAIL_SAMPLES."""
+    dist = TAIL_SOURCE.get(metric)
+    if cell is None or dist is None or not cell.valid_runs:
+        return None
+    counts = [r.get("metrics", dist, "n") for r in cell.valid_runs]
+    counts = [int(c) for c in counts if _is_num(c)]
+    if counts and min(counts) < MIN_TAIL_SAMPLES:
+        return f"p99 from n={min(counts)}<{MIN_TAIL_SAMPLES}"
+    return None
+
+
 def fmt_cell(cell: Cell | None, metric: str, cv_threshold: float) -> str:
     """``mean ± sd (min–max)`` plus flags, or TODO. Never invents a value."""
     stat = cell.stat(metric) if cell is not None and cell.n_reps else None
     flags = cell_flags(cell, stat, cv_threshold)
+    tf = tail_flag(cell, metric)
+    if tf:
+        flags.append(tf)
     if stat is None:
         if cell is not None and cell.n_reps and metric in NULLABLE_METRICS:
             body = "n/a (not exposed)"
@@ -492,7 +542,8 @@ def pivot_table(
 CELL_LEGEND = (
     "Cells: `mean ± sample stdev (min–max)` across valid repetitions. "
     "`TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, "
-    "`CV x%` spread above the threshold, `k invalid excluded` runs dropped from the "
+    "`CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few "
+    "samples to be stable, `k invalid excluded` runs dropped from the "
     "aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. "
     "`n/a (not exposed)` = the engine reported `null` for that counter."
 )
@@ -519,9 +570,8 @@ def render_workload(workload: str, grid: Grid, cv_threshold: float) -> str:
 
 def render_w5(grid: Grid, cv_threshold: float) -> str:
     parts = [
-        f"Arm ids assumed: `ours` (fp16) vs `{INT8_ARM}` (int8), run on W1 and W2. "
-        "SPEC does not yet name the int8 arm; if the harness uses another id, "
-        "update `INT8_ARM` in `bench/xengine/render.py`.",
+        f"`ours` (fp16) vs `{INT8_ARM}` (int8 weight-only, KV pool pinned to the "
+        "fp16 pool), both on W1 and W2 (`make bench-w5`).",
         "",
         CELL_LEGEND,
         "",

@@ -27,7 +27,7 @@ requests:                      # -> bench.workloads.generator.WorkloadConfig
 closed_loop:
   warmup_per_worker: 2         # first N*2 requests: issued, discarded
   measured_per_worker: 8       # measured window: max(N*8, min_measured) requests
-  min_measured: 32             # so N=1 still has 32 samples
+  min_measured: 100            # p99 needs >= 100 samples to be more than the max
   drain_per_worker: 2          # keeps N in flight while the last measured finish
 request_timeout_s: 300
 kv_pool_tokens: null

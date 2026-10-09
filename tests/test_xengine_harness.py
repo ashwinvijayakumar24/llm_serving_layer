@@ -147,7 +147,7 @@ def test_closed_loop_stream_phases():
     warm, meas, drain = xc.closed_loop_counts(spec, 4)
     phases = [s.phase for s in st.specs]
     assert phases.count(Phase.WARMUP) == warm == 8
-    assert phases.count(Phase.STEADY) == meas == 32
+    assert phases.count(Phase.STEADY) == meas == 100  # max(4 * 8, min_measured=100)
     assert phases.count(Phase.DRAIN) == drain == 8
     assert all(s.max_tokens == 128 for s in st.specs)
 
