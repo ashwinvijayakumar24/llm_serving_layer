@@ -1,0 +1,35 @@
+# W1 — concurrency sweep, CLOSED LOOP (docs/xengine/SPEC.md, "Workloads").
+#
+# N workers each send the next request the moment their previous one finishes,
+# so exactly N requests are in flight for the whole measured window. This is the
+# shape vLLM's and SGLang's own `--max-concurrency` benchmarks use, which is why
+# it is here: it answers "how fast is each engine at a FIXED batch occupancy".
+# It cannot find a saturation knee (a closed loop never builds a queue deeper
+# than N) — W2 is the open-loop workload that does that.
+id: W1
+title: "Concurrency sweep, fixed prompt 512 / output 128"
+loop: closed
+seed: 20261008
+# The expected point grid (in-flight requests). The renderer reads this list so a
+# missing point shows as TODO. Each point is a single-key mapping.
+points:
+  - {concurrency: 1}
+  - {concurrency: 2}
+  - {concurrency: 4}
+  - {concurrency: 8}
+  - {concurrency: 16}
+  - {concurrency: 32}
+  - {concurrency: 64}
+requests:                      # -> bench.workloads.generator.WorkloadConfig
+  structure: zero              # every prompt unique: no prefix-cache help for anyone
+  prompt: {dist: fixed, mean: 512}
+  output: {dist: fixed, mean: 128}
+closed_loop:
+  warmup_per_worker: 2         # first N*2 requests: issued, discarded
+  measured_per_worker: 8       # measured window: max(N*8, min_measured) requests
+  min_measured: 32             # so N=1 still has 32 samples
+  drain_per_worker: 2          # keeps N in flight while the last measured finish
+request_timeout_s: 300
+kv_pool_tokens: null
+arms: [ours, ours-noprefix, vllm, vllm-eager, vllm-noprefix, vllm-matched,
+       sglang, sglang-noradix, sglang-nooverlap, sglang-eager]

@@ -1,0 +1,35 @@
+# W4 — KV-pool pressure, OPEN LOOP. Many concurrent long sequences against an
+# EQUAL KV pool size in tokens on every engine, small enough to force
+# preemption (vLLM "preemption", SGLang "retraction", ours "preemption").
+#
+# `kv_pool_tokens` is translated per engine by bench/xengine/engines.py:
+#   ours    SERVING_KV_BLOCKS = kv_pool_tokens / 16   (block_size 16 is the
+#           build_default_app default; the uvicorn factory takes no arguments)
+#   vLLM    --num-gpu-blocks-override = kv_pool_tokens / --block-size (16)
+#   SGLang  --max-total-tokens = kv_pool_tokens
+# Pools are equal in TOKENS, not in usable tokens: each engine reserves part of
+# its pool differently (ours holds back a watermark of max_batch_size blocks).
+# That difference is recorded in each artifact's engine.flags, not hidden.
+id: W4
+title: "Long sequences, equal 32768-token KV pool, forced preemption"
+loop: open
+seed: 20261011
+# The expected point grid (offered load, requests/s). The renderer reads this list so a
+# missing point shows as TODO. Each point is a single-key mapping.
+points:
+  - {rate: 1}
+  - {rate: 2}
+  - {rate: 4}
+  - {rate: 8}
+requests:
+  structure: zero
+  prompt: {dist: uniform, mean: 2048, uniform_spread: 0.25, min_len: 1024, max_len: 3072}
+  output: {dist: uniform, mean: 1024, uniform_spread: 0.25, min_len: 512, max_len: 1536}
+open_loop:
+  warmup_s: 15
+  duration_s: 90
+  drain_s: 15
+  process: poisson
+request_timeout_s: 600
+kv_pool_tokens: 32768          # ~10 sequences of ~3k tokens: preemption is certain
+arms: [ours, vllm, sglang]

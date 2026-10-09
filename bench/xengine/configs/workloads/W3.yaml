@@ -1,0 +1,33 @@
+# W3 — shared system prefix, OPEN LOOP. 80% of requests start with the SAME
+# long system prefix (1024 tokens); the rest are unique. Run with the prefix
+# cache ON and OFF for every engine — the on/off pairs are the result, not
+# either number alone.
+id: W3
+title: "80% share a 1024-token system prefix; prefix cache on vs off"
+loop: open
+seed: 20261010
+# The expected point grid (offered load, requests/s). The renderer reads this list so a
+# missing point shows as TODO. Each point is a single-key mapping.
+points:
+  - {rate: 1}
+  - {rate: 2}
+  - {rate: 4}
+  - {rate: 8}
+  - {rate: 16}
+requests:
+  structure: system
+  sharing_rate: 0.8
+  n_shared_prefixes: 1
+  shared_prefix_tokens: 1024
+  # Total prompt ~1280: the 1024-token prefix plus a ~256-token unique suffix.
+  prompt: {dist: lognormal, mean: 1280, sigma: 0.15, min_len: 1056, max_len: 2048}
+  output: {dist: fixed, mean: 128}
+open_loop:
+  warmup_s: 15
+  duration_s: 60
+  drain_s: 10
+  process: poisson
+request_timeout_s: 300
+kv_pool_tokens: null
+# Every engine appears with its cache on AND off.
+arms: [ours, ours-noprefix, vllm, vllm-noprefix, sglang, sglang-noradix]

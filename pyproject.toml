@@ -44,6 +44,7 @@ dev = [
 bench = [
     "pandas>=2.2",                  # artifact analysis only, never hot path
     "matplotlib>=3.8",              # goodput-vs-offered-load curves
+    "pyyaml>=6.0",                  # bench/xengine configs
 ]
 # Fast paged-attention path. Optional BY DESIGN: PagedTorchBackend is the
 # correctness oracle and the fallback, so the Phase 1 memory claim does not

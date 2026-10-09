@@ -1,0 +1,24 @@
+# W5 — appendix: our engine, int8 vs fp16, on the W1 and W2 shapes.
+#
+# BLOCKED. serving/server/app.py:build_default_app has no quantization knob:
+# there is no environment variable or config field that loads int8 weights, and
+# docs/xengine/SPEC.md rule 4 forbids modifying serving/ in this study. The
+# fp16 half of this appendix is simply the `ours` arm of W1/W2. The runner
+# refuses W5 with this reason rather than measuring fp16 twice under two labels.
+id: W5
+title: "Appendix: ours int8 vs fp16 on W1/W2"
+loop: derived
+seed: 20261012
+base_workloads: [W1, W2]
+variants:
+  fp16: {env: {}}
+  int8: null
+blocked: true
+blocked_reason: >-
+  no int8 path in build_default_app (serving/server/app.py) and serving/ may not
+  be modified in this study (SPEC rule 4); to be logged in
+  docs/xengine/FINDINGS_OURS.md
+# Arm ids: the int8 side is `ours-int8`; the fp16 side reuses the `ours`
+# cells of W1/W2. Points are those of the base workloads.
+arms: [ours-int8]
+points: []

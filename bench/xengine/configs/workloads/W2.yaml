@@ -1,0 +1,35 @@
+# W2 — skewed lengths, offered-rate sweep, OPEN LOOP (existing bench/loadgen
+# discipline: precomputed Poisson schedule, latency from intended dispatch).
+# Lognormal prompts and a heavy-tailed output distribution: a few very long
+# generations hold KV blocks while short requests queue behind them, which is
+# the case batching and preemption policies exist for.
+id: W2
+title: "Lognormal prompts, long-tail outputs, offered-rate sweep"
+loop: open
+seed: 20261009
+# The expected point grid (offered load, requests/s). The renderer reads this list so a
+# missing point shows as TODO. Each point is a single-key mapping.
+points:
+  - {rate: 1}
+  - {rate: 2}
+  - {rate: 4}
+  - {rate: 8}
+  - {rate: 16}
+  - {rate: 32}
+requests:
+  structure: zero
+  prompt: {dist: lognormal, mean: 512, sigma: 0.8, min_len: 16, max_len: 4096}
+  # heavy_tail keeps the MEAN at 128 while 2% of requests average 20x that.
+  # max_len 4096 = our server's max_tokens_cap (serving/server/app.py), so the
+  # same cap applies to every engine and no engine silently truncates.
+  output: {dist: heavy_tail, mean: 128, sigma: 0.6, tail_fraction: 0.02,
+           tail_multiplier: 20.0, tail_sigma: 0.5, min_len: 4, max_len: 4096}
+open_loop:                     # -> bench.loadgen.LoadGenConfig
+  warmup_s: 15
+  duration_s: 60
+  drain_s: 10
+  process: poisson
+request_timeout_s: 300
+kv_pool_tokens: null
+arms: [ours, vllm, vllm-eager, vllm-noprefix, vllm-matched,
+       sglang, sglang-noradix, sglang-nooverlap, sglang-eager]
