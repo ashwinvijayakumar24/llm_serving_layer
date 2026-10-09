@@ -23,7 +23,7 @@ Claims about the engine cite `file:line` in `../llm_inference_engine`. **[infere
 | ADR-010 | The serving layer owns the production HTTP surface; the engine's server stays a reference path | Accepted |
 | ADR-011 | Goodput under a declared SLO is the primary metric | Accepted |
 | ADR-012 | Open-loop load generation | Accepted |
-| ADR-013 | No vLLM throughput comparison; shape comparison only | Accepted (revisit after one attempt) |
+| ADR-013 | No vLLM throughput comparison; shape comparison only | Superseded by ADR-025 (2026-10-08) |
 | ADR-014 | No SQL / relational persistence; JSON+CSV artifacts on the filesystem | Accepted (revisit if run comparison becomes painful) |
 | ADR-015 | Kubernetes + cache-aware inference gateway | Rejected |
 | ADR-016 | Phase ordering — preemption (P3) before the radix cache (P4) | Accepted |
@@ -35,6 +35,7 @@ Claims about the engine cite `file:line` in `../llm_inference_engine`. **[infere
 | ADR-022 | The router is a single point of failure, and that is accepted | Accepted (revisit if HA becomes a claim) |
 | ADR-023 | `forward_varlen` returns a device tensor; server-side timing uses CUDA events | Accepted |
 | ADR-024 | LIFO victim selection with a starvation guard | Accepted (revisit if the fairness result demands it) |
+| ADR-025 | Cross-engine benchmark against vLLM and SGLang; gap attribution is the headline | Accepted (supersedes ADR-013) |
 
 ---
 
@@ -544,7 +545,7 @@ Closed-loop runs are permitted **only** as a labeled secondary result, for measu
 
 ## ADR-013 — No vLLM throughput comparison; vLLM is used as a scaling-shape and correctness reference only
 
-**Status:** Accepted (revisit after one attempt)
+**Status:** Superseded by ADR-025 (2026-10-08)
 **Date:** 2026-07-31
 
 **Context**
@@ -1023,3 +1024,52 @@ On recompute, the victim returns to the **front** of the waiting queue with its 
 - Makes harder: any fairness claim beyond "no request starves." Latency variance for recently admitted requests is deliberately higher.
 
 **Revisit if:** the preemption-rate measurements show LIFO producing pathological repeat-victimization under some workload the starvation guard handles only crudely, or if priority scheduling (Tier 3) lands and supplies a real ordering key.
+
+---
+
+## ADR-025 — Cross-engine benchmark against vLLM and SGLang; the headline is the attribution of the gap, not the gap; supersedes ADR-013
+
+**Status:** Accepted (supersedes ADR-013)
+**Date:** 2026-10-08
+
+**Context**
+
+ADR-013 was written when the project's goal was *build a serving layer*, and the question *"how does it compare to vLLM?"* was a positioning risk to be managed. The goal has since widened. The project is now also a vehicle for *understanding production engines by measuring them*: what vLLM and SGLang actually do that this system does not, and how much each mechanism is worth on the same GPU, model, and request stream. A scaling-shape overlay alone cannot answer that question; it needs the absolute numbers.
+
+The author has stated explicitly that this system is expected to lose, and that losing with a correct, mechanistic explanation is a successful outcome (`docs/xengine/SPEC.md`). That changes the incentive that made ADR-013 necessary. ADR-013 guarded against a comparison that is quietly tuned to flatter, or quietly dropped when it does not. A study whose stated success condition is *explaining a loss* has no favorable number to protect.
+
+ADR-013's concerns are still correct, and this ADR addresses each one rather than dismissing it:
+
+- **Kernel quality dominates throughput.** Still true: the linear layers here are plain `x @ w.T` (`engine/components_gpu.py:24`), while vLLM and SGLang ship fused kernels and CUDA graphs. ADR-013 treated this as a reason not to compare. Here it becomes the thing being measured. A gap made of kernels, graphs, and scheduler overlap can be decomposed, and decomposing it is the study.
+- **Caveats do not survive being screenshotted.** Still true. The answer is to make sure the unit a reader can screenshot is not a ratio. If no table, chart title, or summary sentence says *"X% of vLLM"*, there is no single number to lift out of context.
+- **A detuned baseline manufactures a favorable comparison.** Still true, and it is the most important constraint. It is handled by the diagnostic-arm rule below (decision 3), which permits feature-off runs of the other engines only in the opposite role from the one ADR-013 rejected.
+
+**Decision**
+
+1. **Raw numbers are published in tables.** Throughput, goodput, and latency percentiles (TTFT is time to first token; ITL is inter-token latency; TPOT is time per output token) are published for every engine, arm, workload, and load point. Each is rendered from a committed JSON artifact (ADR-018, SPEC hard rule 1). Hiding them would make the attribution impossible to check.
+2. **Never a headline ratio.** No table caption, chart title, summary, README line, or résumé bullet states *"we are X% of vLLM"*, *"vLLM is N× faster"*, or *"we beat SGLang"*. The headline of every finding is the **attribution of the gap**: which mechanism accounts for how much of it, with a citation into the other engine's source (`docs/xengine/SOURCE_NOTES.md`). The required form looks like *"At concurrency 32, turning CUDA graphs off in vLLM moves its decode ITL from A to B ms; that mechanism, not the scheduler, is most of the gap to this system."* The forbidden form is *"vLLM is 4× faster."*
+3. **Diagnostic arms attribute the other engine's speed; they are never the comparison baseline.** A diagnostic arm is a run of vLLM or SGLang with one feature turned off: `vllm-eager` (`--enforce-eager`, CUDA graphs off), `vllm-noprefix`, `vllm-matched`, `sglang-noradix`, `sglang-nooverlap`, `sglang-eager` (SPEC, "Engines and arms"). These runs exist only to answer *"how much of vLLM's (or SGLang's) own performance comes from feature F?"* They are always presented next to that engine's **default** arm, as the second half of a with/without pair. This system's numbers are compared against the default arms, never against a diagnostic arm.
+
+   **Why this is the opposite of what ADR-013 rejected.** ADR-013 rejected *"compare against vLLM with vLLM detuned to a comparable configuration"* because the detuned run would stand in for the competitor and make this system look closer than it is. Here the detuned run never stands in for anything. It is compared to the same engine's default, so what it measures is the size of that engine's advantage from feature F. That makes the competitor look *stronger and better understood*, not weaker. A detuned baseline shrinks the gap; a diagnostic arm explains the gap and leaves it at full size. The test for misuse is mechanical: if a diagnostic arm ever appears in a column labelled as *the* vLLM or SGLang result, or is used as the other side of any comparison with this system, the rule has been broken.
+4. **One frozen, absolute SLO for all engines.** Goodput is counted against a single TTFT/TPOT threshold, taken from this system's calibration (`results/p2/RESULTS.md`) or re-calibrated once on the study GPU and frozen in `bench/xengine/configs/slo.yaml` with the calibration artifact path. It is never re-calibrated per engine. Per-engine SLOs would let each system set its own pass mark, and goodput would stop being comparable (ADR-011).
+5. **Same node, same allocation.** Every engine runs back-to-back on the same node in the same Slurm allocation, with the allocation identity recorded in every artifact (ADR-021). The engine's own ~25% cross-node swing for identical code (`BENCHMARKS.md:17`) is larger than many of the effects this study attributes.
+6. **Unverified mechanisms are labelled.** Any mechanistic explanation that is not confirmed by a diagnostic arm or by reading the other engine's source at its pinned version is marked **UNVERIFIED** in the published text. A plausible story about why vLLM is fast stays a hypothesis until a measurement or a source citation backs it.
+7. **ADR-013's other uses are retained.** vLLM (and now SGLang) remain a **scaling-shape reference** — knee position relative to each system's own batch-1 capacity, hit rate as a function of sharing rate — and a **correctness and sanity reference**: a prefix-cache hit rate wildly different from theirs on the same seeded workload still means one of the systems has a bug.
+
+**Alternatives considered**
+
+- **Stay within ADR-013 (shape and correctness comparison only).** Rejected for the new goal. It answers *"does the design behave similarly?"* but not *"what are production engines doing that I am not, and how much is each thing worth?"* — the question the project now partly exists to answer. Without absolute numbers, a diagnostic arm has nothing to attribute.
+- **Publish the raw comparison without attribution** (the tables alone, or a ratio with caveats). Rejected for the reason ADR-013 gave: a bare gap is read as a verdict, and a verdict is uninformative. It would tell a reader that this system is slower, which everyone expected, and nothing about why. The attribution is the only part of the study that is new information.
+- **Detune vLLM/SGLang to match this system and compare against that.** Still rejected, exactly as in ADR-013. Decision 3 exists to keep diagnostic arms from drifting into this role.
+- **Hold the forward pass constant by sharing kernels across systems.** Still rejected as out of scope (ADR-013).
+
+**Consequences**
+
+- The project can now answer *"how fast is it versus production systems?"* — with a table and an explanation, never with a ratio.
+- The arm matrix roughly triples, because each feature that might explain a gap needs its own diagnostic run. That costs GPU-hours inside a single allocation, and a failed allocation loses the whole matrix (ADR-021).
+- Attribution requires reading vLLM and SGLang source at pinned versions. That is the point of the study, but it is slow. Findings without a source citation or a diagnostic arm ship marked UNVERIFIED rather than waiting.
+- Setup friction with vLLM and SGLang becomes an output in its own right: it is logged in `bench/oss-pr-candidates.md` as open-source contribution leads.
+- Bugs found in this system during the study are logged in `docs/xengine/FINDINGS_OURS.md` and are not fixed in-study, so the measured system stays the one that was frozen (SPEC hard rule 4).
+- Makes harder: keeping the no-ratio rule intact as results are summarized downstream (README, résumé, interviews). Every summary must be checked against decision 2. R31 in `docs/RISK_REGISTER.md` tracks this.
+
+**Revisit if:** a diagnostic arm turns out to be unattributable (for example, a flag that changes several mechanisms at once), in which case its finding is withdrawn and the reason published; or if the gap proves not to be decomposable at all, in which case the study publishes that negative result the way ADR-013's point 4 required — in writing, with the reason. The no-headline-ratio rule is not revisited.
