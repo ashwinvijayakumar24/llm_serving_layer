@@ -60,7 +60,7 @@ Category definitions:
 
 ## Entries
 
-Entries OSS-001..003 were hit while wiring the harness's vLLM launch command
+Entries OSS-001..003 were first hit while wiring the harness's vLLM launch command
 and startup-log parsing (2026-10-08), before any GPU run. Their evidence is the
 source at the pinned commit; the runtime log line will be captured on the first
 PACE launch and the status moved to "repro confirmed" only then.
@@ -102,7 +102,22 @@ PACE launch and the status moved to "repro confirmed" only then.
   1. `vllm serve <path>` with neither flag set; read the startup log.
 - **Expected:** the values the scheduler actually uses appear somewhere in the startup log (as SGLang does for `max_running_requests` and `chunked_prefill_size`, `managers/scheduler.py:1229-1237`).
 - **Actual:** the startup logs that exist are the "non-default args" dict (`entrypoints/serve/utils/api_utils.py:286`), which only lists flags the user passed; the engine-config line (`v1/engine/core.py:130`, built at `config/vllm.py:2840+`) carries `max_seq_len` but not these two; and the KV-capacity line (`v1/core/kv_cache_utils.py:2464`) gives tokens and max concurrency only. Reproducing a benchmark therefore requires knowing GPU memory and re-deriving the defaults by hand.
-- **Evidence:** source at the pinned commit; harness consequence in `bench/xengine/engines.py` (`VLLM_RESOLVED_RES` comment).
+- **Evidence:** source at the pinned commit; harness consequence in `bench/xengine/engines.py` (`VLLM_RESOLVED_RES` comment). Runtime: the vLLM server log of pilot job 13918362 (`results/xengine_pilot/W1/vllm/server_20261009T225009Z.log`, H200) contains zero occurrences of `max_num_seqs`; it does log `max_num_batched_tokens`.
 - **Upstream search done?** no — to do before filing.
 - **Proposed fix:** add both resolved values to the engine-config log line, or log them once after scheduler-config resolution.
-- **Status:** candidate
+- **Status:** repro confirmed on pinned version (pilot job 13918362) for `max_num_seqs`; `max_num_batched_tokens` does appear, so the entry narrows to `max_num_seqs`.
+
+### OSS-004 — SGLang's retraction and eviction counters are absent from `/metrics` until the first event
+
+- **Engine + version:** SGLang 0.5.21 — commit `e00930c5`
+- **Category:** doc gap (observability)
+- **Found while:** reading preemption counts from the pilot run (job 13918362); the harness recorded "not exposed" for SGLang because the series did not exist.
+- **Repro steps:**
+  1. `python -m sglang.launch_server --model-path <path> --enable-metrics`
+  2. Send any load that causes no retraction; `curl -s localhost:<port>/metrics | grep retracted`
+- **Expected:** `sglang:num_retracted_requests_total{...} 0` and `sglang:evicted_tokens_total{...} 0`, so a scraper can tell "zero" from "not supported".
+- **Actual:** only the old gauge `sglang:num_retracted_reqs` appears. The counters are prometheus_client Counters with label names (`observability/metrics_collector.py:474-479`, eviction counter near `:2213`), and a labeled child is created only on the first `.labels(...).inc()` (`:1270`). Until then the series does not exist.
+- **Evidence:** `results/xengine_pilot/W1/sglang/concurrency1_rep1.json` → `server_counters.raw.before` (452 series, no `num_retracted_requests_total`, no `evicted_tokens_total`); source lines above.
+- **Upstream search done?** no — to do before filing.
+- **Proposed fix:** initialize each labeled child at collector construction (`self.num_retracted_reqs_total.labels(**labels)` with no increment), which exports a 0 series. This is the standard prometheus_client pattern for counters that should read 0 before their first event.
+- **Status:** repro confirmed on pinned version (pilot job 13918362).

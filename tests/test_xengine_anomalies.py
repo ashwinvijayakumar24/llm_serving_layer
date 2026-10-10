@@ -116,3 +116,18 @@ def test_run_anomalies_bundle_skips_itl():
     assert "bimodal_ttft" in kinds
     assert not any("itl" in k for k in kinds)
     assert all(isinstance(a["detail"], str) for a in found)
+
+
+def test_tail_outliers_flags_sparse_spikes_only():
+    from bench.xengine.anomalies import detect_tail_outliers
+
+    base = [12.0 + 0.1 * (i % 5) for i in range(100)]
+    spiky = list(base)
+    spiky[15], spiky[60] = 119.0, 114.0
+    out = detect_tail_outliers(spiky, "ttft_ms")
+    assert out and out[0]["kind"] == "tail_outliers_ttft" and out[0]["positions"] == [15, 60]
+    assert detect_tail_outliers(base, "ttft_ms") == []
+    heavy = list(base)
+    for i in range(0, 100, 10):  # 10% far out: a tail, not sparse outliers
+        heavy[i] = 120.0
+    assert detect_tail_outliers(heavy, "ttft_ms") == []

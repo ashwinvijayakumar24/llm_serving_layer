@@ -74,7 +74,7 @@ from bench.xengine.engines import (
     get_arm,
     ours_kv_pool_tokens_from,
 )
-from bench.xengine.hardware import GpuSampler, capture_hardware, publishable
+from bench.xengine.hardware import GpuSampler, capture_hardware, code_dirty, publishable
 from serving.metrics.artifact import Provenance
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -498,6 +498,11 @@ def _run_points(
 
             prov = Provenance.capture(repo_root=REPO_ROOT, seed=stream.seed)
             prov_ok, prov_blockers = prov.is_publishable()
+            # Judge dirtiness on code, not on the harness's own untracked output.
+            code_is_dirty, dirty_lines = code_dirty(REPO_ROOT)
+            if code_is_dirty is False:
+                prov_blockers = [b for b in prov_blockers if "dirty" not in b.lower()]
+                prov_ok = not prov_blockers
             blockers = prov_blockers + hw_blockers
             art = build_artifact(
                 arm=arm.id,
@@ -535,7 +540,11 @@ def _run_points(
                 hardware={**hardware, "gpu_samples": gpu_samples},
                 provenance={
                     "repo_sha": prov.repo_sha,
-                    "repo_dirty": prov.repo_dirty,
+                    "repo_dirty": (code_is_dirty if code_is_dirty is not None else prov.repo_dirty),
+                    # Raw `git status --porcelain` verdict, which also counts the
+                    # untracked results this harness writes; kept for audit.
+                    "repo_dirty_including_outputs": prov.repo_dirty,
+                    "repo_dirty_lines": dirty_lines[:20],
                     "started_at": run.started_utc + "Z",
                     "harness_version": HARNESS_VERSION,
                     "publishable": prov_ok and hw_ok,

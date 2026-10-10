@@ -11,7 +11,7 @@ is that a result recorded here never has to be re-run just to remember it.
 |---|---|
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
-| 2 — vLLM/SGLang env setup on PACE | envs done 2026-10-09; pilot job 13910146 (embers) submitted |
+| 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
 | 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | not started |
 | 4 — analysis + BENCHMARKS.md | not started |
 
@@ -77,6 +77,33 @@ is that a result recorded here never has to be re-run just to remember it.
 - Pilot submitted: job 13910146, embers QOS, H200/H100, W1 points 1 and 16,
   arms ours/vllm/sglang, 1 rep, into `results/xengine_pilot/` (setup check only,
   not reported as results).
+
+- Pilot attempt 1 (job 13910146) landed on a V100 because the pilot asked for an
+  untyped GPU; the sbatch sm_80 guard stopped it after 1m41s. Fixed by keeping
+  the H200 request and only switching QOS.
+- Pilot attempt 2 (job 13918362, embers, H200 node atl1-1-02-012-23-0, driver
+  615.71.09) waited ~5.5 h in queue, then ran 20 min. All 6 artifacts valid.
+  **Setup checks passed:** ours on FlashInfer (pre-flight + log); vLLM on
+  FLASH_ATTN, SGLang on FA3; versions recorded; per-request usage read.
+- **Pilot findings fixed before the real runs:**
+  1. Every artifact was `repo_dirty` because the harness's own untracked
+     results count as dirty in `Provenance`. Harness now judges dirtiness on
+     code (untracked `results/` ignored) and keeps the raw verdict for audit.
+  2. SGLang's retraction/eviction counters are labeled and exported only after
+     the first event, so "absent" was recorded as "not exposed". Now: absent on
+     a live endpoint = 0, with the rule written into the artifact (OSS-004).
+  3. SGLang `page_size` was parsed as 16 from `c128_page_size`; real value 1.
+     All resolved-default patterns now require a word boundary.
+  4. The harness stopped servers by signalling the whole process group, which
+     made SGLang log a scheduler crash and get SIGKILLed. Now parent-first.
+  5. New anomaly detector `tail_outliers_*`: SGLang at concurrency 1 had 2/100
+     TTFTs ~10x the median mid-run, which set its p99 alone.
+- Startup cost observed (not a benchmark result, n=1): ours healthy after 19 s,
+  vLLM 452 s, SGLang 268 s (CUDA-graph capture / compile). Matters for job
+  wall-clock limits: one server start per arm per workload.
+- OSS-003 confirmed at runtime (vLLM never logs `max_num_seqs`); OSS-004 added.
+- Pilot numbers are single-rep setup checks on a preemptible QOS and are **not**
+  results; they are kept in `results/xengine_pilot/` only as setup evidence.
 
 ## Measured results
 

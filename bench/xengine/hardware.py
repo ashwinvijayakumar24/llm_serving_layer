@@ -26,6 +26,7 @@ import socket
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 
@@ -159,3 +160,42 @@ class GpuSampler:
         if self._thread is not None:
             self._thread.join(timeout=10)
         return list(self.samples)
+
+
+# Paths the harness itself writes during a run. Untracked files under these do
+# not make the MEASURED CODE differ from its commit, so they do not count as
+# dirty. serving.metrics.artifact.Provenance counts every porcelain line, which
+# flags every artifact after the first one written (job 13918362); serving/ is
+# frozen in this study, so the narrower check lives here.
+HARNESS_OUTPUT_PREFIXES = ("results/",)
+
+
+def code_dirty(repo_root: str | Path) -> tuple[bool | None, list[str]]:
+    """(dirty, offending porcelain lines), ignoring untracked harness output.
+
+    Any modified/staged tracked file counts, including under results/ (an
+    edited artifact is a real change). Only untracked (``??``) files under
+    HARNESS_OUTPUT_PREFIXES are ignored. Returns (None, []) outside a git repo.
+    """
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None, []
+    bad = []
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        path = line[3:].strip().strip('"')
+        if line.startswith("??") and path.startswith(HARNESS_OUTPUT_PREFIXES):
+            continue
+        bad.append(line)
+    return bool(bad), bad

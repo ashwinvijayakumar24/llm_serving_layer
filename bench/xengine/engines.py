@@ -155,9 +155,9 @@ VLLM_BACKEND_LOG_RE = re.compile(r"Using (\w+)(?: attention)? backend")
 # unless set by the arm; a null here means "not logged", not "unlimited".
 _KV = r"['\"]?\s*[=:]\s*['\"]?"
 VLLM_RESOLVED_RES = {
-    "max_num_seqs": re.compile(r"max_num_seqs" + _KV + r"(\d+)"),
-    "max_num_batched_tokens": re.compile(r"max_num_batched_tokens" + _KV + r"(\d+)"),
-    "max_model_len": re.compile(r"(?:max_model_len|max_seq_len)" + _KV + r"(\d+)"),
+    "max_num_seqs": re.compile(r"(?<![\w])max_num_seqs" + _KV + r"(\d+)"),
+    "max_num_batched_tokens": re.compile(r"(?<![\w])max_num_batched_tokens" + _KV + r"(\d+)"),
+    "max_model_len": re.compile(r"(?<![\w])(?:max_model_len|max_seq_len)" + _KV + r"(\d+)"),
     "kv_cache_tokens": re.compile(r"GPU KV cache size:\s*([\d,]+)\s*tokens"),
 }
 
@@ -187,6 +187,11 @@ SGLANG_METRIC_PREFILL_TOKENS = "sglang:prefill_effective_tokens_total"  # :913-9
 SGLANG_PREFIX_HIT_MODES = ("device_hit", "host_hit", "storage_hit")
 SGLANG_METRIC_EVICTIONS = "sglang:evicted_tokens_total"  # collector.py:2213-2220 (tokens)
 # NOT used: sglang:cache_hit_rate is the last prefill batch only (:305-310).
+# The retraction and eviction counters are LABELED Counters: exported only after
+# the first increment (metrics_collector.py:474-479, inc at :1270). Pilot job
+# 13918362 showed them absent on a live server with no retractions. This gauge
+# from the same collector is always exported and proves the endpoint is live.
+SGLANG_LIVE_MARKER = "sglang:num_running_reqs"
 # Two verified log sources: the scheduler's startup line, written as key=value
 # (managers/scheduler.py:1229-1237: max_total_num_tokens, chunked_prefill_size,
 # max_prefill_tokens, max_running_requests), and the
@@ -194,12 +199,14 @@ SGLANG_METRIC_EVICTIONS = "sglang:evicted_tokens_total"  # collector.py:2213-222
 # (entrypoints/engine.py:289, server_args.py:260). Patterns accept both forms.
 SGLANG_BACKEND_LOG_RE = re.compile(r"""attention_backend['"]?\s*[=:]\s*['"]?(\w+)""")
 SGLANG_RESOLVED_RES = {
-    "max_running_requests": re.compile(r"max_running_requests" + _KV + r"(\d+)"),
-    "chunked_prefill_size": re.compile(r"chunked_prefill_size" + _KV + r"(-?\d+)"),
-    "max_total_num_tokens": re.compile(r"max_total_num_tokens" + _KV + r"(\d+)"),
-    "max_prefill_tokens": re.compile(r"max_prefill_tokens" + _KV + r"(\d+)"),
-    "schedule_policy": re.compile(r"schedule_policy" + _KV + r"([a-z_-]+)"),
-    "page_size": re.compile(r"page_size" + _KV + r"(\d+)"),
+    "max_running_requests": re.compile(r"(?<![\w])max_running_requests" + _KV + r"(\d+)"),
+    "chunked_prefill_size": re.compile(r"(?<![\w])chunked_prefill_size" + _KV + r"(-?\d+)"),
+    "max_total_num_tokens": re.compile(r"(?<![\w])max_total_num_tokens" + _KV + r"(\d+)"),
+    "max_prefill_tokens": re.compile(r"(?<![\w])max_prefill_tokens" + _KV + r"(\d+)"),
+    "schedule_policy": re.compile(r"(?<![\w])schedule_policy" + _KV + r"([a-z_-]+)"),
+    # (?<!\w): the server_args dump also has 'c128_page_size', which a bare
+    # pattern matched in pilot job 13918362 (recorded 16; the real value is 1).
+    "page_size": re.compile(r"(?<![\w])page_size" + _KV + r"(\d+)"),
 }
 # ===========================================================================
 # end ENGINE FLAGS block
@@ -413,6 +420,26 @@ def _delta(before: dict[str, Any], after: dict[str, Any], name: str | None) -> f
     return float(a) - float(b)
 
 
+def _lazy_counter_delta(
+    before: dict[str, Any], after: dict[str, Any], name: str, live_marker: str
+) -> float | None:
+    """Delta of a LABELED prometheus Counter that is exported only after its first increment.
+
+    prometheus_client creates a labeled child on the first ``.labels(...).inc()``,
+    so until then the series is absent from /metrics. Absent before and present
+    after means it started from 0. Absent in both scrapes is 0 only when
+    ``live_marker`` (a metric always exported by the same collector) proves the
+    endpoint is live; otherwise the value is unknown (None), never a guessed 0.
+    """
+    a = after.get(name)
+    if isinstance(a, (int, float)) and not isinstance(a, bool):
+        b = before.get(name, 0.0)
+        return float(a) - float(b) if isinstance(b, (int, float)) else None
+    if live_marker in after:
+        return 0.0
+    return None
+
+
 def _ratio(num: float | None, den: float | None) -> float | None:
     if num is None or den is None or den <= 0:
         return None
@@ -509,26 +536,40 @@ class ServerProcess:
         )
 
     def stop(self, grace_s: float = 30.0) -> int | None:
+        """Graceful shutdown, parent first.
+
+        SIGTERM goes to the server's main process only, so the engine can stop
+        its own workers in order. Signalling the whole group at once made
+        SGLang's scheduler child die first and the parent log a crash and get
+        SIGKILLed (pilot job 13918362). Escalation: group SIGTERM after
+        ``grace_s``, then group SIGKILL. A final group SIGKILL reaps any orphaned
+        worker, which would otherwise keep GPU memory and skew the next arm.
+        """
         rc = None
         if self.proc is not None:
             if self.proc.poll() is None:
-                try:
-                    os.killpg(self.proc.pid, signal.SIGTERM)
-                except (ProcessLookupError, PermissionError):
-                    self.proc.terminate()
+                self.proc.terminate()
                 try:
                     self.proc.wait(timeout=grace_s)
                 except subprocess.TimeoutExpired:
+                    self._signal_group(signal.SIGTERM)
                     try:
-                        os.killpg(self.proc.pid, signal.SIGKILL)
-                    except (ProcessLookupError, PermissionError):
-                        self.proc.kill()
-                    self.proc.wait(timeout=10)
+                        self.proc.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        self._signal_group(signal.SIGKILL)
+                        self.proc.wait(timeout=10)
             rc = self.proc.returncode
+            self._signal_group(signal.SIGKILL)  # orphans only; the parent is gone
         if self._log_fh is not None:
             self._log_fh.close()
             self._log_fh = None
         return rc
+
+    def _signal_group(self, sig: int) -> None:
+        try:
+            os.killpg(self.proc.pid, sig)
+        except (ProcessLookupError, PermissionError):
+            pass
 
     def __enter__(self) -> ServerProcess:
         return self
@@ -741,7 +782,11 @@ class OursAdapter(EngineAdapter):
         prov = Provenance.capture(repo_root=REPO_ROOT)
         if prov.repo_sha is None:
             return None
-        v = f"git:{prov.repo_sha[:12]}" + ("-dirty" if prov.repo_dirty else "")
+        from bench.xengine.hardware import code_dirty
+
+        dirty, _ = code_dirty(REPO_ROOT)
+        dirty = prov.repo_dirty if dirty is None else dirty
+        v = f"git:{prov.repo_sha[:12]}" + ("-dirty" if dirty else "")
         if prov.engine_tag or prov.engine_sha:
             v += f"+engine:{prov.engine_tag or (prov.engine_sha or '')[:12]}"
         return v
@@ -1031,8 +1076,12 @@ class SGLangAdapter(EngineAdapter):
             # but only once the counter family itself is known to exist.
             hits = sum(p for p in parts if p is not None)
         return {
-            "preemptions": _delta(before, after, SGLANG_METRIC_PREEMPTIONS),
-            "evictions": _delta(before, after, SGLANG_METRIC_EVICTIONS),
+            "preemptions": _lazy_counter_delta(
+                before, after, SGLANG_METRIC_PREEMPTIONS, SGLANG_LIVE_MARKER
+            ),
+            "evictions": _lazy_counter_delta(
+                before, after, SGLANG_METRIC_EVICTIONS, SGLANG_LIVE_MARKER
+            ),
             "prefix_hit_rate": _ratio(hits, queries),
             "raw": {
                 "before": before,
@@ -1045,8 +1094,15 @@ class SGLangAdapter(EngineAdapter):
                     "preemptions": "requests (retractions)",
                 },
                 "definitions": {
-                    "preemptions": f"delta {SGLANG_METRIC_PREEMPTIONS}",
-                    "evictions": f"delta {SGLANG_METRIC_EVICTIONS} (TOKENS, not blocks)",
+                    "preemptions": (
+                        f"delta {SGLANG_METRIC_PREEMPTIONS}; absent series on a live "
+                        f"endpoint ({SGLANG_LIVE_MARKER} present) = 0 (labeled counter, "
+                        "exported after first increment)"
+                    ),
+                    "evictions": (
+                        f"delta {SGLANG_METRIC_EVICTIONS} (TOKENS, not blocks); absent "
+                        "series on a live endpoint = 0, as for preemptions"
+                    ),
                     "prefix_hit_rate": (
                         f"delta {base} with mode in {list(SGLANG_PREFIX_HIT_MODES)} / delta "
                         f"{base} over all modes (TOKEN granularity). sglang:cache_hit_rate is "

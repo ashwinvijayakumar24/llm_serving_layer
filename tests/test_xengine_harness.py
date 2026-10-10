@@ -893,3 +893,45 @@ def test_wall_clock_budget():
     spec = xc.load_workload("W1")
     xc.build_stream(spec, {"concurrency": 64}, 1, SLO, URL)
     assert time.perf_counter() - t < 10
+
+
+def test_code_dirty_ignores_untracked_results_only(tmp_path):
+    import subprocess
+
+    from bench.xengine.hardware import code_dirty
+
+    def git(*a):
+        subprocess.run(["git", *a], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    (tmp_path / "code.py").write_text("x = 1\n")
+    git("add", "code.py")
+    git("commit", "-q", "-m", "init")
+    assert code_dirty(tmp_path) == (False, [])
+    (tmp_path / "results" / "xengine").mkdir(parents=True)
+    (tmp_path / "results" / "xengine" / "a.json").write_text("{}")
+    assert code_dirty(tmp_path)[0] is False  # harness output only
+    (tmp_path / "stray.py").write_text("")
+    assert code_dirty(tmp_path)[0] is True  # untracked file outside results/
+    (tmp_path / "stray.py").unlink()
+    (tmp_path / "code.py").write_text("x = 2\n")
+    assert code_dirty(tmp_path)[0] is True  # modified tracked code
+
+
+def test_sglang_lazy_counters_absent_on_live_endpoint_are_zero():
+    a = xe.SGLangAdapter(python="py")
+    live = {"sglang:num_running_reqs": 0.0, "sglang:prefill_effective_tokens_total": 10.0}
+    c = a.server_counters(live, dict(live))
+    assert c["preemptions"] == 0.0 and c["evictions"] == 0.0
+    # Absent before, present after: counted from zero.
+    after = {**live, xe.SGLANG_METRIC_PREEMPTIONS: 3.0}
+    assert a.server_counters(live, after)["preemptions"] == 3.0
+    # No proof the endpoint is live: unknown, never a guessed 0.
+    assert a.server_counters({}, {})["preemptions"] is None
+
+
+def test_sglang_page_size_not_confused_with_c128():
+    log = "server_args={'page_size': 1, 'c128_page_size': 16}"
+    assert xe.grep_resolved(log, xe.SGLANG_RESOLVED_RES)["page_size"] in (1, "1")

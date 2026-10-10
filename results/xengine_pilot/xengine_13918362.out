@@ -1,0 +1,76 @@
+---------------------------------------
+Begin Slurm Prolog: Oct-09-2026 18:43:05
+Job ID:    13918362
+User ID:   avijayakumar41
+Account:   paceship-simpliearn
+Job name:  xengine-pilot
+Partition: gpu-h200
+QOS:       embers
+---------------------------------------
+=== node: atl1-1-02-012-23-0.pace.gatech.edu  job: 13918362  qos: embers ===
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 345 MHz, 1980 MHz, 3201 MHz, 29, 77.25 W, 700.00 W
+job 13918362 node atl1-1-02-012-23-0.pace.gatech.edu
+ours:   torch 2.12.0+cu130 cuda 13.0
+vllm:   vllm 0.31.0 torch 2.13.0+cu130
+sglang: sglang 0.5.21 torch 2.13.0+cu130
+  NVIDIA H200 sm_90  torch 2.12.0+cu130
+=== bench ours W1 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm ours --workload W1 \
+	--reps 1 --out results/xengine_pilot --points 1,16
+warning: --reps 1 < 3; SPEC hard rule 3 needs >= 3 per cell
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[ours] attention-backend pre-flight: flashinfer
+[ours] healthy after 19.0s at http://127.0.0.1:47641
+[ours] engine version: git:ea6d66a794e3-dirty+engine:v0.2.1
+[ours] W1 concurrency1 rep1: 104 requests (closed loop) ...
+[ours] -> results/xengine_pilot/W1/ours/concurrency1_rep1.json  VALID  out 117.2 tok/s  goodput 0.92  ok 100/100  (104 total)
+[ours] W1 concurrency16 rep1: 192 requests (closed loop) ...
+[ours] -> results/xengine_pilot/W1/ours/concurrency16_rep1.json  VALID  out 1311.3 tok/s  goodput 10.25  ok 128/128  (192 total)
+[ours] server stopped (rc=-15)
+=== bench vllm W1 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm vllm --workload W1 \
+	--reps 1 --out results/xengine_pilot --points 1,16
+warning: --reps 1 < 3; SPEC hard rule 3 needs >= 3 per cell
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[vllm] healthy after 452.2s at http://127.0.0.1:60173
+[vllm] engine version: 0.31.0
+[vllm] W1 concurrency1 rep1: 104 requests (closed loop) ...
+[vllm] -> results/xengine_pilot/W1/vllm/concurrency1_rep1.json  VALID  out 737.1 tok/s  goodput 5.76  ok 100/100  (104 total)
+[vllm] W1 concurrency16 rep1: 192 requests (closed loop) ...
+[vllm] -> results/xengine_pilot/W1/vllm/concurrency16_rep1.json  VALID  out 7391.8 tok/s  goodput 57.79  ok 128/128  (192 total)
+[vllm] server stopped (rc=0)
+=== bench sglang W1 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-sglang/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm sglang --workload W1 \
+	--reps 1 --out results/xengine_pilot --points 1,16
+warning: --reps 1 < 3; SPEC hard rule 3 needs >= 3 per cell
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[sglang] healthy after 268.1s at http://127.0.0.1:53821
+[sglang] engine version: 0.5.21
+[sglang] W1 concurrency1 rep1: 104 requests (closed loop) ...
+[sglang] -> results/xengine_pilot/W1/sglang/concurrency1_rep1.json  VALID  out 758.5 tok/s  goodput 5.93  ok 100/100  (104 total)
+[sglang] W1 concurrency16 rep1: 192 requests (closed loop) ...
+[sglang] -> results/xengine_pilot/W1/sglang/concurrency16_rep1.json  VALID  out 7467.1 tok/s  goodput 58.37  ok 128/128  (192 total)
+[sglang] server stopped (rc=-9)
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 345 MHz, 1980 MHz, 3201 MHz, 31, 77.46 W, 700.00 W
+OUT=results/xengine_pilot is not results/xengine: skipping render (pilot/scratch run)
+
+=== artifacts ===
+6
+=== done (bench rc=0) ===
+---------------------------------------
+Begin Slurm Epilog: Oct-09-2026 19:03:16
+Job ID:        13918362
+User ID:       avijayakumar41
+Account:       paceship-simpliearn
+Job name:      xengine-pilot
+Resources:     cpu=8,gres/gpu:h200=1,mem=32G,node=1
+Rsrc Used:     cput=02:41:52,vmem=0,walltime=00:20:14,mem=11985544K,energy_used=0
+Partition:     gpu-h200
+QOS:           embers
+Nodes:         atl1-1-02-012-23-0
+---------------------------------------

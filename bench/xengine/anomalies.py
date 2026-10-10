@@ -207,6 +207,49 @@ def detect_bimodal(
 
 
 # ---------------------------------------------------------------------------
+# Sparse tail outliers
+# ---------------------------------------------------------------------------
+# A few isolated samples far above the median, too few to form a KDE mode,
+# can still own the p99: in pilot job 13918362 two of 100 SGLang TTFTs at
+# concurrency 1 were ~115 ms against a 12 ms median, mid-run (not warmup), and
+# set p99 alone. This flags that case so a p99 is not read as typical behavior.
+OUTLIER_FACTOR = 5.0  # sample > factor x median
+OUTLIER_MAX_FRACTION = 0.05  # more than this is a mode/tail, not sparse outliers
+
+
+def detect_tail_outliers(
+    xs_in_order: Sequence[float],
+    metric: str,
+    factor: float = OUTLIER_FACTOR,
+    max_fraction: float = OUTLIER_MAX_FRACTION,
+    min_n: int = 30,
+) -> list[dict[str, Any]]:
+    xs = list(xs_in_order)
+    if len(xs) < min_n:
+        return []
+    med = sorted(xs)[len(xs) // 2]
+    if med <= 0:
+        return []
+    idx = [i for i, x in enumerate(xs) if x > factor * med]
+    if not idx or len(idx) / len(xs) > max_fraction:
+        return []
+    return [
+        {
+            "kind": f"tail_outliers_{metric.removesuffix('_ms')}",
+            "detail": (
+                f"{metric}: {len(idx)}/{len(xs)} samples > {factor:g}x the median "
+                f"({med:.1f}); max {max(xs):.1f} at positions {idx[:10]} in send "
+                "order. p99 may be set by these alone."
+            ),
+            "metric": metric,
+            "median": med,
+            "positions": idx,
+            "values": [xs[i] for i in idx],
+        }
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Warmup
 # ---------------------------------------------------------------------------
 
@@ -349,6 +392,7 @@ def run_anomalies(
         out += detect_bimodal(list(xs), metric)
     for metric in ("ttft_ms", "tpot_ms"):
         out += detect_warmup(list(samples_in_order.get(metric) or []), metric)
+        out += detect_tail_outliers(list(samples_in_order.get(metric) or []), metric)
     if gpu_samples:
         out += detect_gpu_drift(gpu_samples)
     return out
