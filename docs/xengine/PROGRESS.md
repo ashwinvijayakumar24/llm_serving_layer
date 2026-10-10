@@ -12,8 +12,8 @@ is that a result recorded here never has to be re-run just to remember it.
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
 | 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
-| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | W1, W2, W3 done; W4 v1 superseded; W4 v2 job 13933751 queued |
-| 4 — analysis + BENCHMARKS.md | not started |
+| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | done 2026-10-10: W1 13931401, W2 13931402, W3 13931403, W4 v2 13933751 (W4 v1 13931404 superseded) |
+| 4 — analysis + BENCHMARKS.md | drafted 2026-10-10: observations for (a)–(e) + W5 written from the tables; all hypotheses UNVERIFIED pending Ashwin |
 
 ## Log
 
@@ -138,34 +138,48 @@ repo `3a91fd7` clean. Values are cell means from `docs/xengine/BENCHMARKS.md`.
 | 2026-10-10 | W1 c=64 | ours flattens: tok/s 1984→2110 (c32→64), TTFT p99 602→2233 ms | — | `results/xengine/W1/ours/` | 13931401 |
 | 2026-10-10 | W5 on W1 | ours int8 vs fp16 tok/s at c=1 | 82 vs 117 (−30%) | `results/xengine/W1/ours-int8/` | 13931401 |
 
-W2 (13931402) and W3 (13931403) results are in `BENCHMARKS.md`; see the W3
-observation (b) and F-006 for what they showed. W4 v1 (13931404) was
-superseded by W4 v2 (closed loop), job 13933751.
+| 2026-10-10 | W3 rate 8 | prefix hit rate: ours / vLLM / SGLang | 0.626 / 0.629 / 0.635 (ceiling ≈0.64) | `results/xengine/W3/{ours,vllm,sglang}/rate8_rep*.json` | 13931403 |
+| 2026-10-10 | W3 rate 8 | TTFT p50 ms, cache on vs off: vLLM / SGLang | 15.1 vs 17.1 / 14.8 vs 15.7 | `results/xengine/W3/*/rate8_rep*.json` | 13931403 |
+| 2026-10-10 | W3 rate 16 | ours TTFT p50 ms, cache on vs off | 728 vs 1,160 | `results/xengine/W3/ours*/rate16_rep*.json` | 13931403 |
+| 2026-10-10 | W2 | ours free KV blocks at successive cell starts (0 requests running) | 277,590 → … → 0, then goodput 0 | `results/xengine/W2/ours/*.json` (before-snapshots) | 13931402 |
+| 2026-10-10 | W2 rate 32 | goodput rps: vLLM / SGLang (SLO attainment 1.00) | 32.8 / 33.2 | `results/xengine/W2/{vllm,sglang}/rate32_rep*.json` | 13931402 |
+| 2026-10-10 | W4 v2 c=16 | preemptions per run: ours / ours-noprefix / vLLM / SGLang | ≈1,850 / ≈970 / 22 / 5 | `results/xengine/W4/*/concurrency16_rep*.json` | 13933751 |
+| 2026-10-10 | W4 v2 c=16 | output tok/s: ours / ours-noprefix / vLLM / SGLang | 592 / 874 / 5,786 / 5,551 | same | 13933751 |
+| 2026-10-10 | W4 v2 c=4 | preemptions with pool not short: ours (cache on) vs ours-noprefix | 111–143 vs 0 | `results/xengine/W4/ours*/concurrency4_rep*.json` | 13933751 |
 
-### 2026-10-10
-- W3: all three caches hit ≈0.63 of tokens (the workload's ceiling ≈0.64);
-  TTFT benefit 1–2 ms for vLLM/SGLang; none for ours unloaded, large for ours
-  under load (p50 728 vs 1160 ms at rate 16). `sglang-lpm` = default.
-- W2: ours collapses once its prefix cache has filled the whole KV pool
-  (free blocks 277,590 → 0 across cells with no requests running); vLLM does
-  not drift. W3's `ours-noprefix` keeps the full pool, so the cache is the
-  cause. Logged in F-006 with evidence; cells starting with <5% free blocks
-  are flagged in the doc.
-- Steady-state rejections in W2/W3 line up across engines for the same
-  (rate, rep) arrival stream and concentrate at low rates; the pre-registered
-  check is kept as-is.
+GPU health: every job ended at the 1980 MHz max SM clock, 34–45 °C
+(`results/xengine/_env/gpu_*_{start,end}.csv`).
+
+Coverage caveats: W2 and W3 have 1–3 valid reps per cell (steady-state rule);
+W2 `ours` cells after its pool filled are flagged; three W5-on-W2 int8 cells
+were cut by the time limit.
+
+### 2026-10-10 (later)
+- W4 v2 all 45 cells valid in 32 min. F-004 reproduced (ours preempts at
+  concurrency 4 only with the cache on). New F-007: with the cache on, 12–18 of
+  48 requests "complete" with no output.
+- OSS candidates: 5 entries, all reproduced on the pinned versions (OSS-005:
+  `vllm serve --help` crashes on a GPU-less host).
 
 ## Resume-usable facts
 
-Drafts, each tied to the rows above. The condition is part of the claim.
+Drafts, each tied to rows above. The condition is part of the claim.
 
 - "Benchmarked my serving layer against vLLM 0.31 and SGLang 0.5.21 on one
-  H200 (Llama-3.2-1B, fp16): 6.2× throughput gap at batch 1; ablations
-  attributed ≈4.7× of it to CUDA graphs + torch.compile, leaving a ≈1.3×
-  residual." — from the W1 c=1 ladder rows.
-- "Measured that disabling CPU/GPU scheduling overlap costs vLLM 35% and SGLang
-  36% of batch-1 throughput." — W1 c=1 ladder rows.
-- Not yet usable: anything about prefix caching (W3) or preemption (W4).
+  H200 (Llama-3.2-1B, fp16) across 4 workloads; ablations attributed ≈4.7× of
+  a 6.2× batch-1 throughput gap to CUDA graphs + torch.compile." — W1 rows.
+- "Measured that CPU/GPU scheduling overlap is worth ≈35% of batch-1
+  throughput in both vLLM and SGLang." — W1 ladder rows.
+- "Found, with a cache-off control arm, that my radix prefix cache never
+  released memory proactively, triggering ~85× more preemptions than vLLM
+  under an equal 32k-token KV pool." — W4 v2 rows + W2 drift row. (Say
+  "found and documented", not "fixed": it is not fixed yet.)
+- "Filed 5 reproduced open-source candidates against vLLM/SGLang (e.g.
+  `vllm serve --help` crashes without a GPU)." — only once any are filed;
+  until then: "identified 5 reproduced issues".
+- Prefix caching: the honest headline is a tie — all three caches hit the
+  workload's ≈0.64 ceiling on a shared system prompt. Usable as an interview
+  answer, not as a resume win.
 
 ## Open questions / decisions pending
 
