@@ -466,6 +466,15 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 | rate=32 | TODO | TODO |
 <!-- END GENERATED: w5_table -->
 
+**W5 observation** (drafted from the table above, job 13931401). int8
+weight-only is **slower** than fp16 in our engine at every concurrency on W1:
+82 vs 117 tok/s at concurrency 1 (−30%), 1586 vs 2110 at 64 (−25%). This is
+expected from the engine's design: `components_gpu.linear()` dequantizes each
+int8 weight back to fp16 on every call and then runs an fp16 matmul, so int8
+adds work and saves only memory. The win from int8 would need a fused int8
+GEMM, which the engine does not have. Every `ours-int8` artifact confirms in
+its server log that 112 linear layers were quantized.
+
 ## Run inventory
 
 Every artifact the renderer found, including invalid runs. Invalid runs are
@@ -698,8 +707,39 @@ Ashwin has checked it against both the data and the source.
 
 ### (a) Raw throughput gap and its attribution
 
-**Observation.** TODO — fill from the W1 tables and Figure W1-a once artifacts
-exist. State the gap between `ours` and each baseline at each concurrency.
+**Observation** (drafted from the W1 tables above, job 13931401; every number
+below is a cell mean from those tables, and every ratio is plain arithmetic on
+two such means).
+
+- **The gap.** At concurrency 1, `ours` produces 117 output tok/s against 730
+  for `vllm` and 757 for `sglang` (≈6.2× and ≈6.5×). Per-request decode time
+  shows the same thing: TPOT p99 8.27 ms vs 1.30 ms and 1.25 ms. At
+  concurrency 32 the gap is ≈5.5× (vLLM) and ≈6.0× (SGLang): 1984 vs 10970
+  and 11957 tok/s.
+- **Ablation ladder at concurrency 1 (vLLM).** Default 730 → no CUDA graphs
+  (`vllm-nograph`) 185 → no graphs and no torch.compile (`vllm-eager`) 154.
+  Removing graphs alone divides vLLM's throughput by ≈3.9; removing compile
+  as well takes it to ≈4.7. The remaining ratio between `vllm-eager` (154) and
+  `ours` (117) is ≈1.3. In other words, once vLLM loses graphs and compile,
+  most of the 6.2× gap is gone.
+- **SGLang shows the same shape.** Default 757 → `sglang-eager` 133 (≈5.7×).
+  With graphs off, SGLang at concurrency 1 is only ≈1.14× faster than `ours`
+  (133 vs 117 tok/s), so the two engines are close once graphs are removed.
+- **CPU/GPU overlap matters too, and both engines have it.** `vllm-noasync`
+  drops to 477 (−35%) and `sglang-nooverlap` to 486 (−36%) at concurrency 1.
+  Our engine has no overlap at all.
+- **At high concurrency the ladder compresses.** At concurrency 64:
+  `vllm` 12806, `vllm-noasync` 10977, `vllm-nograph` 8234, `vllm-eager` 7269,
+  `ours` 2110. Larger batches amortize launch overhead, so graphs matter less
+  (≈1.6× instead of ≈3.9×), and our engine's own batch cap (below) dominates.
+
+**Reading, not yet a conclusion.** For a 1B model at small batch, each decode
+step is mostly kernel-launch and CPU overhead, not math. That is why CUDA
+graphs (which remove per-step launch cost) and overlap (which hides CPU time)
+account for most of the measured gap, and why fused-kernel differences are a
+residual ≈1.3× at batch 1. This matches the mechanism; whether the residual is
+fused kernels, our per-layer Python loop, or our blocking `.tolist()` is not
+separated by these arms.
 
 **Mechanistic hypothesis.** The gap is attributed with an ablation ladder: each
 diagnostic arm turns off one feature of a baseline engine, and the change in
@@ -829,7 +869,26 @@ verified; effect on tails unverified.
 | concurrency=64 | 18.06x **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: warmup_tpot; base: anomaly: bimodal_ttft; base: anomaly: bimodal_e2e; base: anomaly: bimodal_tpot]** | 17.55x **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; base: anomaly: bimodal_ttft; base: anomaly: bimodal_tpot]** | 16.48x **[anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: bimodal_ttft]** |
 <!-- END GENERATED: w1_scaling -->
 
-**Observation.** TODO — fill from the derived table above once artifacts exist.
+**Observation** (drafted from the derived table above, job 13931401).
+
+- Normalized to its own concurrency-1 throughput, `ours` scales **as well as
+  or slightly better than** both baselines up to concurrency 32: 16.98× vs
+  15.03× (`vllm`) and 15.79× (`sglang`).
+- Between concurrency 32 and 64, `ours` almost stops scaling (16.98× → 18.06×)
+  while `vllm` keeps going (15.03× → 17.55×). In absolute terms our throughput
+  goes 1984 → 2110 tok/s, and TTFT p99 jumps from 602 ms to 2233 ms.
+
+**Reading, not yet a conclusion.** Two mechanisms are consistent with this.
+(1) A large fixed per-step cost scales *well* in relative terms: the more of a
+step is overhead, the more a bigger batch amortizes it, so good relative
+scaling here partly reflects poor absolute efficiency. (2) Our scheduler caps
+the running batch at 32 (`serving/scheduler/scheduler.py:209`), so at 64
+in-flight requests half of them wait in the queue; the TTFT jump is that
+queueing. `vllm-matched` (vLLM capped at 32 sequences) is the direct check:
+at concurrency 64 it reaches 11745 tok/s vs 12806 for default vLLM, and its
+TTFT p99 rises from 350 to 448 ms. So capping vLLM at 32 costs it ≈8%
+throughput, far less than our flattening, which says the cap is not the whole
+story for us.
 
 **Mechanistic hypothesis.** This comparison is retained from ADR-013. Dividing
 each engine's throughput by its own batch-1 throughput removes kernel quality
