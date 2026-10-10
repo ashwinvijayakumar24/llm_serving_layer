@@ -11,8 +11,8 @@
 # shorter jobs also queue faster than one long one and a failure costs one
 # workload, not the study. The renderer flags any cross-node mixing it sees.
 #
-# Wall-clock limits are first guesses for scheduling only; replace them with
-# 1.5x the per-cell times the pilot measures (logged per cell in logs/).
+# Wall-clock limits: checked against pilot job 13918362 (server start: vLLM ~7.5 min,
+# SGLang ~4.5 min, ours ~20 s per arm per workload; W1 points ~20 s-2 min each).
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -41,7 +41,7 @@ case "${1:-}" in
         ;;
     all)
         submit xengine-W1 06:00:00 WORKLOADS=W1 RUN_W5=1 W5_WORKLOADS=W1
-        submit xengine-W2 03:00:00 WORKLOADS=W2 RUN_W5=1 W5_WORKLOADS=W2
+        submit xengine-W2 04:00:00 WORKLOADS=W2 RUN_W5=1 W5_WORKLOADS=W2
         submit xengine-W3 05:00:00 WORKLOADS=W3
         submit xengine-W4 04:00:00 WORKLOADS=W4
         ;;
