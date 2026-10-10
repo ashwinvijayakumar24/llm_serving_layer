@@ -12,7 +12,7 @@ is that a result recorded here never has to be re-run just to remember it.
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
 | 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
-| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | not started |
+| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | submitted 2026-10-09 on inferno: W1 13931401, W2 13931402, W3 13931403, W4 13931404 |
 | 4 — analysis + BENCHMARKS.md | not started |
 
 ## Log
@@ -104,6 +104,23 @@ is that a result recorded here never has to be re-run just to remember it.
 - OSS-003 confirmed at runtime (vLLM never logs `max_num_seqs`); OSS-004 added.
 - Pilot numbers are single-rep setup checks on a preemptible QOS and are **not**
   results; they are kept in `results/xengine_pilot/` only as setup evidence.
+
+- Full matrix submitted on inferno (user approved): W1 13931401, W2 13931402,
+  W3 13931403, W4 13931404 (1×H200 each; W1 and W2 also run the W5 int8 cells).
+- Two pre-start fixes pushed while the jobs were queued:
+  (1) in-job `make render` now writes an untracked copy under
+  `results/xengine/_render/`, so parallel jobs never modify a tracked file;
+  (2) `vllm-matched` matches only `--max-num-seqs 32` when the workload sets no
+  pool, because ours derives a larger pool (4.44M tokens) than vLLM can allocate
+  (4.08M) and copying it would fail vLLM's startup.
+- **Provenance note for W1 (13931401):** the job started 22:51:15 EDT at
+  `614cd1a`; the PACE checkout was fast-forwarded to `3a91fd7` at 22:52:32. Only
+  the first arm (`ours`) had started, and its process loaded `614cd1a`; all later
+  W1 arms run `3a91fd7`. The diff between the two commits touches only
+  matched-arm pool resolution (`run.py:resolve_kv_pool_tokens`,
+  `engines.py` vLLM matched flags) and tests, which the `ours` arm does not
+  execute. The `ours` artifacts nevertheless record `3a91fd7` because the SHA is
+  read at write time. Rule adopted: no PACE checkout changes while jobs run.
 
 ## Measured results
 
