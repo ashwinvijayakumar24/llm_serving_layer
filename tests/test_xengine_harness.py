@@ -947,3 +947,33 @@ def test_vllm_matched_without_workload_pool_matches_batch_limit_only(tmp_path):
     assert spec.flags["max_num_seqs"] == 32
     w4 = xc.load_workload("W4")
     assert xr.resolve_kv_pool_tokens(None, w4, arm, tmp_path)[0] == 32768
+
+
+def test_closed_loop_deadline_cuts_off_and_reports():
+    srv = serve_in_thread(token_delay_s=0.05)
+    try:
+        cfg = LoadGenConfig(url=srv.base_url + "/v1/chat/completions", request_timeout_s=30)
+        specs = [RequestSpec(i, 0.0, f"p{i}", 40, Phase.STEADY) for i in range(40)]
+        run = asyncio.run(run_closed_loop(cfg, specs, 2, deadline_s=1.0))
+    finally:
+        srv.stop()
+    assert run.deadline_hit is True
+    assert len(run.results) < 40 and run.dropped_in_flight >= 1
+    assert len(run.schedule) == len(run.results)
+
+
+def test_load_state_per_engine():
+    assert xe.VLLMAdapter(python="p").load_state(
+        {"vllm:num_requests_running": 2.0, "vllm:num_requests_waiting": 1.0}
+    ) == {"running": 2.0, "waiting": 1.0}
+    assert xe.SGLangAdapter(python="p").load_state({}) == {"running": None, "waiting": None}
+    ours = xe.OursAdapter(python="p").load_state({"scheduler": {"running": 0, "waiting": 3}})
+    assert ours["waiting"] == 3
+
+
+def test_w4_is_closed_loop_with_deadline():
+    w4 = xc.load_workload("W4")
+    assert w4.loop == "closed" and w4.kv_pool_tokens == 32768
+    assert [p["concurrency"] for p in w4.points()] == [4, 16, 32]
+    lcfg = xc.build_loadgen_config(w4, {"concurrency": 4}, 0, SLO, URL)
+    assert lcfg.extra_config["point_deadline_s"] == 1200.0

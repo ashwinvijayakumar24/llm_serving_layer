@@ -66,7 +66,7 @@ Baseline arms (`ours`, `vllm`, `sglang`) run on every workload. Each diagnostic
 arm runs only where its mechanism is exercised: W1 — `vllm-eager`,
 `vllm-nograph`, `vllm-noasync`, `vllm-matched`, `sglang-eager`,
 `sglang-nooverlap`; W3 — `ours-noprefix`, `vllm-noprefix`, `sglang-noradix`,
-`sglang-lpm`; W4 — `vllm-matched`. Source of truth: the `ARMS_W*` lists in the
+`sglang-lpm`; W4 — `ours-noprefix`, `vllm-matched`. Source of truth: the `ARMS_W*` lists in the
 `Makefile`.
 
 ## Workloads (`bench/xengine/configs/workloads/*.yaml`)
@@ -76,7 +76,7 @@ arm runs only where its mechanism is exercised: W1 — `vllm-eager`,
 | W1 | concurrency sweep 1,2,4,8,16,32,64; prompt 512 / output 128 fixed | closed loop (fixed in-flight count) |
 | W2 | lognormal prompt lengths, long-tail outputs; offered-rate sweep | open loop (existing loadgen) |
 | W3 | 80% of requests share a long common system prefix | open loop; prefix-cache on vs off for every engine |
-| W4 | many concurrent long sequences with an **equal KV pool size in tokens** across engines, forcing preemption | open loop |
+| W4 | v2: 4 / 16 / 32 long sequences in flight (≈2.5k tokens each) with an **equal 32,768-token KV pool** on every engine; 4 fits, 16 and 32 force preemption | closed loop (v1 open loop, job 13931404, superseded: unequal pressure across engines) |
 | W5 | appendix: our engine int8 vs fp16 on W1/W2 | — |
 
 All workloads seeded; same seed → byte-identical request stream for every engine.

@@ -386,6 +386,11 @@ def build_loadgen_config(
         ignore_eos=True,
         name=f"xengine_{spec.id}",
         extra_body=json.loads(json.dumps(STREAM_OPTIONS)),
+        extra_config=(
+            {"point_deadline_s": float(spec.closed_loop["point_deadline_s"])}
+            if spec.closed_loop.get("point_deadline_s")
+            else {}
+        ),
     )
 
 

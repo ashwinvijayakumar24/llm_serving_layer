@@ -842,7 +842,7 @@ def _w3_chart(grid: Grid, out: Path) -> bool:
 
 
 def _w4_chart(grid: Grid, out: Path) -> bool:
-    arms = BASELINE_ARMS + ["vllm-matched"]
+    arms = BASELINE_ARMS + ["ours-noprefix", "vllm-matched"]
     good = {a: _series(grid, "W4", a, "goodput_rps") for a in arms}
     pre = {a: _series(grid, "W4", a, "preemptions") for a in arms}
     if not any(s[0] for s in good.values()) and not any(s[0] for s in pre.values()):
@@ -857,13 +857,13 @@ def _w4_chart(grid: Grid, out: Path) -> bool:
                 continue
             style = "-" if arm in BASELINE_ARMS else "--"
             ax.errorbar(xs, ys, yerr=[lo, hi], label=arm, marker="o", linestyle=style, capsize=3)
-        ax.set_xlabel(f"offered load ({xname})")
+        ax.set_xlabel(f"in-flight sequences ({xname})")
         ax.set_ylabel(METRIC_LABELS[metric])
         ax.grid(True, alpha=0.3)
         if ax.get_legend_handles_labels()[0]:
             ax.legend(fontsize=8)
-    a1.set_title("goodput vs offered load", fontsize=10)
-    a2.set_title("preemptions vs offered load (null counters omitted)", fontsize=10)
+    a1.set_title("goodput vs in-flight sequences", fontsize=10)
+    a2.set_title("preemptions vs in-flight sequences (null counters omitted)", fontsize=10)
     fig.suptitle(f"W4 forced preemption, equal KV pool\n({ERRBAR_NOTE})", fontsize=10)
     fig.tight_layout()
     fig.savefig(out, dpi=120)

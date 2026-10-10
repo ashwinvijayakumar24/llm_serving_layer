@@ -698,6 +698,23 @@ class EngineAdapter:
     def parse_metrics(self, body: str) -> dict[str, Any]:
         return parse_prometheus(body)
 
+    # Gauge names for "requests on the server right now", per engine.
+    running_metric: str | None = None
+    waiting_metric: str | None = None
+
+    def load_state(self, snapshot: dict[str, Any]) -> dict[str, Any]:
+        """Requests running/waiting on the server in one metrics snapshot.
+
+        Recorded before every point so a point that starts behind leftover work
+        from the previous one is marked invalid (server_not_idle_at_start).
+        """
+
+        def val(name: str | None) -> float | None:
+            v = snapshot.get(name) if name else None
+            return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+        return {"running": val(self.running_metric), "waiting": val(self.waiting_metric)}
+
     def server_counters(self, before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
         """SPEC `server_counters` from two snapshots. Missing -> None, never 0."""
         raise NotImplementedError
@@ -801,6 +818,12 @@ class OursAdapter(EngineAdapter):
         # Keep the parts that carry counters; drop specs/notes text.
         return {k: d.get(k) for k in ("server", "scheduler", "allocator") if k in d}
 
+    def load_state(self, snapshot: dict[str, Any]) -> dict[str, Any]:
+        sched = (snapshot or {}).get("scheduler") or {}
+        return {
+            k: sched.get(k) for k in ("running", "waiting", "swapped", "blocks_free", "blocks_used")
+        }
+
     def server_counters(self, before, after):
         sb = (before or {}).get("scheduler") or {}
         sa = (after or {}).get("scheduler") or {}
@@ -894,6 +917,8 @@ class OursAdapter(EngineAdapter):
 
 class VLLMAdapter(EngineAdapter):
     name = "vllm"
+    running_metric = "vllm:num_requests_running"  # ENGINE_FLAGS.md §4
+    waiting_metric = "vllm:num_requests_waiting"
     health_path = VLLM_HEALTH_PATH
     metrics_path = VLLM_METRICS_PATH
 
@@ -998,6 +1023,8 @@ class VLLMAdapter(EngineAdapter):
 
 class SGLangAdapter(EngineAdapter):
     name = "sglang"
+    running_metric = "sglang:num_running_reqs"  # ENGINE_FLAGS.md §4
+    waiting_metric = "sglang:num_queue_reqs"
     health_path = SGLANG_HEALTH_PATH
     metrics_path = SGLANG_METRICS_PATH
 

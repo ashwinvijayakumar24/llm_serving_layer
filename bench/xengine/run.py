@@ -256,9 +256,18 @@ def measure(
     checks: dict[str, Any] = {}
     if stream.loop == "closed":
         assert stream.concurrency is not None
+        deadline = stream.lcfg.extra_config.get("point_deadline_s")
         run = asyncio.run(
-            run_closed_loop(stream.lcfg, stream.specs, stream.concurrency, client=client)
+            run_closed_loop(
+                stream.lcfg, stream.specs, stream.concurrency, client=client, deadline_s=deadline
+            )
         )
+        if getattr(run, "deadline_hit", False):
+            reasons.append(
+                f"point_deadline_exceeded: stopped after {deadline:g}s with "
+                f"{run.dropped_in_flight} requests in flight and "
+                f"{len(stream.specs) - len(run.schedule) - run.dropped_in_flight} never sent"
+            )
         win = steady_window(run)
         window_s = (win[1] - win[0]) if win else 0.0
         chk = inflight_check(run, stream.concurrency)
@@ -468,6 +477,7 @@ def _run_points(
                 spec, point, rep, slo, adapter.chat_url(base_url), renderer, adapter.model_name
             )
             before = adapter.scrape_counters(base_url)
+            pre_state = adapter.load_state(before)
             sampler = (
                 GpuSampler(args.gpu_sample_interval).start()
                 if args.gpu_sample_interval > 0
@@ -482,9 +492,15 @@ def _run_points(
             gpu_samples = sampler.stop() if sampler else []
             after = adapter.scrape_counters(base_url)
             counters = adapter.server_counters(before, after)
+            counters.setdefault("raw", {})["pre_point_state"] = pre_state
 
             metrics, samples, in_order = compute_metrics(run, stream.lcfg, window_s)
             reasons = list(static_reasons) + reasons
+            if pre_state.get("running") or pre_state.get("waiting"):
+                reasons.append(
+                    f"server_not_idle_at_start: running={pre_state.get('running')} "
+                    f"waiting={pre_state.get('waiting')} before this point"
+                )
             if metrics["completed"] == 0:
                 reasons.append("no_completed_requests: no steady-window request completed")
             if not healthy(adapter, base_url):

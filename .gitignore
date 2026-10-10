@@ -47,6 +47,7 @@ slurm-*.out
 # it is committed next to the artifact it belongs to.
 !results/xengine/**/server_*.log
 !results/xengine_pilot/**/server_*.log
+!results/xengine_w4_v1/**/server_*.log
 logs/
 
 # Editor

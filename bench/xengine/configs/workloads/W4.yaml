@@ -1,36 +1,48 @@
-# W4 — KV-pool pressure, OPEN LOOP. Many concurrent long sequences against an
-# EQUAL KV pool size in tokens on every engine, small enough to force
-# preemption (vLLM "preemption", SGLang "retraction", ours "preemption").
+# W4 — KV-pool pressure, CLOSED LOOP (v2). A fixed number of long sequences in
+# flight against an EQUAL KV pool size in tokens on every engine.
+#
+# WHY CLOSED LOOP (v1 was open loop, job 13931404): at a fixed offered RATE a
+# slower engine holds more requests in flight, so it faces more memory pressure
+# than a faster one at the same point — ours ran ~53 ms/token on these lengths
+# vs ~1.5 ms for vLLM/SGLang, so "rate 1" meant ~50 in flight for ours and ~1-2
+# for them. A fixed in-flight COUNT puts the same KV demand on every engine.
+# v1 also failed the steady-state check in most cells (long requests vs a 90 s
+# window) and exposed a no-progress state in ours (docs/xengine/FINDINGS_OURS.md
+# F-006). v1 artifacts are kept in results/xengine_w4_v1/ as evidence.
+#
+# Sizing: prompt ~2048 + output 512 ≈ 2.5k tokens per sequence; the 32768-token
+# pool holds ~12 of them. concurrency 4 fits (control), 16 (~41k) forces
+# preemption, 32 (~82k) is heavy pressure.
 #
 # `kv_pool_tokens` is translated per engine by bench/xengine/engines.py:
-#   ours    SERVING_KV_BLOCKS = kv_pool_tokens / 16   (block_size 16 is the
-#           build_default_app default; the uvicorn factory takes no arguments)
+#   ours    SERVING_KV_BLOCKS = kv_pool_tokens / 16
 #   vLLM    --num-gpu-blocks-override = kv_pool_tokens / --block-size (16)
 #   SGLang  --max-total-tokens = kv_pool_tokens
 # Pools are equal in TOKENS, not in usable tokens: each engine reserves part of
 # its pool differently (ours holds back a watermark of max_batch_size blocks).
-# That difference is recorded in each artifact's engine.flags, not hidden.
 id: W4
-title: "Long sequences, equal 32768-token KV pool, forced preemption"
-loop: open
-seed: 20261011
-# The expected point grid (offered load, requests/s). The renderer reads this list so a
-# missing point shows as TODO. Each point is a single-key mapping.
+title: "Long sequences, equal 32768-token KV pool, fixed in-flight count (v2)"
+loop: closed
+seed: 20261013
 points:
-  - {rate: 1}
-  - {rate: 2}
-  - {rate: 4}
-  - {rate: 8}
+  - {concurrency: 4}
+  - {concurrency: 16}
+  - {concurrency: 32}
 requests:
   structure: zero
-  prompt: {dist: uniform, mean: 2048, uniform_spread: 0.25, min_len: 1024, max_len: 3072}
-  output: {dist: uniform, mean: 1024, uniform_spread: 0.25, min_len: 512, max_len: 1536}
-open_loop:
-  warmup_s: 15
-  duration_s: 90
-  drain_s: 15
-  process: poisson
+  prompt: {dist: uniform, mean: 2048, uniform_spread: 0.25, min_len: 1536, max_len: 2560}
+  output: {dist: fixed, mean: 512}
+closed_loop:
+  warmup_per_worker: 1
+  measured_per_worker: 4
+  # 48 keeps concurrency 4 to ~48 long requests per rep. p99 cells below 100
+  # samples are flagged by the renderer; W4's headline metrics are throughput,
+  # goodput and preemption counts, not tails.
+  min_measured: 48
+  drain_per_worker: 1
+  # Wall-clock cap per point: a server that stops making progress is cut off
+  # and the point is marked invalid (point_deadline_exceeded), not waited out.
+  point_deadline_s: 1200
 request_timeout_s: 600
-kv_pool_tokens: 32768          # ~10 sequences of ~3k tokens: preemption is certain
-# Arm x workload matrix: docs/xengine/SPEC.md (source of truth: Makefile ARMS_W*).
-arms: [ours, vllm, sglang, vllm-matched]
+kv_pool_tokens: 32768
+arms: [ours, ours-noprefix, vllm, sglang, vllm-matched]

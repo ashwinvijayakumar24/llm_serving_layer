@@ -1,0 +1,817 @@
+{
+ "schema": "xengine-run/1",
+ "arm": "ours",
+ "engine": {
+  "name": "ours",
+  "version": "git:3a91fd7db4e0+engine:v0.2.1",
+  "launch_cmd": [
+   "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+   "-m",
+   "uvicorn",
+   "bench.xengine.ours_factory:build_app",
+   "--factory",
+   "--host",
+   "127.0.0.1",
+   "--port",
+   "47225",
+   "--log-level",
+   "warning"
+  ],
+  "flags": {
+   "factory": "bench.xengine.ours_factory:build_app",
+   "prefix_cache": true,
+   "preemption": "recompute",
+   "block_size": 16,
+   "max_batch_size": 32,
+   "watermark_blocks": 32,
+   "dtype": "float16",
+   "weight_quant": null,
+   "kv_pool_tokens": 32768,
+   "kv_blocks": 2048,
+   "kv_pool_note": "ours reserves a watermark of 32 blocks (512 tokens) from admission",
+   "kv_pool_tokens_source": "W4.yaml kv_pool_tokens",
+   "resolved": {
+    "kv_blocks": 2048,
+    "preemption": "recompute",
+    "prefix_cache": true,
+    "static_batching": false
+   }
+  },
+  "model_name": "llama-3.2-1b-instruct",
+  "launch_env": {
+   "LLM_WEIGHTS_PATH": "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/llm_inference_engine/weights",
+   "HF_HUB_OFFLINE": "1",
+   "PYTHONPATH": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/vendor/llm_inference_engine:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/vendor/llm_inference_engine:/usr/local/pace-apps/manual/packages/xalt/xalt/site_packages",
+   "SERVING_KV_BLOCKS": "2048"
+  },
+  "launched_by_harness": true,
+  "base_url": "http://127.0.0.1:47225",
+  "healthy_after_s": 10.017535768012749,
+  "server_log": "results/xengine/W4/ours/server_20261010T031205Z.log",
+  "server_python": "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+  "attention_backend_evidence": {
+   "preflight": {
+    "backend": "flashinfer",
+    "flashinfer_version": "0.6.16",
+    "returncode": 0
+   },
+   "server_log": "flashinfer",
+   "startup_config_line": {
+    "kv_blocks": 2048,
+    "preemption": "recompute",
+    "prefix_cache": true,
+    "static_batching": false
+   }
+  }
+ },
+ "workload": {
+  "id": "W4",
+  "config_path": "bench/xengine/configs/workloads/W4.yaml",
+  "config_sha256": "4e3ad7babcc08a28dccddf4c13cb916fe7b78be40955bc3374a750aa67c5bc32",
+  "seed": 399478873,
+  "point": {
+   "rate": 2
+  },
+  "loop": "open",
+  "base_seed": 20261011,
+  "concurrency": null,
+  "kv_pool_tokens": 32768,
+  "request_stream_sha256": "fa9edb02a79e35346a1d5b59bba1a6272ee03441dec607db4f7c49de97b08872",
+  "workload_fingerprint": "f5eda1bf7ed95d085a25d13e807ae3c9",
+  "n_requests": 256,
+  "prompt_render": "hf_tokenizer",
+  "realized": {
+   "prompt_len": {
+    "n": 256,
+    "mean": 2072.83984375,
+    "stdev": 298.90719212863644,
+    "cv": 0.14420177855510524,
+    "min": 1551,
+    "p50": 2084.5,
+    "p90": 2475.5,
+    "p99": 2545.9,
+    "max": 2550,
+    "p99_over_p50": 1.221348045094747,
+    "percentile_method": "linear interpolation between order statistics"
+   },
+   "output_len": {
+    "n": 256,
+    "mean": 1013.328125,
+    "stdev": 136.02364278493786,
+    "cv": 0.13423454795053463,
+    "min": 768,
+    "p50": 1007.5,
+    "p90": 1206.5,
+    "p99": 1261.25,
+    "max": 1273,
+    "p99_over_p50": 1.251861042183623,
+    "percentile_method": "linear interpolation between order statistics"
+   },
+   "sharing": {
+    "block_size": 16,
+    "n_requests": 256,
+    "total_prompt_blocks": 33049,
+    "shared_prompt_blocks": 0,
+    "realized_block_sharing_rate": 0.0,
+    "realized_request_sharing_rate": 0.0,
+    "requests_sharing_at_least_one_block": 0,
+    "mean_shared_prefix_blocks": 0.0,
+    "max_shared_prefix_blocks": 0,
+    "distinct_first_blocks": 256,
+    "distinct_prompts": 256,
+    "definition": "block_sharing_rate = leading block-aligned prefix blocks already present in an earlier request / total block-aligned prompt blocks. This is the infinite-cache ORACLE hit rate and an upper bound on any measured one."
+   },
+   "rendered_prompt_tokens_mean": 2149.828125,
+   "rendered_prompt_tokens_min": 1596,
+   "rendered_prompt_tokens_max": 2657,
+   "degeneracy_warnings": []
+  },
+  "server_usage": {
+   "prompt_tokens": null,
+   "cached_tokens_total": null,
+   "n_with_usage": 0,
+   "note": "server sent no usage in the stream (ours ignores stream_options)"
+  },
+  "notes": [
+   "OPEN LOOP: precomputed Poisson schedule (bench/loadgen.py discipline); latency is timed from INTENDED dispatch, so harness lateness is included, and a run whose dispatch drift exceeds the threshold is invalid."
+  ]
+ },
+ "rep": 1,
+ "hardware": {
+  "gpu_name": "NVIDIA H200",
+  "gpu_count": 1,
+  "driver": "615.71.09",
+  "cuda": "13.0",
+  "cuda_source": "torch.version.cuda",
+  "torch_cuda": "13.0",
+  "node": "atl1-1-02-012-23-0",
+  "slurm_job_id": "13931404",
+  "cuda_visible_devices": "0",
+  "gpu_samples": [
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 124.48,
+    "t": 0.03013090300373733
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 124.08,
+    "t": 2.057418846001383
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 140.13,
+    "t": 4.085196318017552
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 143.03,
+    "t": 6.112545310024871
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 131.97,
+    "t": 8.140358374017524
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.98,
+    "t": 10.167506450001383
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 133.07,
+    "t": 12.195397223025793
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 132.44,
+    "t": 14.223096267000074
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 130.83,
+    "t": 16.250835087004816
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 136.9,
+    "t": 18.277869616023963
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 132.05,
+    "t": 20.307798935013125
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.23,
+    "t": 22.352440355025465
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 135.06,
+    "t": 24.380967590026557
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 131.69,
+    "t": 26.408292083011474
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.33,
+    "t": 28.436017854022793
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.38,
+    "t": 30.46361654700013
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 140.6,
+    "t": 32.491136638011085
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 123.67,
+    "t": 34.51852732300176
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 139.05,
+    "t": 36.545680424023885
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 140.5,
+    "t": 38.57272865800769
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 141.46,
+    "t": 40.600001496000914
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 126.96,
+    "t": 42.62691240099957
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.8,
+    "t": 44.654158971010474
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 127.36,
+    "t": 46.68131138602621
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 128.13,
+    "t": 48.70860451000044
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 130.54,
+    "t": 50.73622805500054
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 124.62,
+    "t": 52.76269862201298
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 123.65,
+    "t": 54.79089670302346
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 130.43,
+    "t": 56.81815135400393
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 32.0,
+    "power_w": 138.85,
+    "t": 58.8455314260209
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 127.79,
+    "t": 60.87364274301217
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 128.03,
+    "t": 62.906737392011564
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 123.71,
+    "t": 64.93421789701097
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.92,
+    "t": 66.9614264050033
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 126.82,
+    "t": 68.98947086502449
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 135.17,
+    "t": 71.01823011200759
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.69,
+    "t": 73.0462689929991
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 137.95,
+    "t": 75.07522846001666
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 126.98,
+    "t": 77.10405856301077
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 130.49,
+    "t": 79.13235401900602
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 134.33,
+    "t": 81.1615361860022
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 130.92,
+    "t": 83.19175680400804
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 128.19,
+    "t": 85.22091506901779
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 127.04,
+    "t": 87.2513253740035
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 131.8,
+    "t": 89.2798390230164
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 134.86,
+    "t": 91.30833451700164
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 132.1,
+    "t": 93.33700613802648
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 123.69,
+    "t": 95.3653767760261
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 140.49,
+    "t": 97.39360458499868
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 143.58,
+    "t": 99.42185827202047
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 127.65,
+    "t": 101.4500675930176
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 127.51,
+    "t": 103.48071206602617
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 128.49,
+    "t": 105.50978046702221
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 148.35,
+    "t": 107.53813683000044
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 123.58,
+    "t": 109.56718423700659
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 126.96,
+    "t": 111.5960141789983
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 135.43,
+    "t": 113.62435990999802
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 139.34,
+    "t": 115.6529480110039
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 31.0,
+    "power_w": 127.24,
+    "t": 117.68175481900107
+   }
+  ]
+ },
+ "provenance": {
+  "repo_sha": "3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2",
+  "repo_dirty": false,
+  "repo_dirty_including_outputs": true,
+  "repo_dirty_lines": [],
+  "started_at": "2026-10-10T03:14:38Z",
+  "harness_version": "0.1.0",
+  "publishable": true,
+  "publish_blockers": [],
+  "allocation_id": "13931404@atl1-1-02-012-23-0",
+  "slurm_qos": "inferno",
+  "python": "3.11.15",
+  "torch": "2.12.0+cu130",
+  "flashinfer_version": "0.6.16",
+  "wall_seconds": 119.21803705400089
+ },
+ "slo": {
+  "ttft_ms": 434.0,
+  "tpot_ms": 27.8,
+  "source": "results/p2/RESULTS.md (job 11608159, H200; TTFT p50 43.4ms x10, TPOT p50 9.3ms x3)"
+ },
+ "validity": {
+  "valid": false,
+  "reasons": [
+   "no_completed_requests: no steady-window request completed"
+  ],
+  "attention_backend": "flashinfer",
+  "checks": {
+   "stationarity": {
+    "held": true,
+    "n_samples": 1793,
+    "mean_inflight": 0.07417735638594534,
+    "first_half_mean": 0.08035714285714286,
+    "second_half_mean": 0.06800445930880714,
+    "half_vs_half_relative_change": -0.16652903460275156,
+    "ols_slope_per_s": -9.946096568282179e-05,
+    "ols_relative_change_over_window": -0.1206165203791723,
+    "ols_t_statistic": -0.39258573413183806,
+    "trend_material": false,
+    "trend_significant": false,
+    "tolerance": 0.25,
+    "label": "steady state",
+    "note": null
+   },
+   "dispatch_drift": {
+    "metric": "dispatch_drift_ms",
+    "n": 256,
+    "mean": 0.7284438263221713,
+    "stdev": 0.40693102771994477,
+    "min": 0.091152097438707,
+    "p50": 0.6921459793645113,
+    "p90": 1.1857853554557707,
+    "p95": 1.505877045367754,
+    "p99": 1.941865850299429,
+    "max": 2.0593395647523494,
+    "percentile_method": "linear interpolation between order statistics",
+    "p99_resolvable": false,
+    "p99_note": "n=256: p99 is interpolated near the top of the sample and carries roughly one sample of resolution (R15).",
+    "threshold_ms": 50.0,
+    "threshold_percentile": 99.0
+   }
+  }
+ },
+ "metrics": {
+  "ttft_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "itl_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "tpot_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "e2e_ms": {
+   "p50": 30.96017872077894,
+   "p95": 54.04907513313528,
+   "p99": 74.54670311998098,
+   "n": 186
+  },
+  "output_tok_s": 0.0,
+  "request_rps": 0.0,
+  "goodput_rps": 0.0,
+  "slo_attainment": 0.0,
+  "completed": 0,
+  "failed": 186,
+  "window_s": 90.0,
+  "steady_requests": 186,
+  "outcomes": {
+   "completed": 0,
+   "error": 0,
+   "timeout": 0,
+   "incomplete": 0,
+   "no_content": 186
+  }
+ },
+ "server_counters": {
+  "preemptions": 2.0,
+  "evictions": 16512.0,
+  "prefix_hit_rate": 0.010812034757012255,
+  "raw": {
+   "before": {
+    "server": {
+     "requests_received": 124,
+     "requests_streaming": 124,
+     "requests_completed": 124,
+     "requests_cancelled": 0,
+     "requests_shed_429": 0,
+     "requests_failed": 0,
+     "output_tokens_total": 127387,
+     "prompt_tokens_total": 261899,
+     "empty_detokenizations_total": 880,
+     "uptime_s": 142.7709614080086
+    },
+    "scheduler": {
+     "step": 12921,
+     "running": 0,
+     "waiting": 0,
+     "swapped": 0,
+     "finished": 124,
+     "blocks_free": 0,
+     "blocks_used": 2048,
+     "block_utilization": 1.0,
+     "preemption_policy": "recompute",
+     "preemptions_total": 1991,
+     "preemptions_by_policy": {
+      "recompute": 1991,
+      "swap": 0
+     },
+     "tokens_recomputed": 2434191,
+     "bytes_swapped_out": 0,
+     "bytes_swapped_in": 0,
+     "swap_out_seconds": 0.0,
+     "resumes": 0,
+     "resume_seconds_total": 0.0,
+     "resume_seconds_mean": 0.0,
+     "resume_seconds_max": 0.0,
+     "resume_steps_mean": 0.0,
+     "resume_steps_max": 0,
+     "starvation_fallbacks": 1619,
+     "admission_control_alarm": true,
+     "swap_space_exhausted": 0,
+     "cache_enabled": true,
+     "cache_block_size": 16,
+     "cache_lookups": 2115,
+     "cache_requests_with_a_hit": 2114,
+     "cache_request_hit_rate": 0.9995271867612293,
+     "cache_blocks_reused": 103451,
+     "cache_blocks_required": 291054,
+     "cache_block_hit_rate": 0.35543576106152125,
+     "cache_mean_partial_hit_depth": 48.913002364066195,
+     "cache_max_partial_hit_depth": 194,
+     "cache_partial_block_truncations": 472,
+     "cache_tokens_matched_but_recomputed": 6619,
+     "cache_inserts": 71499,
+     "cache_evictions": 69451,
+     "cache_cow_copies": 0,
+     "cache_node_count": 2048,
+     "cache_max_node_depth": 229,
+     "cache_cached_blocks": 2048,
+     "cache_shared_blocks_refcount_gt_1": 0
+    },
+    "allocator": {
+     "num_blocks": 2048,
+     "block_size": 16,
+     "watermark_blocks": 32,
+     "blocks_free": 0,
+     "blocks_used": 2048,
+     "utilization": 1.0,
+     "total_allocated": 73285,
+     "total_freed": 71237,
+     "peak_used": 2048,
+     "tokens_capacity": 32768
+    }
+   },
+   "after": {
+    "server": {
+     "requests_received": 380,
+     "requests_streaming": 380,
+     "requests_completed": 380,
+     "requests_cancelled": 0,
+     "requests_shed_429": 0,
+     "requests_failed": 0,
+     "output_tokens_total": 127387,
+     "prompt_tokens_total": 821205,
+     "empty_detokenizations_total": 880,
+     "uptime_s": 262.0090918430069
+    },
+    "scheduler": {
+     "step": 13693,
+     "running": 0,
+     "waiting": 0,
+     "swapped": 0,
+     "finished": 380,
+     "blocks_free": 0,
+     "blocks_used": 2048,
+     "block_utilization": 1.0,
+     "preemption_policy": "recompute",
+     "preemptions_total": 1993,
+     "preemptions_by_policy": {
+      "recompute": 1993,
+      "swap": 0
+     },
+     "tokens_recomputed": 2434239,
+     "bytes_swapped_out": 0,
+     "bytes_swapped_in": 0,
+     "swap_out_seconds": 0.0,
+     "resumes": 0,
+     "resume_seconds_total": 0.0,
+     "resume_seconds_mean": 0.0,
+     "resume_seconds_max": 0.0,
+     "resume_steps_mean": 0.0,
+     "resume_steps_max": 0,
+     "starvation_fallbacks": 1619,
+     "admission_control_alarm": true,
+     "swap_space_exhausted": 0,
+     "cache_enabled": true,
+     "cache_block_size": 16,
+     "cache_lookups": 2373,
+     "cache_requests_with_a_hit": 2372,
+     "cache_request_hit_rate": 0.9995785924989464,
+     "cache_blocks_reused": 103833,
+     "cache_blocks_required": 326385,
+     "cache_block_hit_rate": 0.31813042878808767,
+     "cache_mean_partial_hit_depth": 43.75600505689001,
+     "cache_max_partial_hit_depth": 194,
+     "cache_partial_block_truncations": 611,
+     "cache_tokens_matched_but_recomputed": 8512,
+     "cache_inserts": 88011,
+     "cache_evictions": 85963,
+     "cache_cow_copies": 0,
+     "cache_node_count": 2048,
+     "cache_max_node_depth": 66,
+     "cache_cached_blocks": 2048,
+     "cache_shared_blocks_refcount_gt_1": 0
+    },
+    "allocator": {
+     "num_blocks": 2048,
+     "block_size": 16,
+     "watermark_blocks": 32,
+     "blocks_free": 0,
+     "blocks_used": 2048,
+     "utilization": 1.0,
+     "total_allocated": 89797,
+     "total_freed": 87749,
+     "peak_used": 2048,
+     "tokens_capacity": 32768
+    }
+   },
+   "definitions": {
+    "preemptions": "delta scheduler.preemptions_total",
+    "evictions": "delta scheduler.cache_evictions (radix block evictions); None when the prefix cache is off",
+    "prefix_hit_rate": "delta cache_blocks_reused / delta cache_blocks_required (BLOCK granularity)"
+   }
+  }
+ },
+ "anomalies": [
+  {
+   "kind": "bimodal_e2e",
+   "detail": "e2e_ms: 2 KDE modes near 30.8, 55.9; valley at 44.1 holds 0.10x the smaller peak; 94% of mass below it; Sarle BC 0.834 (n=186)",
+   "metric": "e2e_ms",
+   "n_modes": 2,
+   "sarle_bc": 0.8344327814846709,
+   "splits": [
+    {
+     "valley_at": 44.06557356816548,
+     "modes_at": [
+      30.761935257738216,
+      55.87628550820667
+     ],
+     "valley_over_smaller_peak": 0.1033998550918134,
+     "mass_below_valley": 0.9355750454803253
+    }
+   ]
+  },
+  {
+   "kind": "rep_spread_output_tok_s",
+   "detail": "output_tok_s CV 0.780 > 0.10 across 3 reps (values 0, 1922, 1108)",
+   "metric": "output_tok_s",
+   "cv": 0.7799057942874454,
+   "values": [
+    0.0,
+    1922.3666666666666,
+    1108.2222222222222
+   ]
+  },
+  {
+   "kind": "rep_spread_ttft_p50",
+   "detail": "ttft_p50 CV 0.317 > 0.10 across 2 reps (values 3.958e+04, 2.054e+04)",
+   "metric": "ttft_p50",
+   "cv": 0.3167739423808408,
+   "values": [
+    39579.52746745707,
+    20536.37579213185
+   ]
+  }
+ ],
+ "samples": {
+  "ttft_ms": [],
+  "itl_ms": [],
+  "tpot_ms": []
+ }
+}

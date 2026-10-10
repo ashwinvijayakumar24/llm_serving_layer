@@ -61,11 +61,18 @@ async def run_closed_loop(
     concurrency: int,
     client: Any = None,
     sample_interval_s: float | None = None,
+    deadline_s: float | None = None,
 ) -> LoadGenRun:
     """
     Run `specs` with exactly `concurrency` workers. Returns a real
     `LoadGenRun` whose `schedule` holds the specs AS DISPATCHED (with the
     worker-free time as `intended_send_time`), results in list order.
+
+    `deadline_s` bounds the point's wall-clock time. When it passes, workers are
+    cancelled and in-flight requests are dropped; the returned run carries
+    `deadline_hit = True` so the caller marks it invalid. This exists because a
+    server that stops making progress (W4, job 13931404) would otherwise hold a
+    closed-loop point until every request times out.
     """
     if concurrency < 1:
         raise ValueError(f"concurrency must be >= 1, got {concurrency}")
@@ -108,8 +115,16 @@ async def run_closed_loop(
             results[i] = await stream_one(client, spec, cfg, t0, inflight)
 
     sampler_task = asyncio.create_task(sampler())
+    deadline_hit = False
     try:
-        await asyncio.gather(*(worker() for _ in range(concurrency)))
+        workers = asyncio.gather(*(worker() for _ in range(concurrency)))
+        if deadline_s:
+            try:
+                await asyncio.wait_for(workers, timeout=deadline_s)
+            except TimeoutError:
+                deadline_hit = True
+        else:
+            await workers
     finally:
         stop.set()
         await sampler_task
@@ -117,14 +132,21 @@ async def run_closed_loop(
             await client.aclose()
     inflight_samples.append((time.perf_counter() - t0, float(inflight[0])))
 
-    return LoadGenRun(
+    run = LoadGenRun(
         cfg=cfg,
-        schedule=[s for s in dispatched if s is not None],
+        schedule=[
+            s for s, r in zip(dispatched, results, strict=True) if s is not None and r is not None
+        ],
         results=[r for r in results if r is not None],
         inflight_samples=inflight_samples,
         wall_seconds=time.perf_counter() - t0,
         started_utc=started_utc,
     )
+    run.deadline_hit = deadline_hit  # type: ignore[attr-defined]
+    run.dropped_in_flight = sum(  # type: ignore[attr-defined]
+        1 for s, r in zip(dispatched, results, strict=True) if s is not None and r is None
+    )
+    return run
 
 
 def steady_window(run: LoadGenRun) -> tuple[float, float] | None:

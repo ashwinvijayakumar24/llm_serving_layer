@@ -37,7 +37,7 @@ ARMS_W1 ?= $(BASELINE_ARMS) vllm-eager vllm-nograph vllm-noasync vllm-matched \
            sglang-eager sglang-nooverlap
 ARMS_W2 ?= $(BASELINE_ARMS)
 ARMS_W3 ?= $(BASELINE_ARMS) ours-noprefix vllm-noprefix sglang-noradix sglang-lpm
-ARMS_W4 ?= $(BASELINE_ARMS) vllm-matched
+ARMS_W4 ?= $(BASELINE_ARMS) ours-noprefix vllm-matched
 ARMS      ?=
 WORKLOADS ?= W1 W2 W3 W4
 CELLS = $(foreach wl,$(WORKLOADS),$(foreach a,$(if $(ARMS),$(ARMS),$(ARMS_$(wl))),$(a)/$(wl)))

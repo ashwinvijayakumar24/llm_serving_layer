@@ -1,0 +1,176 @@
+---------------------------------------
+Begin Slurm Prolog: Oct-09-2026 23:10:58
+Job ID:    13931404
+User ID:   avijayakumar41
+Account:   paceship-simpliearn
+Job name:  xengine-W4
+Partition: gpu-h200
+QOS:       inferno
+---------------------------------------
+=== node: atl1-1-02-012-23-0.pace.gatech.edu  job: 13931404  qos: inferno ===
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 345 MHz, 1980 MHz, 3201 MHz, 32, 81.61 W, 700.00 W
+job 13931404 node atl1-1-02-012-23-0.pace.gatech.edu
+ours:   torch 2.12.0+cu130 cuda 13.0
+vllm:   vllm 0.31.0 torch 2.13.0+cu130
+sglang: sglang 0.5.21 torch 2.13.0+cu130
+  NVIDIA H200 sm_90  torch 2.12.0+cu130
+=== bench ours W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm ours --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[ours] attention-backend pre-flight: flashinfer
+[ours] healthy after 10.0s at http://127.0.0.1:47225
+[ours] engine version: git:3a91fd7db4e0+engine:v0.2.1
+[ours] W4 rate1 rep1: 124 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate1_rep1.json  INVALID: not_steady_state  out 929.1 tok/s  goodput 0.00  ok 81/81  (124 total)
+[ours] W4 rate2 rep1: 256 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate2_rep1.json  INVALID: no_completed_requests  out 0.0 tok/s  goodput 0.00  ok 0/186  (0 total)
+[ours] W4 rate4 rep1: 485 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate4_rep1.json  INVALID: not_steady_state  out 4048.7 tok/s  goodput 0.00  ok 361/361  (461 total)
+[ours] W4 rate8 rep1: 950 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate8_rep1.json  INVALID: not_steady_state  out 5629.1 tok/s  goodput 0.00  ok 497/723  (582 total)
+[ours] W4 rate1 rep2: 130 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate1_rep2.json  INVALID: no_completed_requests  out 0.0 tok/s  goodput 0.00  ok 0/86  (0 total)
+[ours] W4 rate2 rep2: 223 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate2_rep2.json  INVALID: not_steady_state  out 1922.4 tok/s  goodput 0.00  ok 169/169  (208 total)
+[ours] W4 rate4 rep2: 464 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate4_rep2.json  INVALID: not_steady_state  out 3989.0 tok/s  goodput 0.00  ok 347/349  (409 total)
+[ours] W4 rate8 rep2: 935 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate8_rep2.json  INVALID: not_steady_state  out 4560.2 tok/s  goodput 0.00  ok 403/699  (526 total)
+[ours] W4 rate1 rep3: 136 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate1_rep3.json  INVALID: not_steady_state  out 881.9 tok/s  goodput 0.00  ok 77/97  (97 total)
+[ours] W4 rate2 rep3: 239 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate2_rep3.json  INVALID: not_steady_state  out 1108.2 tok/s  goodput 0.00  ok 98/188  (122 total)
+[ours] W4 rate4 rep3: 475 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate4_rep3.json  INVALID: not_steady_state  out 4008.0 tok/s  goodput 0.00  ok 355/355  (475 total)
+[ours] W4 rate8 rep3: 932 requests (open loop) ...
+[ours] -> results/xengine/W4/ours/rate8_rep3.json  INVALID: not_steady_state  out 5206.6 tok/s  goodput 0.00  ok 462/681  (564 total)
+[ours] server stopped (rc=-15)
+make[1]: *** [Makefile:70: bench] Error 2
+=== bench vllm W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm vllm --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[vllm] healthy after 152.1s at http://127.0.0.1:55763
+[vllm] engine version: 0.31.0
+[vllm] W4 rate1 rep1: 124 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate1_rep1.json  VALID  out 932.2 tok/s  goodput 0.90  ok 81/81  (124 total)
+[vllm] W4 rate2 rep1: 256 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate2_rep1.json  VALID  out 2065.8 tok/s  goodput 2.07  ok 186/186  (256 total)
+[vllm] W4 rate4 rep1: 485 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate4_rep1.json  INVALID: not_steady_state  out 4051.9 tok/s  goodput 4.00  ok 361/361  (485 total)
+[vllm] W4 rate8 rep1: 950 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate8_rep1.json  INVALID: not_steady_state  out 8189.5 tok/s  goodput 0.00  ok 723/723  (950 total)
+[vllm] W4 rate1 rep2: 130 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate1_rep2.json  VALID  out 974.0 tok/s  goodput 0.96  ok 86/86  (130 total)
+[vllm] W4 rate2 rep2: 223 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate2_rep2.json  INVALID: not_steady_state  out 1920.2 tok/s  goodput 1.88  ok 169/169  (223 total)
+[vllm] W4 rate4 rep2: 464 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate4_rep2.json  VALID  out 4015.6 tok/s  goodput 3.73  ok 349/349  (464 total)
+[vllm] W4 rate8 rep2: 935 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate8_rep2.json  INVALID: not_steady_state  out 7890.5 tok/s  goodput 0.00  ok 699/699  (935 total)
+[vllm] W4 rate1 rep3: 136 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate1_rep3.json  INVALID: not_steady_state  out 1101.7 tok/s  goodput 1.08  ok 97/97  (136 total)
+[vllm] W4 rate2 rep3: 239 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate2_rep3.json  INVALID: not_steady_state  out 2110.6 tok/s  goodput 2.09  ok 188/188  (239 total)
+[vllm] W4 rate4 rep3: 475 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate4_rep3.json  VALID  out 4007.9 tok/s  goodput 3.94  ok 355/355  (475 total)
+[vllm] W4 rate8 rep3: 932 requests (open loop) ...
+[vllm] -> results/xengine/W4/vllm/rate8_rep3.json  INVALID: not_steady_state  out 7679.9 tok/s  goodput 0.00  ok 681/681  (932 total)
+[vllm] server stopped (rc=0)
+make[1]: *** [Makefile:70: bench] Error 2
+=== bench sglang W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-sglang/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm sglang --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[sglang] healthy after 72.0s at http://127.0.0.1:56571
+[sglang] engine version: 0.5.21
+[sglang] W4 rate1 rep1: 124 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate1_rep1.json  VALID  out 932.4 tok/s  goodput 0.90  ok 81/81  (124 total)
+[sglang] W4 rate2 rep1: 256 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate2_rep1.json  VALID  out 2066.0 tok/s  goodput 2.07  ok 186/186  (256 total)
+[sglang] W4 rate4 rep1: 485 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate4_rep1.json  INVALID: not_steady_state  out 4051.4 tok/s  goodput 3.98  ok 361/361  (485 total)
+[sglang] W4 rate8 rep1: 950 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate8_rep1.json  INVALID: not_steady_state  out 8202.2 tok/s  goodput 0.00  ok 723/723  (950 total)
+[sglang] W4 rate1 rep2: 130 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate1_rep2.json  VALID  out 972.0 tok/s  goodput 0.96  ok 86/86  (130 total)
+[sglang] W4 rate2 rep2: 223 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate2_rep2.json  INVALID: not_steady_state  out 1920.3 tok/s  goodput 1.88  ok 169/169  (223 total)
+[sglang] W4 rate4 rep2: 464 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate4_rep2.json  VALID  out 4013.1 tok/s  goodput 3.63  ok 349/349  (464 total)
+[sglang] W4 rate8 rep2: 935 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate8_rep2.json  INVALID: not_steady_state  out 7906.8 tok/s  goodput 0.00  ok 699/699  (935 total)
+[sglang] W4 rate1 rep3: 136 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate1_rep3.json  INVALID: not_steady_state  out 1101.0 tok/s  goodput 1.08  ok 97/97  (136 total)
+[sglang] W4 rate2 rep3: 239 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate2_rep3.json  INVALID: not_steady_state  out 2112.1 tok/s  goodput 2.09  ok 188/188  (239 total)
+[sglang] W4 rate4 rep3: 475 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate4_rep3.json  VALID  out 4006.8 tok/s  goodput 3.94  ok 355/355  (475 total)
+[sglang] W4 rate8 rep3: 932 requests (open loop) ...
+[sglang] -> results/xengine/W4/sglang/rate8_rep3.json  INVALID: not_steady_state  out 7691.9 tok/s  goodput 0.00  ok 681/681  (932 total)
+[sglang] server stopped (rc=0)
+make[1]: *** [Makefile:70: bench] Error 2
+=== bench vllm-matched W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm vllm-matched --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[vllm-matched] healthy after 63.0s at http://127.0.0.1:51645
+[vllm-matched] engine version: 0.31.0
+[vllm-matched] W4 rate1 rep1: 124 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate1_rep1.json  VALID  out 932.4 tok/s  goodput 0.90  ok 81/81  (124 total)
+[vllm-matched] W4 rate2 rep1: 256 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate2_rep1.json  VALID  out 2065.4 tok/s  goodput 2.07  ok 186/186  (256 total)
+[vllm-matched] W4 rate4 rep1: 485 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate4_rep1.json  INVALID: not_steady_state  out 4049.9 tok/s  goodput 3.99  ok 361/361  (485 total)
+[vllm-matched] W4 rate8 rep1: 950 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate8_rep1.json  INVALID: not_steady_state  out 8191.5 tok/s  goodput 0.00  ok 723/723  (950 total)
+[vllm-matched] W4 rate1 rep2: 130 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate1_rep2.json  VALID  out 974.0 tok/s  goodput 0.96  ok 86/86  (130 total)
+[vllm-matched] W4 rate2 rep2: 223 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate2_rep2.json  INVALID: not_steady_state  out 1921.0 tok/s  goodput 1.88  ok 169/169  (223 total)
+[vllm-matched] W4 rate4 rep2: 464 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate4_rep2.json  VALID  out 4012.6 tok/s  goodput 3.73  ok 349/349  (464 total)
+[vllm-matched] W4 rate8 rep2: 935 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate8_rep2.json  INVALID: not_steady_state  out 7895.9 tok/s  goodput 0.00  ok 699/699  (935 total)
+[vllm-matched] W4 rate1 rep3: 136 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate1_rep3.json  INVALID: not_steady_state  out 1101.3 tok/s  goodput 1.08  ok 97/97  (136 total)
+[vllm-matched] W4 rate2 rep3: 239 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate2_rep3.json  INVALID: not_steady_state  out 2110.8 tok/s  goodput 2.09  ok 188/188  (239 total)
+[vllm-matched] W4 rate4 rep3: 475 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate4_rep3.json  VALID  out 4004.4 tok/s  goodput 3.94  ok 355/355  (475 total)
+[vllm-matched] W4 rate8 rep3: 932 requests (open loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/rate8_rep3.json  INVALID: not_steady_state  out 7678.5 tok/s  goodput 0.00  ok 681/681  (932 total)
+[vllm-matched] server stopped (rc=0)
+make[1]: *** [Makefile:70: bench] Error 2
+FAILED cells: ours/W4 vllm/W4 sglang/W4 vllm-matched/W4
+make: *** [Makefile:80: bench-all] Error 1
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 1980 MHz, 1980 MHz, 3201 MHz, 35, 131.24 W, 700.00 W
+mkdir -p results/xengine/_render
+cp docs/xengine/BENCHMARKS.md results/xengine/_render/BENCHMARKS_13931404.md
+/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.render --results results/xengine \
+	--doc results/xengine/_render/BENCHMARKS_13931404.md --figures results/xengine/_render/figures_13931404
+WARNING: matplotlib not installed; figures not redrawn
+rendered 417 artifacts into results/xengine/_render/BENCHMARKS_13931404.md
+
+=== artifacts ===
+417
+=== done (bench rc=2) ===
+---------------------------------------
+Begin Slurm Epilog: Oct-10-2026 01:55:41
+Job ID:        13931404
+User ID:       avijayakumar41
+Account:       paceship-simpliearn
+Job name:      xengine-W4
+Resources:     cpu=8,gres/gpu:h200=1,mem=32G,node=1
+Rsrc Used:     cput=21:58:00,vmem=0,walltime=02:44:45,mem=5494924K,energy_used=0
+Partition:     gpu-h200
+QOS:           inferno
+Nodes:         atl1-1-02-012-23-0
+---------------------------------------

@@ -55,3 +55,12 @@ Line numbers are as of base commit `e391b50`.
 - **What:** our server ignores `stream_options.include_usage`, so prompt-token counts cannot be read from the stream as they are for vLLM/SGLang; and cache evictions are only in the JSON scheduler snapshot (`cache_evictions`), not in `/metrics/prometheus`.
 - **In-study handling:** the harness counts prompt tokens with the tokenizer (or records null with a note) and reads evictions from the JSON snapshot.
 - **Status:** open.
+
+## F-006 — Under a small KV pool, the server can sit with every block held by the prefix cache and make no progress
+
+- **Where:** observed, not yet localized in code. Evidence: `results/xengine_w4_v1/W4/ours/` (job 13931404, H200, `SERVING_KV_BLOCKS=2048`, prefix cache on, recompute preemption).
+- **What:** two W4-v1 cells (`rate2_rep1`, `rate1_rep2`) completed **zero** of 186 and 86 requests; every request ended `no_content` (stream closed before a first token). The scheduler snapshot taken *before* `rate2_rep1` reads `running=0 waiting=0 blocks_free=0 blocks_used=2048`: the pool was entirely held by cached blocks with no request on the server. During the cell the scheduler advanced 772 steps and evicted 16,512 cache blocks, yet produced no first token for any of 256 requests. `starvation_fallbacks` was 1,619 before that cell and 105,769 before `rate1_rep2`. A different cell starting from the same full-cache state (`rate4_rep1`) did make progress, so the state is not a permanent deadlock.
+- **Related:** the same run preempted 1,991 times at 1 request/s, where vLLM and SGLang preempted 0 times on the same pool size — although v1's open-loop design gave ours far more requests in flight (see W4 v2 rationale), so that count is not a like-for-like comparison. F-004 (preemption while evictable cached blocks are held) is a candidate mechanism, not a confirmed one.
+- **Why it matters:** a serving system that can stop producing tokens under memory pressure, with no error, is the worst failure mode for availability; it also makes any W4 number for ours depend on the state left by the previous point.
+- **In-study handling:** W4 v2 adds `ours-noprefix` (does the state disappear without the cache?), records the server's running/waiting/block state before every point (`server_counters.raw.pre_point_state`), and caps each closed-loop point at 1,200 s so a stuck server yields an invalid point (`point_deadline_exceeded`) instead of a hung job. Not fixed in-study.
+- **Status:** open; reproduction pending W4 v2.

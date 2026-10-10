@@ -43,7 +43,7 @@ case "${1:-}" in
         submit xengine-W1 06:00:00 WORKLOADS=W1 RUN_W5=1 W5_WORKLOADS=W1
         submit xengine-W2 04:00:00 WORKLOADS=W2 RUN_W5=1 W5_WORKLOADS=W2
         submit xengine-W3 05:00:00 WORKLOADS=W3
-        submit xengine-W4 04:00:00 WORKLOADS=W4
+        submit xengine-W4 08:00:00 WORKLOADS=W4
         ;;
     W1|W2|W3|W4)
         submit "xengine-$1" 06:00:00 WORKLOADS="$1"
