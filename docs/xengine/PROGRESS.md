@@ -13,7 +13,7 @@ is that a result recorded here never has to be re-run just to remember it.
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
 | 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
 | 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | done 2026-10-10: W1 13931401, W2 13931402, W3 13931403, W4 v2 13933751 (W4 v1 13931404 superseded) |
-| 4 — analysis + BENCHMARKS.md | drafted 2026-10-10: observations for (a)–(e) + W5 written from the tables; all hypotheses UNVERIFIED pending Ashwin |
+| 4 — analysis + BENCHMARKS.md | done 2026-10-10: data verified against artifacts (143 claims, 8 fixed; `VERIFICATION.md`); per-finding mechanism status stated; F-004/F-006/F-007 located in code and reproduced on CPU |
 
 ## Log
 
