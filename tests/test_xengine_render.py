@@ -404,3 +404,16 @@ def test_tail_percentile_flagged_when_samples_few(tmp_path):
     c = cell(grid)
     assert "p99 from n=10<100" in R.fmt_cell(c, "ttft_p99", 0.1)
     assert "p99 from n=" not in R.fmt_cell(c, "output_tok_s", 0.1)
+
+
+def test_pool_held_by_cache_flag(tmp_path):
+    for rep in (1, 2, 3):
+        a = make_artifact(rep=rep)
+        a["server_counters"]["raw"] = {
+            "before": {
+                "scheduler": {"running": 0, "waiting": 0, "blocks_free": 3, "blocks_used": 997}
+            }
+        }
+        write(tmp_path, a)
+    c = cell(R.aggregate(R.load_runs(tmp_path)))
+    assert "pool_held_by_cache_at_start" in R.fmt_cell(c, "output_tok_s", 0.1)

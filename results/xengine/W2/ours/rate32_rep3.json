@@ -1,0 +1,4917 @@
+{
+ "schema": "xengine-run/1",
+ "arm": "ours",
+ "engine": {
+  "name": "ours",
+  "version": "git:3a91fd7db4e0+engine:v0.2.1",
+  "launch_cmd": [
+   "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+   "-m",
+   "uvicorn",
+   "bench.xengine.ours_factory:build_app",
+   "--factory",
+   "--host",
+   "127.0.0.1",
+   "--port",
+   "39011",
+   "--log-level",
+   "warning"
+  ],
+  "flags": {
+   "factory": "bench.xengine.ours_factory:build_app",
+   "prefix_cache": true,
+   "preemption": "recompute",
+   "block_size": 16,
+   "max_batch_size": 32,
+   "watermark_blocks": 32,
+   "dtype": "float16",
+   "weight_quant": null,
+   "kv_pool_tokens": null,
+   "kv_pool_tokens_source": null,
+   "resolved": {
+    "kv_blocks": 277590,
+    "preemption": "recompute",
+    "prefix_cache": true,
+    "static_batching": false
+   }
+  },
+  "model_name": "llama-3.2-1b-instruct",
+  "launch_env": {
+   "LLM_WEIGHTS_PATH": "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/llm_inference_engine/weights",
+   "HF_HUB_OFFLINE": "1",
+   "PYTHONPATH": "/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/vendor/llm_inference_engine:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer:/storage/project/ps-simpliearn-0/avijayakumar41/llm_serving_layer/vendor/llm_inference_engine:/usr/local/pace-apps/manual/packages/xalt/xalt/site_packages"
+  },
+  "launched_by_harness": true,
+  "base_url": "http://127.0.0.1:39011",
+  "healthy_after_s": 10.018122323032003,
+  "server_log": "results/xengine/W2/ours/server_20261010T025947Z.log",
+  "server_python": "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+  "attention_backend_evidence": {
+   "preflight": {
+    "backend": "flashinfer",
+    "flashinfer_version": "0.6.16",
+    "returncode": 0
+   },
+   "server_log": "flashinfer",
+   "startup_config_line": {
+    "kv_blocks": 277590,
+    "preemption": "recompute",
+    "prefix_cache": true,
+    "static_batching": false
+   }
+  }
+ },
+ "workload": {
+  "id": "W2",
+  "config_path": "bench/xengine/configs/workloads/W2.yaml",
+  "config_sha256": "f21ac12daa1565260188c7fb6fa324313da03620d380178f0d704a9778ab8907",
+  "seed": 1095933169,
+  "point": {
+   "rate": 32
+  },
+  "loop": "open",
+  "base_seed": 20261009,
+  "concurrency": null,
+  "kv_pool_tokens": null,
+  "request_stream_sha256": "1c961e7a9a732721f5a034ffee89e2734b6b0d5f269304aa4fa43f3b4a73a09b",
+  "workload_fingerprint": "4da8f45d7620a4aef175e24ac2e874aa",
+  "n_requests": 2753,
+  "prompt_render": "hf_tokenizer",
+  "realized": {
+   "prompt_len": {
+    "n": 2753,
+    "mean": 499.3875771885216,
+    "stdev": 457.4638219217849,
+    "cv": 0.9160496632640298,
+    "min": 17,
+    "p50": 367.0,
+    "p90": 1005.8000000000002,
+    "p99": 2351.48,
+    "max": 4096,
+    "p99_over_p50": 6.407302452316077,
+    "percentile_method": "linear interpolation between order statistics"
+   },
+   "output_len": {
+    "n": 2753,
+    "mean": 126.97420995277879,
+    "stdev": 361.67783283650795,
+    "cv": 2.8484353867688132,
+    "min": 8,
+    "p50": 67.0,
+    "p90": 146.0,
+    "p99": 2211.96,
+    "max": 4096,
+    "p99_over_p50": 33.01432835820896,
+    "percentile_method": "linear interpolation between order statistics"
+   },
+   "sharing": {
+    "block_size": 16,
+    "n_requests": 2753,
+    "total_prompt_blocks": 84641,
+    "shared_prompt_blocks": 0,
+    "realized_block_sharing_rate": 0.0,
+    "realized_request_sharing_rate": 0.0,
+    "requests_sharing_at_least_one_block": 0,
+    "mean_shared_prefix_blocks": 0.0,
+    "max_shared_prefix_blocks": 0,
+    "distinct_first_blocks": 2753,
+    "distinct_prompts": 2753,
+    "definition": "block_sharing_rate = leading block-aligned prefix blocks already present in an earlier request / total block-aligned prompt blocks. This is the infinite-cache ORACLE hit rate and an upper bound on any measured one."
+   },
+   "rendered_prompt_tokens_mean": 517.4464220849982,
+   "rendered_prompt_tokens_min": 18,
+   "rendered_prompt_tokens_max": 4263,
+   "degeneracy_warnings": []
+  },
+  "server_usage": {
+   "prompt_tokens": null,
+   "cached_tokens_total": null,
+   "n_with_usage": 0,
+   "note": "server sent no usage in the stream (ours ignores stream_options)"
+  },
+  "notes": [
+   "OPEN LOOP: precomputed Poisson schedule (bench/loadgen.py discipline); latency is timed from INTENDED dispatch, so harness lateness is included, and a run whose dispatch drift exceeds the threshold is invalid."
+  ]
+ },
+ "rep": 3,
+ "hardware": {
+  "gpu_name": "NVIDIA H200",
+  "gpu_count": 1,
+  "driver": "615.71.09",
+  "cuda": "13.0",
+  "cuda_source": "torch.version.cuda",
+  "torch_cuda": "13.0",
+  "node": "atl1-1-02-012-9-0",
+  "slurm_job_id": "13931402",
+  "cuda_visible_devices": "0",
+  "gpu_samples": [
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.96,
+    "t": 0.03192475199466571
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.63,
+    "t": 2.0627539150300436
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.56,
+    "t": 4.091881230007857
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.99,
+    "t": 6.121068231994286
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.99,
+    "t": 8.150124281004537
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.19,
+    "t": 10.179591806023382
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 126.06,
+    "t": 12.209058253036346
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.54,
+    "t": 14.238905883044936
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.92,
+    "t": 16.269172242027707
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.19,
+    "t": 18.298993794014677
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.81,
+    "t": 20.32980809104629
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.3,
+    "t": 22.360160922049545
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.36,
+    "t": 24.39082575001521
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.28,
+    "t": 26.42144005204318
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.6,
+    "t": 28.452133123006206
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.64,
+    "t": 30.4852182980394
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.6,
+    "t": 32.516604663047474
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.87,
+    "t": 34.548056286002975
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.68,
+    "t": 36.579516165016685
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.09,
+    "t": 38.61322098702658
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.62,
+    "t": 40.64753889804706
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.55,
+    "t": 42.679416957020294
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 44.712846754002385
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.94,
+    "t": 46.74534514604602
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.01,
+    "t": 48.77787394303596
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.96,
+    "t": 50.8108450230211
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.65,
+    "t": 52.84363980503986
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.71,
+    "t": 54.87800067703938
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.43,
+    "t": 56.91109825100284
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.18,
+    "t": 58.953817739035
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 60.987147469015326
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.58,
+    "t": 63.02059440902667
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.82,
+    "t": 65.05412608303595
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.16,
+    "t": 67.08798303001095
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.41,
+    "t": 69.12518315605121
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 71.16029632801656
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.89,
+    "t": 73.19449056003941
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.46,
+    "t": 75.22888619103469
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 77.26347148499917
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.47,
+    "t": 79.29981759103248
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.57,
+    "t": 81.33570227504242
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.97,
+    "t": 83.37540663202526
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.73,
+    "t": 85.41076390701346
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.79,
+    "t": 87.44635714002652
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 89.48247673100559
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.68,
+    "t": 91.5178453180124
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 93.55330262699863
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.98,
+    "t": 95.58865608804626
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 97.62403934402391
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.34,
+    "t": 99.65934975002892
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 101.69446362601593
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.74,
+    "t": 103.72954085899983
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 105.76507630402921
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.77,
+    "t": 107.80036924901651
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.23,
+    "t": 109.83562750904821
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.82,
+    "t": 111.87416483403649
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.77,
+    "t": 113.90932725602761
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 115.94417517102556
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.11,
+    "t": 117.97952381201321
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 126.15,
+    "t": 120.01482240000041
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.9,
+    "t": 122.04994579404593
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.41,
+    "t": 124.08528343599755
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.47,
+    "t": 126.12039978400571
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.71,
+    "t": 128.15570112899877
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.94,
+    "t": 130.19220572704216
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.77,
+    "t": 132.22740112204337
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.88,
+    "t": 134.26329759601504
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.82,
+    "t": 136.29928579501575
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.97,
+    "t": 138.33458489604527
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.42,
+    "t": 140.36982133501442
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.74,
+    "t": 142.40497767803026
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.5,
+    "t": 144.44044826703612
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.16,
+    "t": 146.47571253799833
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.18,
+    "t": 148.51099700503983
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.0,
+    "t": 150.54617153899744
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.43,
+    "t": 152.5817429019953
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.35,
+    "t": 154.6169465020066
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.26,
+    "t": 156.65248980704928
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 158.68757409602404
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.86,
+    "t": 160.72289982804796
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.01,
+    "t": 162.75815486599458
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.71,
+    "t": 164.793539737002
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 166.8290695680189
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 168.8646293550264
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.71,
+    "t": 170.9023580320063
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.73,
+    "t": 172.93764770001872
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 174.97325400204863
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.74,
+    "t": 177.00852074602153
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.29,
+    "t": 179.04386752599385
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 181.07978653302416
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.18,
+    "t": 183.1210681819939
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.46,
+    "t": 185.15630091901403
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.73,
+    "t": 187.19150391500443
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 189.22685545199784
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.64,
+    "t": 191.26180113304872
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 193.2967198539991
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.49,
+    "t": 195.33180139999604
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.26,
+    "t": 197.36669750901638
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.14,
+    "t": 199.40186633501435
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.53,
+    "t": 201.43658904504264
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.5,
+    "t": 203.47159512899816
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.84,
+    "t": 205.50613145099487
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.39,
+    "t": 207.54375061905012
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.83,
+    "t": 209.57832439400954
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.91,
+    "t": 211.6126122860005
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 213.64755998604232
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.7,
+    "t": 215.68201272701845
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.95,
+    "t": 217.71619028400164
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.4,
+    "t": 219.7506567700184
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.94,
+    "t": 221.78525247704238
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.22,
+    "t": 223.81951087899506
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.17,
+    "t": 225.85418504104018
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.85,
+    "t": 227.8887741760118
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.85,
+    "t": 229.92305914999451
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.25,
+    "t": 231.9668475020444
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.59,
+    "t": 234.0075124570285
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 236.04184575204272
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 238.07605739100836
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.83,
+    "t": 240.11044175899588
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.85,
+    "t": 242.14471921202494
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.63,
+    "t": 244.17902541003423
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.81,
+    "t": 246.21349703299347
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.81,
+    "t": 248.24783189903246
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.04,
+    "t": 250.2821058530244
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 252.31628931302112
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.06,
+    "t": 254.35018345405115
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.13,
+    "t": 256.38371947500855
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.8,
+    "t": 258.41817340801936
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.93,
+    "t": 260.4523635120131
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 262.48615669604624
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.97,
+    "t": 264.52012604504125
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.35,
+    "t": 266.55378120503156
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.65,
+    "t": 268.5873415330425
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.72,
+    "t": 270.62154976301827
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.53,
+    "t": 272.65575997001724
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.73,
+    "t": 274.68980385904433
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.53,
+    "t": 276.72407420602394
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 278.7585074190283
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.41,
+    "t": 280.79280366003513
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.8,
+    "t": 282.82709439401515
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.84,
+    "t": 284.8617505140137
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.49,
+    "t": 286.8963573850342
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 288.93075436505023
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.81,
+    "t": 290.9658240720164
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.15,
+    "t": 293.00021924002795
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.39,
+    "t": 295.0342414730112
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.88,
+    "t": 297.06843188300263
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.9,
+    "t": 299.10255650104955
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.59,
+    "t": 301.1367802430177
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.91,
+    "t": 303.17088634503307
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.74,
+    "t": 305.2050531200366
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 307.2404446370201
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.23,
+    "t": 309.2745311440085
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.73,
+    "t": 311.3089326460031
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.53,
+    "t": 313.34297597804107
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.08,
+    "t": 315.37726982304594
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.91,
+    "t": 317.41146478202427
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.96,
+    "t": 319.44542930304306
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 321.4798532760469
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.13,
+    "t": 323.51348582899664
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.51,
+    "t": 325.54744967701845
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.15,
+    "t": 327.5809361190186
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.89,
+    "t": 329.61410493199946
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.93,
+    "t": 331.6470551760285
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.9,
+    "t": 333.67995683604386
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.6,
+    "t": 335.71261756302556
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 337.7457738540252
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.57,
+    "t": 339.77808317000745
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 341.81046565104043
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 135.46,
+    "t": 343.8563312140177
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.9,
+    "t": 345.90561685099965
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.6,
+    "t": 347.9375330799958
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.96,
+    "t": 349.9697710380424
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.21,
+    "t": 352.00181367702316
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.9,
+    "t": 354.03385184903163
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.26,
+    "t": 356.0655187609955
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.92,
+    "t": 358.0973216050188
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 360.12906702200416
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.27,
+    "t": 362.16109919402516
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 364.1923528240295
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.95,
+    "t": 366.22340273699956
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 368.2547226320021
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.76,
+    "t": 370.2873845900176
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.26,
+    "t": 372.3183789780014
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.09,
+    "t": 374.3491302850307
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.33,
+    "t": 376.3801435219939
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 132.05,
+    "t": 378.41313207300846
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.15,
+    "t": 380.4440063240472
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.29,
+    "t": 382.47498964500846
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.79,
+    "t": 384.50590370805
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.7,
+    "t": 386.5366331000114
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.59,
+    "t": 388.5676458470407
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.73,
+    "t": 390.5984844590421
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 392.62953934504185
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.28,
+    "t": 394.66039656399516
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 396.69101178401615
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.9,
+    "t": 398.72151720599504
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.96,
+    "t": 400.7522256060038
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.91,
+    "t": 402.78262116602855
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.25,
+    "t": 404.81418325804407
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.76,
+    "t": 406.84508853103034
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.5,
+    "t": 408.87562387104845
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.03,
+    "t": 410.90830659802305
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.56,
+    "t": 412.93857810401823
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.47,
+    "t": 414.9686514090281
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.33,
+    "t": 416.99868875800166
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.27,
+    "t": 419.02895760000683
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 421.0589206730365
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 423.088864343008
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 129.66,
+    "t": 425.11893755802885
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.12,
+    "t": 427.14900261099683
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.28,
+    "t": 429.17885959503474
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.07,
+    "t": 431.20872598100686
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 433.23872133303666
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 136.34,
+    "t": 435.268480932049
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.33,
+    "t": 437.29828875901876
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.23,
+    "t": 439.3279498500051
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.91,
+    "t": 441.3579932950088
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 443.38780114403926
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.87,
+    "t": 445.41735429503024
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.76,
+    "t": 447.44768760801526
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.63,
+    "t": 449.4776897690026
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.68,
+    "t": 451.5075779640465
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.82,
+    "t": 453.53744291403564
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 455.56741391000105
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.38,
+    "t": 457.59706164704403
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.25,
+    "t": 459.62676778103923
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.81,
+    "t": 461.6564891950111
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 463.68627076304983
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 465.71641496400116
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 132.98,
+    "t": 467.74653544003377
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.49,
+    "t": 469.7762718350277
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.38,
+    "t": 471.80632972699823
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.61,
+    "t": 473.8362944890396
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.77,
+    "t": 475.86590147804236
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.62,
+    "t": 477.89554599899566
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.05,
+    "t": 479.9256325830356
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 135.62,
+    "t": 481.9550342540024
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.58,
+    "t": 483.9846437679953
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.03,
+    "t": 486.01434836903354
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 488.04408153303666
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.07,
+    "t": 490.0739132640301
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.65,
+    "t": 492.1037089120364
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.47,
+    "t": 494.1335063500446
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.99,
+    "t": 496.16324039001483
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.29,
+    "t": 498.193279824045
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.27,
+    "t": 500.2230260310462
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.07,
+    "t": 502.27147958800197
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.48,
+    "t": 504.3016899950453
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.3,
+    "t": 506.33151858102065
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.7,
+    "t": 508.361608332023
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.79,
+    "t": 510.391404929047
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 512.421522899007
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 133.65,
+    "t": 514.4515583610046
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.0,
+    "t": 516.4815190110239
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 518.511417302012
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 134.6,
+    "t": 520.5413528850186
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.25,
+    "t": 522.5711459400482
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.38,
+    "t": 524.6013390750159
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.97,
+    "t": 526.6386573970085
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 528.6707206389983
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.62,
+    "t": 530.7005248219939
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.58,
+    "t": 532.7306129290373
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.95,
+    "t": 534.7605018049944
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.69,
+    "t": 536.7906952270423
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.73,
+    "t": 538.8215644470183
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.14,
+    "t": 540.8536998540512
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 542.8845053850091
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.35,
+    "t": 544.9144758520415
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 126.43,
+    "t": 546.9477620800026
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 126.27,
+    "t": 548.9775850510341
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.81,
+    "t": 551.0072683300241
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.79,
+    "t": 553.0369154170039
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.82,
+    "t": 555.066340246005
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.38,
+    "t": 557.0955446010339
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 126.39,
+    "t": 559.1250190199935
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.86,
+    "t": 561.1547083320329
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.75,
+    "t": 563.1840010590386
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 126.49,
+    "t": 565.2136968360282
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 126.18,
+    "t": 567.2434724180494
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 124.52,
+    "t": 569.2730244140257
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.84,
+    "t": 571.3025876050233
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.11,
+    "t": 573.3320250660181
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 575.3609940430033
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.87,
+    "t": 577.3891677560168
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 579.4178285649978
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.33,
+    "t": 581.4472157850396
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.81,
+    "t": 583.4756447360269
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.57,
+    "t": 585.5044739890145
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 587.5393188699964
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 129.4,
+    "t": 589.5692437520484
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 591.5976924040006
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.12,
+    "t": 593.6260828770464
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 595.6542751649977
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.66,
+    "t": 597.6823935410357
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.69,
+    "t": 599.7117353950161
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.23,
+    "t": 601.7424494280131
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.79,
+    "t": 603.7712590400479
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.12,
+    "t": 606.1623121120501
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.9,
+    "t": 608.2099689110182
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.99,
+    "t": 610.2396266300348
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.37,
+    "t": 612.2696956770378
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 614.2997067320393
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 128.85,
+    "t": 616.3296690420248
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.41,
+    "t": 618.3598374560243
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.96,
+    "t": 620.3899728860124
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.63,
+    "t": 622.4200854740338
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.28,
+    "t": 624.4504862860194
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.01,
+    "t": 626.4800862630364
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.28,
+    "t": 628.5095342540299
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.25,
+    "t": 630.5392915520351
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.31,
+    "t": 632.5688276709989
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.3,
+    "t": 634.5985996570089
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.23,
+    "t": 636.6286802400136
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.76,
+    "t": 638.6584090110264
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.73,
+    "t": 640.6880671190447
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.63,
+    "t": 642.717948037025
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.03,
+    "t": 644.7478128450457
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.7,
+    "t": 646.7776290010079
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.0,
+    "t": 648.8076319200336
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.73,
+    "t": 650.8374572939938
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.06,
+    "t": 652.867732993036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.68,
+    "t": 654.8975553010241
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.55,
+    "t": 656.9274720490212
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.05,
+    "t": 658.9574066670029
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.49,
+    "t": 660.9876079690293
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.19,
+    "t": 663.0174971620436
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.72,
+    "t": 665.0472872480168
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.33,
+    "t": 667.0771768510458
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.13,
+    "t": 669.1068543970468
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.7,
+    "t": 671.136545055022
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.81,
+    "t": 673.1662858170457
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.0,
+    "t": 675.1963094900129
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.99,
+    "t": 677.2260344070382
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.99,
+    "t": 679.2556966360426
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.48,
+    "t": 681.2851920810062
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.44,
+    "t": 683.3148232010426
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 685.3443791420432
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.53,
+    "t": 687.3740342880483
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.29,
+    "t": 689.4037566720508
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.22,
+    "t": 691.4332727339934
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.95,
+    "t": 693.4630977970082
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.85,
+    "t": 695.4936987700057
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.59,
+    "t": 697.5234814780415
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.83,
+    "t": 699.5535927950405
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.71,
+    "t": 701.5833970940439
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.11,
+    "t": 703.6132283690386
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.11,
+    "t": 705.6427745970432
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.2,
+    "t": 707.6722011730308
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.97,
+    "t": 709.7015059260302
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.28,
+    "t": 711.7326077120379
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.98,
+    "t": 713.7620337530388
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.86,
+    "t": 715.7922765200492
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 717.8215471940348
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.33,
+    "t": 719.8508957970189
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.99,
+    "t": 721.8835774390027
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.56,
+    "t": 723.9140952770249
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.44,
+    "t": 725.9478643180337
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.53,
+    "t": 727.9771117920172
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.1,
+    "t": 730.0076234810404
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.01,
+    "t": 732.037170992
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 128.6,
+    "t": 734.4321670750505
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.22,
+    "t": 736.5704900260316
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.18,
+    "t": 738.6003553619958
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.96,
+    "t": 740.6312194880447
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.02,
+    "t": 742.6616436180193
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.69,
+    "t": 744.692157974001
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.35,
+    "t": 746.7225528230192
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.67,
+    "t": 748.7534151450382
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.32,
+    "t": 750.7842076970264
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.23,
+    "t": 752.8153215440107
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.45,
+    "t": 754.8467625660123
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.37,
+    "t": 756.8782112920308
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.71,
+    "t": 758.90902950702
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.82,
+    "t": 760.9402161040343
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 762.9710186580196
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.75,
+    "t": 765.0020907990402
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.58,
+    "t": 767.0327718420303
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.54,
+    "t": 769.0634045689949
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 771.0939481690293
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.21,
+    "t": 773.1273991950438
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.66,
+    "t": 775.1583532090299
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.77,
+    "t": 777.190324997995
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.88,
+    "t": 779.2209176600445
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.79,
+    "t": 781.2518896150286
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.61,
+    "t": 783.2841834560386
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.15,
+    "t": 785.3167876080261
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.33,
+    "t": 787.3477481040172
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 789.3786183110205
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.04,
+    "t": 791.4096789640025
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.04,
+    "t": 793.4473465460469
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 795.4780312860385
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.58,
+    "t": 797.5087263290188
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 799.539195713005
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.48,
+    "t": 801.5698509460199
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.05,
+    "t": 803.6004482739954
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.44,
+    "t": 805.6317833689973
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.79,
+    "t": 807.662792682997
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.8,
+    "t": 809.6938625420444
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.84,
+    "t": 811.7245836960501
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.95,
+    "t": 813.7555609370465
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.59,
+    "t": 815.7865734710358
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.96,
+    "t": 817.8177619730122
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.29,
+    "t": 819.8484815830016
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.84,
+    "t": 821.8795616770512
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.99,
+    "t": 823.9102257850464
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.2,
+    "t": 825.9413370260154
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.37,
+    "t": 827.9735818619956
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.76,
+    "t": 830.0044252900407
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.46,
+    "t": 832.0352474530227
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.25,
+    "t": 834.0701230090344
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.91,
+    "t": 836.1008856010158
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.93,
+    "t": 838.1355240070261
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.83,
+    "t": 840.1664857520373
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.5,
+    "t": 842.19751090504
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.47,
+    "t": 844.2289796530386
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 846.2622791200411
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.83,
+    "t": 848.2933064650279
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 129.38,
+    "t": 850.3240733920247
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.15,
+    "t": 852.355150857009
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.25,
+    "t": 854.3912948400248
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.45,
+    "t": 856.422144220036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.28,
+    "t": 858.453293809027
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 860.4846201240434
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.38,
+    "t": 862.515478374029
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.67,
+    "t": 864.5460416610003
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 866.5771208300139
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.73,
+    "t": 868.6082556630136
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.71,
+    "t": 870.6389155610232
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.71,
+    "t": 872.6700106480275
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.76,
+    "t": 874.7008996980148
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.27,
+    "t": 876.7318625420448
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.68,
+    "t": 878.7631640250329
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.84,
+    "t": 880.7937664350029
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.09,
+    "t": 882.8244904530002
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.63,
+    "t": 884.8554525850341
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.99,
+    "t": 886.8866214750451
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.86,
+    "t": 888.9171887990087
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.57,
+    "t": 890.9480983079993
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.3,
+    "t": 892.9787838699995
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.56,
+    "t": 895.0132568300469
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.71,
+    "t": 897.043994555017
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.4,
+    "t": 899.0757755640079
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.41,
+    "t": 901.1067657709937
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.72,
+    "t": 903.1375488780322
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.22,
+    "t": 905.16911294905
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.59,
+    "t": 907.2011655840324
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.71,
+    "t": 909.2316875390243
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.81,
+    "t": 911.2623558000196
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.65,
+    "t": 913.2939999910304
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.51,
+    "t": 915.330902924994
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.94,
+    "t": 917.3615360330441
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.33,
+    "t": 919.3921041170252
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.95,
+    "t": 921.4228120110347
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.65,
+    "t": 923.4536610789946
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.88,
+    "t": 925.4843380350503
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.39,
+    "t": 927.5150685860426
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.95,
+    "t": 929.5463278720272
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 130.8,
+    "t": 931.5768287840183
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.91,
+    "t": 933.6079613750335
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.35,
+    "t": 935.6388296600198
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.93,
+    "t": 937.6696366899996
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.64,
+    "t": 939.7008048110292
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.73,
+    "t": 941.7312253420241
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 943.7618422450032
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.52,
+    "t": 945.7926826800103
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.03,
+    "t": 947.8231852370081
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 949.8539123420487
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.82,
+    "t": 951.8844516620156
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.46,
+    "t": 953.9152047780226
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.39,
+    "t": 955.9571446260088
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.87,
+    "t": 957.9879248310463
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.22,
+    "t": 960.0189954090165
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.97,
+    "t": 962.0498159010313
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.97,
+    "t": 964.0802910610219
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.86,
+    "t": 966.1127231810242
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.31,
+    "t": 968.1447495360044
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.92,
+    "t": 970.1754125430016
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.88,
+    "t": 972.2060762700276
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.27,
+    "t": 974.2370613359963
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 976.2771915350459
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.54,
+    "t": 978.3079967670492
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.84,
+    "t": 980.3387457420467
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 982.3771012840443
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.61,
+    "t": 984.4080592730315
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.99,
+    "t": 986.4388178140507
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.59,
+    "t": 988.4695188720361
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 990.5004798240261
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.2,
+    "t": 992.5314202060108
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.77,
+    "t": 994.5621799640357
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 996.592929756036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 998.6237285170355
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.1,
+    "t": 1000.6550475440454
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.6,
+    "t": 1002.6858497070498
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.86,
+    "t": 1004.7171373610036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.51,
+    "t": 1006.7521770710009
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.83,
+    "t": 1008.7829386980156
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 1010.8138421180192
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.6,
+    "t": 1012.8447202530224
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.3,
+    "t": 1014.8758177130367
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.83,
+    "t": 1016.9166497660335
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.54,
+    "t": 1018.9476677360362
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.96,
+    "t": 1020.9789399640285
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.4,
+    "t": 1023.009685483994
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.77,
+    "t": 1025.0404785620049
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.52,
+    "t": 1027.0738603119971
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 1029.105867330043
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.45,
+    "t": 1031.1365311730187
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.86,
+    "t": 1033.1670864210464
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.53,
+    "t": 1035.1984912860207
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.9,
+    "t": 1037.2446598760434
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.82,
+    "t": 1039.2753634090186
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 1041.3060193800484
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.92,
+    "t": 1043.336338282039
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.29,
+    "t": 1045.3669864520198
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.03,
+    "t": 1047.3975543930428
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.89,
+    "t": 1049.428870475036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.74,
+    "t": 1051.4594965750002
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.96,
+    "t": 1053.4898728190456
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.23,
+    "t": 1055.520339596027
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 1057.552131548
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.28,
+    "t": 1059.5829830850125
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.33,
+    "t": 1061.6139774150215
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 129.57,
+    "t": 1063.6449984729989
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.95,
+    "t": 1065.6814882920007
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 1067.712320547027
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.49,
+    "t": 1069.743213460024
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.08,
+    "t": 1071.7738271870185
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.94,
+    "t": 1073.8045855750097
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.62,
+    "t": 1075.8353894560132
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.29,
+    "t": 1077.8688962760498
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.36,
+    "t": 1079.9014700989937
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.07,
+    "t": 1081.9330028060358
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.21,
+    "t": 1083.963785875996
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.9,
+    "t": 1085.9946308940416
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.35,
+    "t": 1088.0278753089951
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.52,
+    "t": 1090.0606320500374
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.76,
+    "t": 1092.0912936429959
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.75,
+    "t": 1094.1220562120434
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.6,
+    "t": 1096.153312408016
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.97,
+    "t": 1098.2054293230176
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.76,
+    "t": 1100.2360767050413
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.48,
+    "t": 1102.2667818230111
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.35,
+    "t": 1104.2974984600442
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.55,
+    "t": 1106.3282665910083
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.94,
+    "t": 1108.3591708640452
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.28,
+    "t": 1110.389965970011
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.96,
+    "t": 1112.4211125970469
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.43,
+    "t": 1114.4520361340255
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.85,
+    "t": 1116.4826832450344
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.94,
+    "t": 1118.513272511016
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.32,
+    "t": 1120.5440019550151
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.53,
+    "t": 1122.5751839010045
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.29,
+    "t": 1124.6058922090451
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.77,
+    "t": 1126.6367480780464
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.57,
+    "t": 1128.6674818390165
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.32,
+    "t": 1130.6980610510218
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.82,
+    "t": 1132.7287492449977
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.51,
+    "t": 1134.7599316800479
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.95,
+    "t": 1136.7907020760467
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.25,
+    "t": 1138.8269796140376
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.85,
+    "t": 1140.8582842310425
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.83,
+    "t": 1142.8896218670416
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 33.0,
+    "power_w": 123.85,
+    "t": 1144.920166926051
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.71,
+    "t": 1146.9517176770023
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.56,
+    "t": 1148.983588144998
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.23,
+    "t": 1151.0166001190082
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.92,
+    "t": 1153.0474613770493
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.88,
+    "t": 1155.078097855032
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.85,
+    "t": 1157.1088243609993
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.5,
+    "t": 1159.1452580130426
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.73,
+    "t": 1161.176076068019
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.92,
+    "t": 1163.2068355270312
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.17,
+    "t": 1165.2374987860094
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.03,
+    "t": 1167.2678873340483
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 1169.2982409030083
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.33,
+    "t": 1171.3292874970357
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.2,
+    "t": 1173.3612308460288
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 1175.3921380160027
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.96,
+    "t": 1177.4224354620092
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.39,
+    "t": 1179.4531982570188
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.91,
+    "t": 1181.4840167940129
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.58,
+    "t": 1183.5153374079964
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.61,
+    "t": 1185.5463659740053
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.53,
+    "t": 1187.577270934009
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.8,
+    "t": 1189.6082593930187
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.15,
+    "t": 1191.6387615569984
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.98,
+    "t": 1193.669409936003
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.5,
+    "t": 1195.7000741439988
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.23,
+    "t": 1197.733585655049
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.53,
+    "t": 1199.7680571679957
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.2,
+    "t": 1201.798882661038
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.85,
+    "t": 1203.8307853510487
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.9,
+    "t": 1205.8619056020398
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.98,
+    "t": 1207.8926895320183
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.96,
+    "t": 1209.9242351960274
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.68,
+    "t": 1211.9566522600362
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.71,
+    "t": 1213.9873841039953
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.46,
+    "t": 1216.0183002600097
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.43,
+    "t": 1218.049356842006
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.97,
+    "t": 1220.08550370601
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.71,
+    "t": 1222.1243335180334
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.34,
+    "t": 1224.15538675501
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 1226.186240442039
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.57,
+    "t": 1228.2169017000124
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.63,
+    "t": 1230.2479673780035
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.61,
+    "t": 1232.2788866130286
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.8,
+    "t": 1234.3098774970276
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.53,
+    "t": 1236.340622215008
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.21,
+    "t": 1238.3711897020112
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.13,
+    "t": 1240.401769595046
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.59,
+    "t": 1242.4325387730496
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.39,
+    "t": 1244.4634260089952
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.55,
+    "t": 1246.4946524900151
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.74,
+    "t": 1248.5251703420072
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.74,
+    "t": 1250.5559891210287
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.24,
+    "t": 1252.58773625904
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.99,
+    "t": 1254.6187126110308
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.15,
+    "t": 1256.6496519770008
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.51,
+    "t": 1258.6807303430396
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.81,
+    "t": 1260.713710046024
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.93,
+    "t": 1262.7446703150054
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.8,
+    "t": 1264.776970011997
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.8,
+    "t": 1266.8079891950474
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.02,
+    "t": 1268.8388599110185
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.36,
+    "t": 1270.8701968700043
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.04,
+    "t": 1272.9023663460393
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.96,
+    "t": 1274.9332547630183
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.05,
+    "t": 1276.9697268290329
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.74,
+    "t": 1279.0005745920353
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.35,
+    "t": 1281.0382539030397
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.99,
+    "t": 1283.0692072810489
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.26,
+    "t": 1285.099770203
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.69,
+    "t": 1287.1309534860193
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.78,
+    "t": 1289.1621585290413
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.13,
+    "t": 1291.1933393630316
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.9,
+    "t": 1293.2241023069946
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 1295.2549121050397
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.66,
+    "t": 1297.28576737002
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.5,
+    "t": 1299.3166640650015
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.1,
+    "t": 1301.3473469500314
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.93,
+    "t": 1303.378002158017
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.56,
+    "t": 1305.409593131044
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.92,
+    "t": 1307.4406418620492
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.96,
+    "t": 1309.4716998030199
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.49,
+    "t": 1311.5032582250424
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.83,
+    "t": 1313.534110667999
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.32,
+    "t": 1315.5647342880256
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.56,
+    "t": 1317.5954047910054
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.36,
+    "t": 1319.6260841090116
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.18,
+    "t": 1321.659599414037
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.74,
+    "t": 1323.6903179160436
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.7,
+    "t": 1325.7215526280343
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.6,
+    "t": 1327.7522956540342
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.57,
+    "t": 1329.7830238200258
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.87,
+    "t": 1331.8148172990186
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.77,
+    "t": 1333.8484295040253
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.18,
+    "t": 1335.8792858350207
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.66,
+    "t": 1337.9103065910167
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.39,
+    "t": 1339.941213876009
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.63,
+    "t": 1341.9789198070066
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.98,
+    "t": 1344.0101425180328
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.5,
+    "t": 1346.0410160720348
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.29,
+    "t": 1348.071786146029
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.01,
+    "t": 1350.1025824749959
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.82,
+    "t": 1352.1329902410507
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.87,
+    "t": 1354.1636654530303
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.81,
+    "t": 1356.1945779530215
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.98,
+    "t": 1358.2251510090427
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.61,
+    "t": 1360.2578046160052
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.39,
+    "t": 1362.2884421140188
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.0,
+    "t": 1364.318700443022
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.9,
+    "t": 1366.3502044900088
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.95,
+    "t": 1368.38084032404
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.06,
+    "t": 1370.4123464199947
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.43,
+    "t": 1372.4682422500337
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.4,
+    "t": 1374.4988289850298
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.18,
+    "t": 1376.5294560570037
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.07,
+    "t": 1378.5629109360161
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 124.22,
+    "t": 1380.5935670820181
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.41,
+    "t": 1382.6270994730294
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.07,
+    "t": 1384.657650926034
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.39,
+    "t": 1386.6893209310365
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.68,
+    "t": 1388.7198777020094
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.19,
+    "t": 1390.7502084800508
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.52,
+    "t": 1392.7816893309937
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.52,
+    "t": 1394.8144421430188
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 1396.8451346390066
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.56,
+    "t": 1398.8757151900209
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 130.35,
+    "t": 1400.9091393370181
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.83,
+    "t": 1402.9462586430018
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.36,
+    "t": 1404.9767480000155
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.41,
+    "t": 1407.0072355380398
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.44,
+    "t": 1409.037891665008
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.21,
+    "t": 1411.0681396670407
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.77,
+    "t": 1413.0985608870396
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.94,
+    "t": 1415.129827252007
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.6,
+    "t": 1417.1606310640345
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 129.95,
+    "t": 1419.1910404140363
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.53,
+    "t": 1421.2222539689974
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.33,
+    "t": 1423.2528169630095
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.27,
+    "t": 1425.2837978990283
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.84,
+    "t": 1427.3145983350114
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.04,
+    "t": 1429.345254232001
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.52,
+    "t": 1431.3756744720158
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.59,
+    "t": 1433.4062221600325
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 1435.4365485750022
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.72,
+    "t": 1437.467090308026
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.46,
+    "t": 1439.4974723610212
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.63,
+    "t": 1441.5280125500285
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.82,
+    "t": 1443.562771722034
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.59,
+    "t": 1445.593310432043
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.83,
+    "t": 1447.6244123170036
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.69,
+    "t": 1449.6548984490219
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.42,
+    "t": 1451.6852103730198
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.88,
+    "t": 1453.716879521031
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.89,
+    "t": 1455.749004393001
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.94,
+    "t": 1457.7793319490156
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 128.49,
+    "t": 1459.8097809090395
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 123.83,
+    "t": 1461.8405152140185
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.12,
+    "t": 1463.8763287370093
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 127.84,
+    "t": 1465.906961552042
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.07,
+    "t": 1467.9382538710488
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.7,
+    "t": 1469.9687681940268
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 125.49,
+    "t": 1471.9990554680116
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.94,
+    "t": 1474.0294578010216
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 152.25,
+    "t": 1476.0593341460335
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 135.33,
+    "t": 1478.0887853450258
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 131.18,
+    "t": 1480.119257252023
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 144.06,
+    "t": 1482.1492987850215
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 148.27,
+    "t": 1484.1791462750407
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 143.76,
+    "t": 1486.2093276160304
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 153.93,
+    "t": 1488.240654178022
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 150.46,
+    "t": 1490.2706777120475
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 143.28,
+    "t": 1492.3010345090297
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 148.52,
+    "t": 1494.3348128080252
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 164.99,
+    "t": 1496.3647361600306
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 168.02,
+    "t": 1498.3948182340246
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 34.0,
+    "power_w": 126.43,
+    "t": 1500.4250351670198
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 163.82,
+    "t": 1502.4552156470018
+   },
+   {
+    "sm_clock_mhz": 1980.0,
+    "temp_c": 35.0,
+    "power_w": 164.91,
+    "t": 1504.4877478550188
+   }
+  ]
+ },
+ "provenance": {
+  "repo_sha": "3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2",
+  "repo_dirty": false,
+  "repo_dirty_including_outputs": true,
+  "repo_dirty_lines": [],
+  "started_at": "2026-10-10T04:26:50Z",
+  "harness_version": "0.1.0",
+  "publishable": true,
+  "publish_blockers": [],
+  "allocation_id": "13931402@atl1-1-02-012-9-0",
+  "slurm_qos": "inferno",
+  "python": "3.11.15",
+  "torch": "2.12.0+cu130",
+  "flashinfer_version": "0.6.16",
+  "wall_seconds": 1506.0992533409735
+ },
+ "slo": {
+  "ttft_ms": 434.0,
+  "tpot_ms": 27.8,
+  "source": "results/p2/RESULTS.md (job 11608159, H200; TTFT p50 43.4ms x10, TPOT p50 9.3ms x3)"
+ },
+ "validity": {
+  "valid": false,
+  "reasons": [
+   "not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.",
+   "no_completed_requests: no steady-window request completed"
+  ],
+  "attention_backend": "flashinfer",
+  "checks": {
+   "stationarity": {
+    "held": false,
+    "n_samples": 1167,
+    "mean_inflight": 1460.6958011996574,
+    "first_half_mean": 980.9639794168096,
+    "second_half_mean": 1939.6061643835617,
+    "half_vs_half_relative_change": 0.6562914634104016,
+    "ols_slope_per_s": 31.89876785810149,
+    "ols_relative_change_over_window": 1.3100955599103068,
+    "ols_t_statistic": 1660.0618786787434,
+    "trend_material": true,
+    "trend_significant": true,
+    "tolerance": 0.25,
+    "label": "unsaturated-window measurement",
+    "note": "In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp."
+   },
+   "dispatch_drift": {
+    "metric": "dispatch_drift_ms",
+    "n": 2753,
+    "mean": 1.8528094444504855,
+    "stdev": 12.241027006897346,
+    "min": 0.03290271606326556,
+    "p50": 0.695107796133243,
+    "p90": 1.9161995138212264,
+    "p95": 3.3464860558524396,
+    "p99": 7.692581155389181,
+    "max": 260.41267092657705,
+    "percentile_method": "linear interpolation between order statistics",
+    "p99_resolvable": true,
+    "p99_note": null,
+    "threshold_ms": 50.0,
+    "threshold_percentile": 99.0
+   }
+  }
+ },
+ "metrics": {
+  "ttft_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "itl_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "tpot_ms": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "n": 0
+  },
+  "e2e_ms": {
+   "p50": 300007.11832293065,
+   "p95": 300025.1840131955,
+   "p99": 364000.0433679699,
+   "n": 1920
+  },
+  "output_tok_s": 0.0,
+  "request_rps": 0.0,
+  "goodput_rps": 0.0,
+  "slo_attainment": 0.0,
+  "completed": 0,
+  "failed": 1920,
+  "window_s": 60.0,
+  "steady_requests": 1920,
+  "outcomes": {
+   "completed": 0,
+   "error": 172,
+   "timeout": 1748,
+   "incomplete": 0,
+   "no_content": 0
+  }
+ },
+ "server_counters": {
+  "preemptions": 197.0,
+  "evictions": 48689.0,
+  "prefix_hit_rate": 0.10953615431789039,
+  "raw": {
+   "before": {
+    "server": {
+     "requests_received": 13215,
+     "requests_streaming": 12769,
+     "requests_completed": 9159,
+     "requests_cancelled": 3610,
+     "requests_shed_429": 446,
+     "requests_failed": 0,
+     "output_tokens_total": 1144679,
+     "prompt_tokens_total": 7412781,
+     "empty_detokenizations_total": 3052,
+     "uptime_s": 5213.536935351964
+    },
+    "scheduler": {
+     "step": 132608,
+     "running": 0,
+     "waiting": 0,
+     "swapped": 0,
+     "finished": 12769,
+     "blocks_free": 0,
+     "blocks_used": 277590,
+     "block_utilization": 1.0,
+     "preemption_policy": "recompute",
+     "preemptions_total": 1410,
+     "preemptions_by_policy": {
+      "recompute": 1410,
+      "swap": 0
+     },
+     "tokens_recomputed": 712599,
+     "bytes_swapped_out": 0,
+     "bytes_swapped_in": 0,
+     "swap_out_seconds": 0.0,
+     "resumes": 0,
+     "resume_seconds_total": 0.0,
+     "resume_seconds_mean": 0.0,
+     "resume_seconds_max": 0.0,
+     "resume_steps_mean": 0.0,
+     "resume_steps_max": 0,
+     "starvation_fallbacks": 69,
+     "admission_control_alarm": true,
+     "swap_space_exhausted": 0,
+     "cache_enabled": true,
+     "cache_block_size": 16,
+     "cache_lookups": 12983,
+     "cache_requests_with_a_hit": 12982,
+     "cache_request_hit_rate": 0.9999229761996457,
+     "cache_blocks_reused": 59818,
+     "cache_blocks_required": 500236,
+     "cache_block_hit_rate": 0.11957955844841235,
+     "cache_mean_partial_hit_depth": 4.607409689594085,
+     "cache_max_partial_hit_depth": 496,
+     "cache_partial_block_truncations": 4906,
+     "cache_tokens_matched_but_recomputed": 48574,
+     "cache_inserts": 418267,
+     "cache_evictions": 140677,
+     "cache_cow_copies": 0,
+     "cache_node_count": 277590,
+     "cache_max_node_depth": 523,
+     "cache_cached_blocks": 277590,
+     "cache_shared_blocks_refcount_gt_1": 0
+    },
+    "allocator": {
+     "num_blocks": 277590,
+     "block_size": 16,
+     "watermark_blocks": 32,
+     "blocks_free": 0,
+     "blocks_used": 277590,
+     "utilization": 1.0,
+     "total_allocated": 433136,
+     "total_freed": 155546,
+     "peak_used": 277590,
+     "tokens_capacity": 4441440
+    }
+   },
+   "after": {
+    "server": {
+     "requests_received": 15615,
+     "requests_streaming": 15169,
+     "requests_completed": 9616,
+     "requests_cancelled": 5553,
+     "requests_shed_429": 446,
+     "requests_failed": 0,
+     "output_tokens_total": 1204202,
+     "prompt_tokens_total": 8745151,
+     "empty_detokenizations_total": 3138,
+     "uptime_s": 6719.726545215002
+    },
+    "scheduler": {
+     "step": 136970,
+     "running": 0,
+     "waiting": 0,
+     "swapped": 0,
+     "finished": 15169,
+     "blocks_free": 0,
+     "blocks_used": 277590,
+     "block_utilization": 1.0,
+     "preemption_policy": "recompute",
+     "preemptions_total": 1607,
+     "preemptions_by_policy": {
+      "recompute": 1607,
+      "swap": 0
+     },
+     "tokens_recomputed": 810698,
+     "bytes_swapped_out": 0,
+     "bytes_swapped_in": 0,
+     "swap_out_seconds": 0.0,
+     "resumes": 0,
+     "resume_seconds_total": 0.0,
+     "resume_seconds_mean": 0.0,
+     "resume_seconds_max": 0.0,
+     "resume_steps_mean": 0.0,
+     "resume_steps_max": 0,
+     "starvation_fallbacks": 73,
+     "admission_control_alarm": true,
+     "swap_space_exhausted": 0,
+     "cache_enabled": true,
+     "cache_block_size": 16,
+     "cache_lookups": 14876,
+     "cache_requests_with_a_hit": 14875,
+     "cache_request_hit_rate": 0.9999327776283947,
+     "cache_blocks_reused": 67677,
+     "cache_blocks_required": 571984,
+     "cache_block_hit_rate": 0.11831974320960027,
+     "cache_mean_partial_hit_depth": 4.549408443129874,
+     "cache_max_partial_hit_depth": 496,
+     "cache_partial_block_truncations": 5951,
+     "cache_tokens_matched_but_recomputed": 63061,
+     "cache_inserts": 466956,
+     "cache_evictions": 189366,
+     "cache_cow_copies": 0,
+     "cache_node_count": 277590,
+     "cache_max_node_depth": 523,
+     "cache_cached_blocks": 277590,
+     "cache_shared_blocks_refcount_gt_1": 0
+    },
+    "allocator": {
+     "num_blocks": 277590,
+     "block_size": 16,
+     "watermark_blocks": 32,
+     "blocks_free": 0,
+     "blocks_used": 277590,
+     "utilization": 1.0,
+     "total_allocated": 483847,
+     "total_freed": 206257,
+     "peak_used": 277590,
+     "tokens_capacity": 4441440
+    }
+   },
+   "definitions": {
+    "preemptions": "delta scheduler.preemptions_total",
+    "evictions": "delta scheduler.cache_evictions (radix block evictions); None when the prefix cache is off",
+    "prefix_hit_rate": "delta cache_blocks_reused / delta cache_blocks_required (BLOCK granularity)"
+   }
+  }
+ },
+ "anomalies": [
+  {
+   "kind": "bimodal_e2e",
+   "detail": "e2e_ms: 2 KDE modes near 131017.7, 299571.8; valley at 183055.5 holds 0.00x the smaller peak; 9% of mass below it; Sarle BC 0.886 (n=1920)",
+   "metric": "e2e_ms",
+   "n_modes": 2,
+   "sarle_bc": 0.8857749117166493,
+   "splits": [
+    {
+     "valley_at": 183055.54289811343,
+     "modes_at": [
+      131017.67467660789,
+      299571.8030099416
+     ],
+     "valley_over_smaller_peak": 4.051845273033397e-06,
+     "mass_below_valley": 0.08958391389821589
+    }
+   ]
+  },
+  {
+   "kind": "rep_spread_output_tok_s",
+   "detail": "output_tok_s CV 1.380 > 0.10 across 3 reps (values 3492, 57.43, 0)",
+   "metric": "output_tok_s",
+   "cv": 1.3800324043917194,
+   "values": [
+    3492.1666666666665,
+    57.43333333333333,
+    0.0
+   ]
+  },
+  {
+   "kind": "rep_spread_ttft_p50",
+   "detail": "ttft_p50 CV 0.807 > 0.10 across 2 reps (values 5.077e+04, 4.757e+05)",
+   "metric": "ttft_p50",
+   "cv": 0.8071234271677634,
+   "values": [
+    50772.32629214876,
+    475702.46063088876
+   ]
+  },
+  {
+   "kind": "rep_spread_tpot_p50",
+   "detail": "tpot_p50 CV 0.942 > 0.10 across 2 reps (values 85.61, 2886)",
+   "metric": "tpot_p50",
+   "cv": 0.9423718573780134,
+   "values": [
+    85.61495685789329,
+    2885.6748665704695
+   ]
+  }
+ ],
+ "samples": {
+  "ttft_ms": [],
+  "itl_ms": [],
+  "tpot_ms": []
+ }
+}

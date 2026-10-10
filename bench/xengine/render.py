@@ -407,6 +407,8 @@ class Cell:
                 kind = a.get("kind", "unknown") if isinstance(a, dict) else str(a)
                 if kind not in kinds:
                     kinds.append(kind)
+            if pool_held_at_start(r) and POOL_FLAG not in kinds:
+                kinds.append(POOL_FLAG)
         return kinds
 
     def duplicate_reps(self) -> list[Any]:
@@ -417,6 +419,25 @@ class Cell:
 
 
 Grid = dict[tuple[str, str, tuple], Cell]
+
+# Our server's prefix cache keeps blocks until admission needs them, so its free
+# pool shrinks across points even with no requests running (FINDINGS_OURS
+# F-006). A point that STARTS with almost no free blocks measures that state,
+# not the engine fresh; such cells are flagged, read from the artifact's own
+# before-snapshot (no new measurement).
+POOL_FLAG = "pool_held_by_cache_at_start"
+POOL_FREE_FRACTION = 0.05
+
+
+def pool_held_at_start(run: Run) -> bool:
+    sched = run.get("server_counters", "raw", "before", "scheduler", default=None)
+    if not isinstance(sched, dict):
+        return False
+    free, used = sched.get("blocks_free"), sched.get("blocks_used")
+    if not (_is_num(free) and _is_num(used)) or free + used <= 0:
+        return False
+    running = (sched.get("running") or 0) + (sched.get("waiting") or 0)
+    return running == 0 and free / (free + used) < POOL_FREE_FRACTION
 
 
 def aggregate(runs: list[Run]) -> Grid:
@@ -542,7 +563,9 @@ def pivot_table(
 CELL_LEGEND = (
     "Cells: `mean ± sample stdev (min–max)` across valid repetitions. "
     "`TODO` = no valid artifact. Bold brackets are flags: `n=k<3` too few reps, "
-    "`CV x%` spread above the threshold, `p99 from n=k<100` tail backed by too few "
+    "`CV x%` spread above the threshold, `anomaly: pool_held_by_cache_at_start` our "
+    "server began the point with <5% free KV blocks and no requests (F-006), "
+    "`p99 from n=k<100` tail backed by too few "
     "samples to be stable, `k invalid excluded` runs dropped from the "
     "aggregate (listed in the run inventory), `anomaly: kind` reported by the harness. "
     "`n/a (not exposed)` = the engine reported `null` for that counter."

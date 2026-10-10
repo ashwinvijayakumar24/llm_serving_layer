@@ -1,0 +1,39 @@
+{
+  "arm": "ours-int8",
+  "engine": "ours",
+  "version": "git:3a91fd7db4e0+engine:v0.2.1",
+  "launch_cmd": [
+    "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+    "-m",
+    "uvicorn",
+    "bench.xengine.ours_factory:build_app",
+    "--factory",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "34123",
+    "--log-level",
+    "warning"
+  ],
+  "flags": {
+    "factory": "bench.xengine.ours_factory:build_app",
+    "prefix_cache": true,
+    "preemption": "recompute",
+    "block_size": 16,
+    "max_batch_size": 32,
+    "watermark_blocks": 32,
+    "dtype": "float16",
+    "weight_quant": "int8",
+    "kv_pool_tokens": 4441440,
+    "kv_blocks": 277590,
+    "kv_pool_note": "ours reserves a watermark of 32 blocks (512 tokens) from admission",
+    "kv_pool_tokens_source": "ours allocator.tokens_capacity from results/xengine/W2/ours/rate8_rep3.json",
+    "resolved": {
+      "kv_blocks": 277590,
+      "preemption": "recompute",
+      "prefix_cache": true,
+      "static_batching": false
+    }
+  },
+  "captured_at": "20261010T054757Z"
+}
