@@ -42,6 +42,11 @@ weights/
 # Slurm scratch output — the ARTIFACT goes in results/, the raw job log does not
 slurm-*.out
 *.log
+# Cross-engine study: each run's server log is evidence (attention backend,
+# resolved defaults, startup warnings cited in bench/oss-pr-candidates.md), so
+# it is committed next to the artifact it belongs to.
+!results/xengine/**/server_*.log
+!results/xengine_pilot/**/server_*.log
 logs/
 
 # Editor
