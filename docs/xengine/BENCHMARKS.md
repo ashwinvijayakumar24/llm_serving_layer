@@ -1125,21 +1125,44 @@ resolved values recorded per run are needed to read this table. Ours capping at
 
 ## Five interview questions
 
-Each question points at the section, table or figure that will answer it.
+Each question points at where its answer lives, with the short answer the data
+currently supports. Short answers are drafts on the same terms as the Analysis:
+UNVERIFIED until Ashwin signs off.
 
 1. **Why is vLLM faster, and how much of the gap comes from each cause?**
-   See Analysis (a), the W1 tables (baseline and diagnostic arms), and
-   Figure W1-a. The `vllm-eager` and `sglang-eager` columns give the CUDA-graph
-   share.
+   Where: Analysis (a); W1 output tok/s tables (baseline and diagnostic arms);
+   Figure W1-a. Short answer: at batch 1 the gap is ≈6.2×; turning off CUDA
+   graphs and torch.compile in vLLM removes ≈4.7× of it (730 → 154 tok/s),
+   leaving ≈1.3× to our engine (117). CPU/GPU overlap is worth ≈35% in both
+   vLLM and SGLang; ours has none. At concurrency 64 graphs matter less (≈1.6×)
+   and our batch cap and per-step cost dominate.
 2. **How does our prefix cache compare with RadixAttention, and when does each
-   win?** See Analysis (b), the W3 tables (including `prefix hit rate`) and
-   Figure W3.
+   win?** Where: Analysis (b); W3 tables (`TTFT p99`, `prefix hit rate`);
+   Figure W3; `SOURCE_NOTES.md` §5. Short answer: on a single shared system
+   prompt all three caches hit the workload's ceiling (≈0.63), so the data
+   structure did not matter; the latency payoff is 1–2 ms for vLLM/SGLang and
+   appears for ours only under load. Where ours clearly loses is *lifecycle*:
+   its cache only grows and is evicted only at admission, so it eventually
+   holds the whole pool and the server collapses (F-006, W2 evidence).
 3. **How does each engine choose preemption victims, and what does it cost?**
-   See Analysis (c), the W4 tables (`preemptions`, `goodput`) and Figure W4.
-4. **How was the comparison kept fair?** See the Setup metadata block (one GPU,
-   one allocation, recorded versions), the Run inventory, [`SPEC.md`](SPEC.md)
-   fixed parameters (one frozen SLO, same seed, same model files), and the
-   separation of diagnostic arms from baselines in every table.
-5. **What was broken or underdocumented in vLLM and SGLang?** See
-   `bench/oss-pr-candidates.md` (friction log from setting the engines up) and
-   [`SOURCE_NOTES.md`](SOURCE_NOTES.md).
+   Where: Analysis (c); W4 tables (`preemptions`, `goodput`); Figure W4;
+   `SOURCE_NOTES.md` §2.4/§3.5/§4.2. Short answer (mechanism verified in
+   source; cost pending W4 v2): ours evicts the newest arrival with a
+   starvation guard, vLLM the last-admitted running request (recompute only,
+   no swap in V1), SGLang the request with the fewest generated tokens.
+4. **How was the comparison kept fair?** Where: Setup metadata block; Run
+   inventory; [`SPEC.md`](SPEC.md); ADR-025. Short answer: one H200 per
+   workload, every arm in one allocation; same weights, fp16, greedy,
+   `ignore_eos`; byte-identical seeded request streams; one frozen SLO; KV pool
+   equalized in tokens for W4; a closed loop for W4 so every engine faces the
+   same in-flight count; diagnostic arms never used as the competitor; the
+   steady-state rule fixed before the runs and not loosened after. And the
+   things that are *not* equal are recorded (attention kernels differ:
+   FlashInfer / FlashAttention / FA3).
+5. **What was broken or underdocumented in vLLM and SGLang?** Where:
+   `bench/oss-pr-candidates.md`; `SOURCE_NOTES.md` §8. Short answer: five
+   candidates, all reproduced on the pinned versions — vLLM's deprecation
+   message names a nonexistent `vllm server` command; a missing space in a
+   warning; auto-derived `max_num_seqs` is never logged; `vllm serve --help`
+   crashes without a GPU; SGLang's retraction/eviction counters are absent
+   from `/metrics` until their first event.
