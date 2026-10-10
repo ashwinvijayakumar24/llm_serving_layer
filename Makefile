@@ -97,8 +97,20 @@ bench-w5:
 	done; \
 	if [ -n "$$failed" ]; then echo "FAILED cells:$$failed"; exit 1; fi
 
+# Inside a Slurm job, render into an untracked copy under results/ instead of
+# the tracked docs/xengine/BENCHMARKS.md: the four workload jobs run in
+# parallel in one checkout, and a tracked file modified by the first job to
+# finish would mark every later artifact of the others repo_dirty. The real doc
+# is rendered after the results are pulled (`make render` outside Slurm).
 render:
+ifdef SLURM_JOB_ID
+	mkdir -p $(OUT)/_render
+	cp docs/xengine/BENCHMARKS.md $(OUT)/_render/BENCHMARKS_$(SLURM_JOB_ID).md
+	$(OURS_PY) -m bench.xengine.render --results $(OUT) \
+		--doc $(OUT)/_render/BENCHMARKS_$(SLURM_JOB_ID).md --figures $(OUT)/_render/figures_$(SLURM_JOB_ID)
+else
 	$(OURS_PY) -m bench.xengine.render --results $(OUT)
+endif
 
 test:
 	$(OURS_PY) -m pytest -m "$(PYTEST_MARKERS)" -q -p no:cacheprovider
