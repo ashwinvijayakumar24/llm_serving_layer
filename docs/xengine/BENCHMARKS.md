@@ -921,8 +921,9 @@ excluded from every aggregate above but are listed here with the reason.
 Each subsection below follows the same shape. The **Observation** states what
 the tables show and stays `TODO` until the data exists. The **Mechanistic
 hypothesis** is the proposed cause. The **Source evidence** cites the engine
-code that supports or refutes it. Every hypothesis stays marked UNVERIFIED until
-Ashwin has checked it against both the data and the source.
+code that supports or refutes it. Each subsection's **Status** says separately
+what was verified in the data, what was verified in source, and what remains a
+hypothesis.
 
 ### (a) Raw throughput gap and its attribution
 
@@ -937,8 +938,8 @@ two such means).
   and 11957 tok/s.
 - **Ablation ladder at concurrency 1 (vLLM).** Default 730 → no CUDA graphs
   (`vllm-nograph`) 185 → no graphs and no torch.compile (`vllm-eager`) 154.
-  Removing graphs alone divides vLLM's throughput by ≈3.9; removing compile
-  as well takes it to ≈4.7. The remaining ratio between `vllm-eager` (154) and
+  Removing graphs alone divides vLLM's throughput by ≈4.0 (729.9 / 184.7 =
+  3.95); removing compile as well takes it to ≈4.7. The remaining ratio between `vllm-eager` (154) and
   `ours` (117) is ≈1.3. In other words, once vLLM loses graphs and compile,
   most of the 6.2× gap is gone.
 - **SGLang shows the same shape.** Default 757 → `sglang-eager` 133 (≈5.7×).
@@ -950,7 +951,7 @@ two such means).
 - **At high concurrency the ladder compresses.** At concurrency 64:
   `vllm` 12806, `vllm-noasync` 10977, `vllm-nograph` 8234, `vllm-eager` 7269,
   `ours` 2110. Larger batches amortize launch overhead, so graphs matter less
-  (≈1.6× instead of ≈3.9×), and our engine's own batch cap (below) dominates.
+  (≈1.6× instead of ≈4.0×), and our engine's own batch cap (below) dominates.
 
 **Reading, not yet a conclusion.** For a 1B model at small batch, each decode
 step is mostly kernel-launch and CPU overhead, not math. That is why CUDA
@@ -995,7 +996,15 @@ and `--enforce-eager` disables both (`vllm/config/vllm.py:316`, `:1694-1696`,
 `activation.py:62`). The *mechanism differences* are verified in source; that
 they *account for* the gap is what the arms measure.
 
-**Status: UNVERIFIED — Ashwin to confirm.**
+**Status: VERIFIED for the data; mechanism PARTLY VERIFIED** (reviewed by
+Claude at Ashwin's request, 2026-10-10).
+- *Numbers:* independently recomputed from the raw artifacts on 2026-10-10 (143 claims checked; 8 corrected, 1 unrecordable fixed from the P2 artifacts).
+- *Mechanism verified in source:* our engine has no CUDA graphs, unfused ops,
+  a Python layer loop and a blocking `.tolist()`; vLLM and SGLang capture
+  graphs and overlap CPU with GPU by default (`SOURCE_NOTES.md` §6(a)).
+- *Measured, not inferred:* the share removed by each diagnostic arm.
+- *Still a hypothesis:* how the ≈1.3× residual splits between fused kernels,
+  the Python loop and the `.tolist()` sync — no arm separates them.
 
 ### (b) Prefix cache: our radix trie vs SGLang RadixAttention vs vLLM hash-block caching
 
@@ -1020,11 +1029,14 @@ repetitions per arm and is not used here).
   728 vs 1,160 ms p50 and 1,730 vs 2,390 ms p99. The saving appears only once
   requests queue, which suggests the cache relieves prefill *work* (capacity)
   rather than the per-request critical path.
-- **Longest-prefix-match ordering adds nothing here.** `sglang-lpm` matches
-  default `sglang` within noise at every rate (TTFT p50 15.5 vs 14.8 ms at
-  rate 8). With a single shared prefix, FCFS order already groups the sharers.
+- **Longest-prefix-match ordering adds nothing here, and is slightly worse.**
+  `sglang-lpm` has a 0.7–1.3 ms (5–9%) higher TTFT p50 than default `sglang`
+  at every rate (15.9 vs 14.8 ms at rate 2; 15.5 vs 14.8 ms at rate 8; 16.7 vs
+  15.4 ms at rate 16), and the per-repetition ranges do not overlap at rates
+  2, 4 and 16. With a single shared prefix, FCFS order already groups the
+  sharers, so the reordering only adds cost.
 - **Ours decodes much slower on W3 than on W1.** TPOT p50 is 35–72 ms on W3
-  (rates 2–16) vs 8.3–11.4 ms on W1, so `ours` goodput is 0 from rate 8 up
+  (rates 2–16) vs 8.2–10.9 ms on W1 at concurrency 1–16, so `ours` goodput is 0 from rate 8 up
   (the TPOT SLO is 27.8 ms). vLLM/SGLang stay at 1.2–1.5 ms. See (d).
 
 **Reading, not yet a conclusion.** The cache comparison is a tie on hit rate
@@ -1057,12 +1069,19 @@ Ours: `serving/cache/radix.py` (LRU eviction `_evict_one` at `:546`). Caveat on
 the hit-rate column: vLLM and SGLang count tokens, ours counts blocks, and
 vLLM's counters skip re-lookups by resumed (preempted) requests.
 
-**Status: UNVERIFIED — Ashwin to confirm.**
+**Status: VERIFIED for the data; interpretation is a reading** (reviewed by
+Claude, 2026-10-10).
+- *Numbers:* independently recomputed from the raw artifacts on 2026-10-10 (143 claims checked; 8 corrected, 1 unrecordable fixed from the P2 artifacts). The hit-rate ceiling (≈0.64) is arithmetic on the
+  workload definition in `configs/workloads/W3.yaml`.
+- *Mechanism verified in source:* block vs token granularity, LPM off by
+  default, eviction timing per engine (`SOURCE_NOTES.md` §5, §6(b)).
+- *Still a reading:* that ours' cache helps capacity rather than the
+  per-request critical path; consistent with the data, not isolated.
 
 ### (c) Preemption policy and its cost under W4
 
-**Observation** (drafted from the W4 v2 tables above, job 13933751; all 45
-cells valid, 3/3 repetitions each; every engine had the same 32,768-token pool
+**Observation** (drafted from the W4 v2 tables above, job 13933751; all 15
+cells (45 runs) valid, 3/3 repetitions each; every engine had the same 32,768-token pool
 and the same number of ~2.5k-token sequences in flight).
 
 - **Preemption counts differ by two orders of magnitude.** Per run of 64
@@ -1096,7 +1115,8 @@ preempts only when a *running* decode cannot grow; SGLang additionally evicts
 cached tokens before retracting anything. Ours admits, then resolves the
 shortage by preempting the newest request and recomputing it, so under
 sustained pressure the same requests are preempted and recomputed repeatedly
-(≈30 preemptions per completed request at concurrency 32). The cache makes it
+(≈21 preemptions per completed request at concurrency 32: 3,954 per point
+over the 192 requests the server completed in it). The cache makes it
 worse because cached blocks are not counted as reclaimable when the preemption
 decision is made (F-004), and with the cache on some requests even return
 empty (F-007).
@@ -1117,9 +1137,17 @@ selection (`v1/core/sched/scheduler.py:763-771`) and recompute-only preemption
 (`schedule_batch.py:2239-2274`). Ours: LIFO with starvation guard (ADR-024,
 `serving/scheduler/preemption.py:130`).
 
-**Status: UNVERIFIED — Ashwin to confirm** (vLLM's victim rule is verified in
-source; the counts and throughput above are measured; the admission-control
-explanation is a hypothesis from source reading).
+**Status: VERIFIED for the data and for ours' mechanism; vLLM/SGLang
+explanation verified in source only** (reviewed by Claude, 2026-10-10).
+- *Numbers:* independently recomputed from the raw artifacts on 2026-10-10 (143 claims checked; 8 corrected, 1 unrecordable fixed from the P2 artifacts).
+- *Ours, verified:* the preemption check counts only free blocks, freeing a
+  victim returns nothing the cache also holds, and the last request is failed
+  with a false "outgrew the KV pool" — located in code and reproduced on CPU
+  with the cache-off control (`FINDINGS_OURS.md` F-004/F-006/F-007,
+  `repro/f004_f007_cpu_repro.py`).
+- *vLLM/SGLang:* victim rules and recompute-only preemption verified in
+  source; "they protect running requests via admission control" is from
+  source reading, not an experiment.
 
 ### (d) Scheduler and batching policy effects on latency tails
 
@@ -1129,12 +1157,13 @@ and 32 — so read these as indicative). vLLM and SGLang meet the SLO for 100%
 of requests at every rate with valid data, up to 32 requests/s (goodput 32.8
 and 33.2 rps). `ours` meets it for ≈1% of requests at rates 4–16: its TPOT p50
 is 48–64 ms against the 27.8 ms SLO. The SLO was calibrated on our own engine
-at shorter prompts (P2, 256-token mean); W2's 512-token lognormal prompts with
+at shorter requests (P2 job 11608159: 128-token mean prompts, 64-token
+outputs, per its artifacts in `results/p2/`); W2's 512-token lognormal prompts with
 continuous arrivals push our decode time past it. That is the same effect as
 on W3 below.
 
 **Observation, W1 and W3.** Our per-token decode time
-depends heavily on concurrent prefill traffic: TPOT p50 is 8.3 ms at W1
+depends heavily on concurrent prefill traffic: TPOT p50 is 8.2 ms at W1
 concurrency 1 (no arrivals during a request's decode beyond the closed loop's
 own) but 35 ms at W3 rate 2 and 72 ms at W3 rate 16, where 1,280-token prompts
 keep arriving. vLLM and SGLang move only from ~1.3 to ~1.5 ms over the same
@@ -1164,7 +1193,14 @@ requests first and chunk sizing (`v1/core/sched/scheduler.py:629-630`, `:1110`,
 512-token prefill budget (`serving/scheduler/scheduler.py:612-694`). Mechanisms
 verified; effect on tails unverified.
 
-**Status: UNVERIFIED — Ashwin to confirm.**
+**Status: VERIFIED for the data; mechanism is a HYPOTHESIS** (reviewed by
+Claude, 2026-10-10).
+- *Numbers:* independently recomputed from the raw artifacts on 2026-10-10 (143 claims checked; 8 corrected, 1 unrecordable fixed from the P2 artifacts).
+- *Verified in source:* each engine's chunk budget and whether prefill and
+  decode share a step (`SOURCE_NOTES.md` §6(d)).
+- *Hypothesis:* that ours' TPOT inflation on W2/W3 comes from 512-token prefill
+  chunks sharing decode steps. No arm varies the chunk size, so this is not
+  isolated.
 
 ### (e) Scaling shape normalized to each engine's own batch-1 capacity
 
@@ -1217,13 +1253,21 @@ batch ceiling bounds where its curve can bend: ours `max_batch_size=32`
 resolved values recorded per run are needed to read this table. Ours capping at
 32 means its curve must flatten by concurrency 32 regardless of kernel speed.
 
-**Status: UNVERIFIED — Ashwin to confirm.**
+**Status: VERIFIED for the data; mechanism partly verified** (reviewed by
+Claude, 2026-10-10).
+- *Numbers:* independently recomputed from the raw artifacts on 2026-10-10 (143 claims checked; 8 corrected, 1 unrecordable fixed from the P2 artifacts); the derived table is a plain ratio of two
+  verified cells.
+- *Verified in code:* our scheduler's 32-request batch cap
+  (`serving/scheduler/scheduler.py:210`). `vllm-matched` measures what a 32 cap
+  costs vLLM (≈8%).
+- *Still a reading:* that a large fixed per-step cost is why our relative
+  scaling looks good.
 
 ## Five interview questions
 
 Each question points at where its answer lives, with the short answer the data
-currently supports. Short answers are drafts on the same terms as the Analysis:
-UNVERIFIED until Ashwin signs off.
+currently supports. Short answers carry the same status as the Analysis subsection they point to:
+data verified against the artifacts; mechanism status stated there.
 
 1. **Why is vLLM faster, and how much of the gap comes from each cause?**
    Where: Analysis (a); W1 output tok/s tables (baseline and diagnostic arms);
@@ -1247,7 +1291,7 @@ UNVERIFIED until Ashwin signs off.
    starvation guard, vLLM the last-admitted running request (recompute only,
    no swap in V1), SGLang the request with the fewest generated tokens. On an
    equal 32k-token pool at 16 sequences in flight, ours preempted ≈1,850 times
-   per run vs 22 (vLLM) and 5 (SGLang), and delivered 592 vs ≈5,600 tok/s;
+   per run vs 22 (vLLM) and 5 (SGLang), and delivered 592 vs 5,786 (vLLM) and 5,551 (SGLang) tok/s;
    SGLang evicts cache before retracting, and ours preempts even when the pool
    is only held by its own cache (F-004).
 4. **How was the comparison kept fair?** Where: Setup metadata block; Run
