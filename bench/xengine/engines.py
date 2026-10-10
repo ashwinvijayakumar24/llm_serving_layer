@@ -931,10 +931,10 @@ class VLLMAdapter(EngineAdapter):
                 arm.extra_args[arm.extra_args.index(VLLM_FLAG_MAX_NUM_SEQS) + 1]
             )
         if arm.matched and not kv_pool_tokens:
-            raise ValueError(
-                "vllm-matched needs the KV pool size of ours in tokens: pass "
-                "--kv-pool-tokens, run it on a workload with kv_pool_tokens, or run "
-                "the `ours` arm first so its allocator capacity can be read back"
+            flags["kv_pool_matched"] = False
+            flags["kv_pool_note"] = (
+                "workload sets no KV pool; only max-num-seqs is matched to ours. "
+                "Pool size is irrelevant here: the workload never fills either pool."
             )
         if kv_pool_tokens:
             blocks = kv_pool_tokens // KV_BLOCK_SIZE

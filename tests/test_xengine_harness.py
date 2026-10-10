@@ -207,8 +207,8 @@ def test_vllm_launch_flags():
     assert _flag_value(m, "--max-num-seqs") == "32"
     assert _flag_value(m, "--num-gpu-blocks-override") == "2048"
     assert _flag_value(m, "--block-size") == "16"
-    with pytest.raises(ValueError, match="vllm-matched"):
-        _cmd("vllm-matched")
+    # Without a workload pool, vllm-matched matches max-num-seqs only.
+    assert "--num-gpu-blocks-override" not in _cmd("vllm-matched")
 
 
 def test_sglang_launch_flags():
@@ -935,3 +935,15 @@ def test_sglang_lazy_counters_absent_on_live_endpoint_are_zero():
 def test_sglang_page_size_not_confused_with_c128():
     log = "server_args={'page_size': 1, 'c128_page_size': 16}"
     assert xe.grep_resolved(log, xe.SGLANG_RESOLVED_RES)["page_size"] in (1, "1")
+
+
+def test_vllm_matched_without_workload_pool_matches_batch_limit_only(tmp_path):
+    arm = xe.get_arm("vllm-matched")
+    w1 = xc.load_workload("W1")
+    assert xr.resolve_kv_pool_tokens(None, w1, arm, tmp_path) == (None, None)
+    spec = xe.VLLMAdapter(python="PY").launch_spec(arm, "/w")
+    assert "--num-gpu-blocks-override" not in spec.cmd
+    assert spec.flags["kv_pool_matched"] is False
+    assert spec.flags["max_num_seqs"] == 32
+    w4 = xc.load_workload("W4")
+    assert xr.resolve_kv_pool_tokens(None, w4, arm, tmp_path)[0] == 32768

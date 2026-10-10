@@ -163,7 +163,13 @@ def resolve_kv_pool_tokens(
         return cli, "--kv-pool-tokens"
     if spec.kv_pool_tokens:
         return spec.kv_pool_tokens, f"{spec.id}.yaml kv_pool_tokens"
-    if arm.matched:
+    # Only ours-int8 copies ours' VRAM-derived pool (same engine, so it fits by
+    # construction). vllm-matched does not: ours derives a larger pool than vLLM
+    # can allocate on the same GPU (pilot 13918362: ours 277,590 blocks = 4.44M
+    # tokens vs vLLM's own 4.08M), so vLLM would fail to start. Where the
+    # workload sets no pool (W1-W3), no request mix comes near either pool, and
+    # vllm-matched matches the batch limit only.
+    if arm.matched and arm.engine == "ours":
         for p in sorted((out / spec.id / "ours").glob("*.json"), reverse=True):
             try:
                 d = json.loads(p.read_text())
