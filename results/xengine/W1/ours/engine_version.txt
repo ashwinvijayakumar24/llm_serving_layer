@@ -1,0 +1,37 @@
+{
+  "arm": "ours",
+  "engine": "ours",
+  "version": "git:3a91fd7db4e0+engine:v0.2.1",
+  "launch_cmd": [
+    "/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3",
+    "-m",
+    "uvicorn",
+    "bench.xengine.ours_factory:build_app",
+    "--factory",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "56633",
+    "--log-level",
+    "warning"
+  ],
+  "flags": {
+    "factory": "bench.xengine.ours_factory:build_app",
+    "prefix_cache": true,
+    "preemption": "recompute",
+    "block_size": 16,
+    "max_batch_size": 32,
+    "watermark_blocks": 32,
+    "dtype": "float16",
+    "weight_quant": null,
+    "kv_pool_tokens": null,
+    "kv_pool_tokens_source": null,
+    "resolved": {
+      "kv_blocks": 277590,
+      "preemption": "recompute",
+      "prefix_cache": true,
+      "static_batching": false
+    }
+  },
+  "captured_at": "20261010T025354Z"
+}
