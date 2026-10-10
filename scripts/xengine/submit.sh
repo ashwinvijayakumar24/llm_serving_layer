@@ -46,7 +46,10 @@ case "${1:-}" in
         submit xengine-W4 08:00:00 WORKLOADS=W4
         ;;
     W1|W2|W3|W4)
-        submit "xengine-$1" 06:00:00 WORKLOADS="$1"
+        # Same per-workload limits as `all`, so a single-workload resubmission
+        # never gets less time than the matrix gave it.
+        case "$1" in W1) t=06:00:00 ;; W2) t=04:00:00 ;; W3) t=05:00:00 ;; W4) t=08:00:00 ;; esac
+        submit "xengine-$1" "$t" WORKLOADS="$1"
         ;;
     *)
         echo "usage: $0 pilot | all | W1|W2|W3|W4" >&2

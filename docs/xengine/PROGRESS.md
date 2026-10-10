@@ -12,7 +12,7 @@ is that a result recorded here never has to be re-run just to remember it.
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
 | 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
-| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | W1 done (13931401, 210 valid artifacts); W2–W4 running |
+| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | W1, W2, W3 done; W4 v1 superseded; W4 v2 job 13933751 queued |
 | 4 — analysis + BENCHMARKS.md | not started |
 
 ## Log
@@ -138,7 +138,22 @@ repo `3a91fd7` clean. Values are cell means from `docs/xengine/BENCHMARKS.md`.
 | 2026-10-10 | W1 c=64 | ours flattens: tok/s 1984→2110 (c32→64), TTFT p99 602→2233 ms | — | `results/xengine/W1/ours/` | 13931401 |
 | 2026-10-10 | W5 on W1 | ours int8 vs fp16 tok/s at c=1 | 82 vs 117 (−30%) | `results/xengine/W1/ours-int8/` | 13931401 |
 
-W2–W4: jobs 13931402–13931404 running.
+W2 (13931402) and W3 (13931403) results are in `BENCHMARKS.md`; see the W3
+observation (b) and F-006 for what they showed. W4 v1 (13931404) was
+superseded by W4 v2 (closed loop), job 13933751.
+
+### 2026-10-10
+- W3: all three caches hit ≈0.63 of tokens (the workload's ceiling ≈0.64);
+  TTFT benefit 1–2 ms for vLLM/SGLang; none for ours unloaded, large for ours
+  under load (p50 728 vs 1160 ms at rate 16). `sglang-lpm` = default.
+- W2: ours collapses once its prefix cache has filled the whole KV pool
+  (free blocks 277,590 → 0 across cells with no requests running); vLLM does
+  not drift. W3's `ours-noprefix` keeps the full pool, so the cache is the
+  cause. Logged in F-006 with evidence; cells starting with <5% free blocks
+  are flagged in the doc.
+- Steady-state rejections in W2/W3 line up across engines for the same
+  (rate, rep) arrival stream and concentrate at low rates; the pre-registered
+  check is kept as-is.
 
 ## Resume-usable facts
 
