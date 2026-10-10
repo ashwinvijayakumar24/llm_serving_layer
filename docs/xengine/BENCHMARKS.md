@@ -1037,7 +1037,17 @@ source; the cost comparison is not).
 
 ### (d) Scheduler and batching policy effects on latency tails
 
-**Observation** (partial: W1 and W3; W2 pending). Our per-token decode time
+**Observation, W2** (job 13931402; valid coverage is thin — 1–3 valid
+repetitions per cell, none for any arm at rate 2, none for `ours` at rates 1
+and 32 — so read these as indicative). vLLM and SGLang meet the SLO for 100%
+of requests at every rate with valid data, up to 32 requests/s (goodput 32.8
+and 33.2 rps). `ours` meets it for ≈1% of requests at rates 4–16: its TPOT p50
+is 48–64 ms against the 27.8 ms SLO. The SLO was calibrated on our own engine
+at shorter prompts (P2, 256-token mean); W2's 512-token lognormal prompts with
+continuous arrivals push our decode time past it. That is the same effect as
+on W3 below.
+
+**Observation, W1 and W3.** Our per-token decode time
 depends heavily on concurrent prefill traffic: TPOT p50 is 8.3 ms at W1
 concurrency 1 (no arrivals during a request's decode beyond the closed loop's
 own) but 35 ms at W3 rate 2 and 72 ms at W3 rate 16, where 1,280-token prompts
