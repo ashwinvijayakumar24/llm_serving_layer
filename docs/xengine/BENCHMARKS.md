@@ -40,6 +40,12 @@ appears at the top, because a comparison across two environments measures the
 environment rather than the engines (SPEC hard rule 5).
 
 <!-- BEGIN GENERATED: metadata -->
+> **WARNING — METADATA MISMATCH ACROSS ARTIFACTS.** These runs did not all
+> share one environment, so cross-arm comparisons may be confounded:
+>
+> - **node differs across artifacts: atl1-1-02-012-9-0, atl1-1-02-012-23-0**
+> - **Slurm job id differs across artifacts: 13931401, 13931403**
+
 Values as recorded in the artifacts, invalid runs included (every distinct value is listed).
 
 | field | recorded value(s) |
@@ -48,8 +54,8 @@ Values as recorded in the artifacts, invalid runs included (every distinct value
 | GPU count | 1 |
 | driver | 615.71.09 |
 | CUDA | 13.0 |
-| node | atl1-1-02-012-9-0 |
-| Slurm job id | 13931401 |
+| node | atl1-1-02-012-9-0, atl1-1-02-012-23-0 |
+| Slurm job id | 13931401, 13931403 |
 | repo sha | 3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2 |
 | repo dirty | false |
 | harness version | 0.1.0 |
@@ -268,67 +274,67 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO |
+| rate=1 | 92.7 **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50; p99 from n=50<100]** | 21.3 ± 1.16 (20.5–22.1) **[n=2<3; 1 invalid excluded; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; p99 from n=50<100]** | TODO **[3 invalid excluded]** |
+| rate=2 | 101 ± 3.36 (98.9–104) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | 22.6 ± 1.47 (21.0–23.8) | 20.3 ± 1.17 (19.2–21.5) |
+| rate=4 | 295 ± 236 (128–461) **[n=2<3; CV 80%; 1 invalid excluded; anomaly: rep_spread_goodput_rps; anomaly: tail_outliers_ttft]** | 22.0 ± 0.837 (21.1–22.7) | 20.1 ± 0.336 (19.9–20.4) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | 138 ± 8.41 (132–147) **[anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 23.1 ± 0.193 (22.8–23.2) | 21.1 ± 0.443 (20.6–21.5) |
+| rate=16 | 1726 ± 659 (1261–2192) **[n=2<3; CV 38%; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_ttft_p50; anomaly: rep_spread_tpot_p50; anomaly: bimodal_e2e]** | 27.0 ± 0.635 (26.6–27.5) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | 24.3 ± 0.920 (23.6–24.9) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 
 **W3 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | 87.4 **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50; p99 from n=63<100]** | TODO | TODO | TODO | TODO **[3 invalid excluded]** | TODO | TODO **[3 invalid excluded]** | TODO | TODO | TODO **[3 invalid excluded]** |
+| rate=2 | 114 ± 4.00 (111–117) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_tpot_p50]** | TODO | TODO | TODO | 23.7 ± 1.52 (22.1–25.1) | TODO | 23.7 ± 2.19 (22.2–25.3) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 21.8 ± 2.25 (20.4–24.4) **[CV 10%]** |
+| rate=4 | 133 ± 11.4 (125–141) **[n=2<3; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: rep_spread_goodput_rps]** | TODO | TODO | TODO | 22.7 ± 1.18 (21.9–23.6) **[n=2<3; 1 invalid excluded]** | TODO | 20.8 ± 0.442 (20.5–21.1) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 21.2 ± 1.89 (19.9–22.5) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | 191 ± 48.6 (156–247) **[CV 25%; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | 24.4 ± 0.320 (24.2–24.8) | TODO | 22.0 ± 0.637 (21.5–22.7) | TODO | TODO | 21.9 ± 1.06 (21.2–23.1) |
+| rate=16 | 2386 ± 1184 (1549–3223) **[n=2<3; CV 50%; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: rep_spread_ttft_p50]** | TODO | TODO | TODO | 29.1 ± 1.18 (28.3–29.9) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | TODO | 26.4 ± 0.334 (26.1–26.6) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 26.6 ± 1.95 (25.3–28.0) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 
 **W3 — goodput rps — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO |
+| rate=1 | 0.750 **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | 0.942 ± 0.153 (0.833–1.05) **[n=2<3; CV 16%; 1 invalid excluded; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps]** | TODO **[3 invalid excluded]** |
+| rate=2 | 0.775 ± 0.106 (0.700–0.850) **[n=2<3; CV 14%; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | 2.07 ± 0.218 (1.87–2.30) **[CV 10%]** | 2.07 ± 0.218 (1.87–2.30) **[CV 10%]** |
+| rate=4 | 0.408 ± 0.577 (0.000–0.817) **[n=2<3; CV 141%; 1 invalid excluded; anomaly: rep_spread_goodput_rps; anomaly: tail_outliers_ttft]** | 4.10 ± 0.196 (3.93–4.32) | 4.18 ± 0.189 (4.05–4.32) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 8.13 ± 0.478 (7.58–8.45) | 8.13 ± 0.478 (7.58–8.45) |
+| rate=16 | 0.000 ± 0.000 (0.000–0.000) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_ttft_p50; anomaly: rep_spread_tpot_p50; anomaly: bimodal_e2e]** | 16.7 ± 1.23 (15.8–17.6) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | 16.7 ± 1.23 (15.8–17.6) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 
 **W3 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | 1.03 **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | TODO | TODO | TODO | TODO **[3 invalid excluded]** | TODO | TODO **[3 invalid excluded]** | TODO | TODO | TODO **[3 invalid excluded]** |
+| rate=2 | 0.775 ± 0.106 (0.700–0.850) **[n=2<3; CV 14%; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_tpot_p50]** | TODO | TODO | TODO | 2.07 ± 0.218 (1.87–2.30) **[CV 10%]** | TODO | 1.96 ± 0.130 (1.87–2.05) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 2.07 ± 0.218 (1.87–2.30) **[CV 10%]** |
+| rate=4 | 0.275 ± 0.389 (0.000–0.550) **[n=2<3; CV 141%; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: rep_spread_goodput_rps]** | TODO | TODO | TODO | 4.18 ± 0.189 (4.05–4.32) **[n=2<3; 1 invalid excluded]** | TODO | 4.18 ± 0.189 (4.05–4.32) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 4.18 ± 0.189 (4.05–4.32) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | 8.13 ± 0.478 (7.58–8.45) | TODO | 8.13 ± 0.478 (7.58–8.45) | TODO | TODO | 8.13 ± 0.478 (7.58–8.45) |
+| rate=16 | 0.000 ± 0.000 (0.000–0.000) **[n=2<3; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: rep_spread_ttft_p50]** | TODO | TODO | TODO | 16.7 ± 1.23 (15.8–17.6) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | TODO | 16.7 ± 1.23 (15.8–17.6) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 16.7 ± 1.23 (15.8–17.6) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 
 **W3 — prefix hit rate — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO |
+| rate=1 | 0.610 **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | 0.600 ± 0.018 (0.588–0.613) **[n=2<3; 1 invalid excluded; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps]** | TODO **[3 invalid excluded]** |
+| rate=2 | 0.618 ± 0.049 (0.583–0.653) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | 0.629 ± 0.037 (0.586–0.652) | 0.635 ± 0.036 (0.594–0.660) |
+| rate=4 | 0.630 ± 0.016 (0.619–0.641) **[n=2<3; 1 invalid excluded; anomaly: rep_spread_goodput_rps; anomaly: tail_outliers_ttft]** | 0.637 ± 0.012 (0.623–0.644) | 0.641 ± 0.016 (0.630–0.653) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | 0.626 ± 0.024 (0.599–0.640) **[anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 0.629 ± 0.024 (0.601–0.643) | 0.635 ± 0.024 (0.608–0.652) |
+| rate=16 | 0.632 ± 0.005 (0.628–0.636) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_ttft_p50; anomaly: rep_spread_tpot_p50; anomaly: bimodal_e2e]** | 0.650 ± 0.014 (0.640–0.660) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | 0.651 ± 0.014 (0.641–0.661) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 
 **W3 — prefix hit rate — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| rate=1 | n/a (not exposed) **[n=1<3; 2 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_output_tok_s; anomaly: rep_spread_goodput_rps; anomaly: rep_spread_tpot_p50]** | TODO | TODO | TODO | TODO **[3 invalid excluded]** | TODO | TODO **[3 invalid excluded]** | TODO | TODO | TODO **[3 invalid excluded]** |
+| rate=2 | n/a (not exposed) **[n=2<3; 1 invalid excluded; anomaly: bimodal_ttft; anomaly: rep_spread_tpot_p50]** | TODO | TODO | TODO | n/a (not exposed) | TODO | 0.000 ± 0.000 (0.000–0.000) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 0.635 ± 0.036 (0.594–0.660) |
+| rate=4 | n/a (not exposed) **[n=2<3; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: rep_spread_goodput_rps]** | TODO | TODO | TODO | n/a (not exposed) **[n=2<3; 1 invalid excluded]** | TODO | 0.000 ± 0.000 (0.000–0.000) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 0.641 ± 0.016 (0.630–0.653) **[n=2<3; 1 invalid excluded]** |
+| rate=8 | n/a (not exposed) **[anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | n/a (not exposed) | TODO | 0.000 ± 0.000 (0.000–0.000) | TODO | TODO | 0.635 ± 0.024 (0.608–0.652) |
+| rate=16 | n/a (not exposed) **[n=2<3; 1 invalid excluded; anomaly: bimodal_tpot; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: rep_spread_ttft_p50]** | TODO | TODO | TODO | n/a (not exposed) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** | TODO | 0.000 ± 0.000 (0.000–0.000) **[n=2<3; 1 invalid excluded]** | TODO | TODO | 0.651 ± 0.014 (0.641–0.661) **[n=2<3; 1 invalid excluded; anomaly: tail_outliers_ttft]** |
 <!-- END GENERATED: w3_table -->
 
 **Figure W3: TTFT p99 with the prefix cache on vs off, per engine.**
 
 <!-- BEGIN GENERATED: fig_w3_prefix -->
-TODO: figure `w3_ttft_p99_prefix_on_off.png` renders once valid artifacts exist.
+![w3_prefix](figures/w3_ttft_p99_prefix_on_off.png)
 <!-- END GENERATED: fig_w3_prefix -->
 
 ## W4 — forced preemption at an equal KV pool
@@ -345,73 +351,65 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO |
 
 **W4 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — preemptions — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO |
 
 **W4 — preemptions — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 
 **W4 — failed requests — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| rate=1 | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO |
 
 **W4 — failed requests — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| rate=1 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=2 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| rate=8 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w4_table -->
 
 **Figure W4: goodput and preemption count vs offered load.**
@@ -481,7 +479,7 @@ Every artifact the renderer found, including invalid runs. Invalid runs are
 excluded from every aggregate above but are listed here with the reason.
 
 <!-- BEGIN GENERATED: inventory -->
-210 artifacts, 210 valid, 0 invalid.
+315 artifacts, 282 valid, 33 invalid.
 
 | artifact | arm | workload | point | rep | valid? | GPU | node | job id | reasons / anomalies |
 |---|---|---|---|---|---|---|---|---|---|
@@ -695,6 +693,111 @@ excluded from every aggregate above but are listed here with the reason.
 | `results/xengine/W1/vllm-nograph/concurrency8_rep1.json` | vllm-nograph | W1 | concurrency=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13931401 | — |
 | `results/xengine/W1/vllm-nograph/concurrency8_rep2.json` | vllm-nograph | W1 | concurrency=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13931401 | — |
 | `results/xengine/W1/vllm-nograph/concurrency8_rep3.json` | vllm-nograph | W1 | concurrency=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13931401 | — |
+| `results/xengine/W3/ours/rate16_rep1.json` | ours | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 127.7, 828.8; valley at 228.7 holds 0.66x the smaller peak; 55% of mass below it; Sarle BC 0.755 (n=950); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 66.4, 72.1; valley at 67.5 holds 0.33x the smaller peak; 8% of mass below it; Sarle BC 0.571 (n=950); anomaly rep_spread_output_tok_s: output_tok_s CV 0.114 > 0.10 across 3 reps (values 2026, 2096, 1603); anomaly rep_spread_ttft_p50: ttft_p50 CV 1.339 > 0.10 across 3 reps (values 154.3, 1302, 3.929e+04); anomaly rep_spread_tpot_p50: tpot_p50 CV 1.161 > 0.10 across 3 reps (values 70.98, 73.24, 1064) |
+| `results/xengine/W3/ours/rate16_rep2.json` | ours | W3 | rate=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 135.0, 1548.1; valley at 241.7 holds 0.37x the smaller peak; 18% of mass below it; Sarle BC 0.625 (n=984); anomaly bimodal_tpot: tpot_ms: 3 KDE modes near 69.6, 73.3; valley at 70.7 holds 0.63x the smaller peak; 11% of mass below it; Sarle BC 0.299 (n=984); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 9351.8, 10984.2; valley at 9915.3 holds 0.33x the smaller peak; 28% of mass below it; Sarle BC 0.624 (n=984); anomaly rep_spread_output_tok_s: output_tok_s CV 0.114 > 0.10 across 3 reps (values 2026, 2096, 1603); anomaly rep_spread_ttft_p50: ttft_p50 CV 1.339 > 0.10 across 3 reps (values 154.3, 1302, 3.929e+04); anomaly rep_spread_tpot_p50: tpot_p50 CV 1.161 > 0.10 across 3 reps (values 70.98, 73.24, 1064) |
+| `results/xengine/W3/ours/rate16_rep3.json` | ours | W3 | rate=16 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 657.8, 191808.8; valley at 7215.7 holds 0.16x the smaller peak; 45% of mass below it; Sarle BC 0.745 (n=752); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 73.2, 1135.4; valley at 187.7 holds 0.15x the smaller peak; 26% of mass below it; Sarle BC 0.649 (n=752); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 9464.4, 110451.4; valley at 24932.6 holds 0.16x the smaller peak; 18% of mass below it; Sarle BC 0.692 (n=1054); anomaly warmup_ttft: ttft_ms: median of first 75 steady requests 123.2 vs 71042.9 for the remaining 677 (0.00x); the steady window still contains a ramp; anomaly warmup_tpot: tpot_ms: median of first 75 steady requests 70.3 vs 1082.9 for the remaining 677 (0.06x); the steady window still contains a ramp; anomaly rep_spread_output_tok_s: output_tok_s CV 0.114 > 0.10 across 3 reps (values 2026, 2096, 1603); anomaly rep_spread_ttft_p50: ttft_p50 CV 1.339 > 0.10 across 3 reps (values 154.3, 1302, 3.929e+04); anomaly rep_spread_tpot_p50: tpot_p50 CV 1.161 > 0.10 across 3 reps (values 70.98, 73.24, 1064) |
+| `results/xengine/W3/ours/rate1_rep1.json` | ours | W3 | rate=1 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 61.7, 83.1; valley at 70.7 holds 0.63x the smaller peak; 40% of mass below it; Sarle BC 0.620 (n=50); anomaly rep_spread_output_tok_s: output_tok_s CV 0.163 > 0.10 across 3 reps (values 106.7, 159.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.177 > 0.10 across 3 reps (values 0.75, 1.167, 1.05); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.126 > 0.10 across 3 reps (values 9.971, 13.63, 11.89) |
+| `results/xengine/W3/ours/rate1_rep2.json` | ours | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 60.9, 82.7; valley at 69.0 holds 0.41x the smaller peak; 24% of mass below it; Sarle BC 0.730 (n=76); anomaly rep_spread_output_tok_s: output_tok_s CV 0.163 > 0.10 across 3 reps (values 106.7, 159.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.177 > 0.10 across 3 reps (values 0.75, 1.167, 1.05); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.126 > 0.10 across 3 reps (values 9.971, 13.63, 11.89) |
+| `results/xengine/W3/ours/rate1_rep3.json` | ours | W3 | rate=1 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 61.4, 82.7; valley at 70.1 holds 0.46x the smaller peak; 35% of mass below it; Sarle BC 0.741 (n=63); anomaly rep_spread_output_tok_s: output_tok_s CV 0.163 > 0.10 across 3 reps (values 106.7, 159.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.177 > 0.10 across 3 reps (values 0.75, 1.167, 1.05); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.126 > 0.10 across 3 reps (values 9.971, 13.63, 11.89) |
+| `results/xengine/W3/ours/rate2_rep1.json` | ours | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 60.1, 84.3; valley at 69.2 holds 0.07x the smaller peak; 7% of mass below it; Sarle BC 0.457 (n=138); anomaly rep_spread_goodput_rps: goodput_rps CV 0.123 > 0.10 across 3 reps (values 0.85, 0.95, 0.7); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.117 > 0.10 across 3 reps (values 35.41, 27.24, 35.27) |
+| `results/xengine/W3/ours/rate2_rep2.json` | ours | W3 | rate=2 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 61.2, 83.7; valley at 71.5 holds 0.66x the smaller peak; 12% of mass below it; Sarle BC 0.530 (n=112); anomaly warmup_tpot: tpot_ms: median of first 11 steady requests 11.7 vs 29.2 for the remaining 101 (0.40x); the steady window still contains a ramp; anomaly rep_spread_goodput_rps: goodput_rps CV 0.123 > 0.10 across 3 reps (values 0.85, 0.95, 0.7); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.117 > 0.10 across 3 reps (values 35.41, 27.24, 35.27) |
+| `results/xengine/W3/ours/rate2_rep3.json` | ours | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 59.7, 85.0; valley at 67.8 holds 0.15x the smaller peak; 8% of mass below it; Sarle BC 0.301 (n=123); anomaly rep_spread_goodput_rps: goodput_rps CV 0.123 > 0.10 across 3 reps (values 0.85, 0.95, 0.7); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.117 > 0.10 across 3 reps (values 35.41, 27.24, 35.27) |
+| `results/xengine/W3/ours/rate4_rep1.json` | ours | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly rep_spread_goodput_rps: goodput_rps CV 0.707 > 0.10 across 3 reps (values 0, 0.8, 0.8167) |
+| `results/xengine/W3/ours/rate4_rep2.json` | ours | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_goodput_rps: goodput_rps CV 0.707 > 0.10 across 3 reps (values 0, 0.8, 0.8167) |
+| `results/xengine/W3/ours/rate4_rep3.json` | ours | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly tail_outliers_ttft: ttft_ms: 4/243 samples > 5x the median (88.4); max 525.6 at positions [129, 130, 131, 132] in send order. p99 may be set by these alone.; anomaly rep_spread_goodput_rps: goodput_rps CV 0.707 > 0.10 across 3 reps (values 0, 0.8, 0.8167) |
+| `results/xengine/W3/ours/rate8_rep1.json` | ours | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 52.6, 55.2; valley at 54.6 holds 0.73x the smaller peak; 89% of mass below it; Sarle BC 0.576 (n=455); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 6827.2, 7167.5; valley at 7082.3 holds 0.70x the smaller peak; 88% of mass below it; Sarle BC 0.597 (n=455) |
+| `results/xengine/W3/ours/rate8_rep2.json` | ours | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/ours/rate8_rep3.json` | ours | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/ours-noprefix/rate16_rep1.json` | ours-noprefix | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 68.9, 72.7; valley at 71.2 holds 0.69x the smaller peak; 47% of mass below it; Sarle BC 0.517 (n=950); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 9010.3, 9788.5; valley at 9339.3 holds 0.68x the smaller peak; 37% of mass below it; Sarle BC 0.519 (n=950); anomaly warmup_ttft: ttft_ms: median of first 95 steady requests 163.6 vs 404.3 for the remaining 855 (0.40x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 15/950 samples > 5x the median (297.7); max 1684.1 at positions [445, 446, 447, 448, 449, 450, 451, 456, 457, 458] in send order. p99 may be set by these alone.; anomaly rep_spread_ttft_p50: ttft_p50 CV 0.603 > 0.10 across 3 reps (values 297.4, 2022, 2686) |
+| `results/xengine/W3/ours-noprefix/rate16_rep2.json` | ours-noprefix | W3 | rate=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 74.5, 76.7; valley at 75.8 holds 0.19x the smaller peak; 80% of mass below it; Sarle BC 0.540 (n=984); anomaly rep_spread_ttft_p50: ttft_p50 CV 0.603 > 0.10 across 3 reps (values 297.4, 2022, 2686) |
+| `results/xengine/W3/ours-noprefix/rate16_rep3.json` | ours-noprefix | W3 | rate=16 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 140.0, 4815.3; valley at 350.9 holds 0.14x the smaller peak; 10% of mass below it; Sarle BC 0.561 (n=1054); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 11695.3, 15294.3; valley at 12979.2 holds 0.67x the smaller peak; 54% of mass below it; Sarle BC 0.583 (n=1054); anomaly warmup_ttft: ttft_ms: median of first 105 steady requests 137.5 vs 3292.5 for the remaining 949 (0.04x); the steady window still contains a ramp; anomaly rep_spread_ttft_p50: ttft_p50 CV 0.603 > 0.10 across 3 reps (values 297.4, 2022, 2686) |
+| `results/xengine/W3/ours-noprefix/rate1_rep1.json` | ours-noprefix | W3 | rate=1 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 61.6, 83.1; valley at 69.9 holds 0.75x the smaller peak; 37% of mass below it; Sarle BC 0.547 (n=50); anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.7, 160.9, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.187 > 0.10 across 3 reps (values 0.75, 1.2, 1.033); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.130 > 0.10 across 3 reps (values 10.01, 13.82, 12.04) |
+| `results/xengine/W3/ours-noprefix/rate1_rep2.json` | ours-noprefix | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 60.7, 83.8; valley at 68.7 holds 0.50x the smaller peak; 23% of mass below it; Sarle BC 0.257 (n=76); anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.7, 160.9, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.187 > 0.10 across 3 reps (values 0.75, 1.2, 1.033); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.130 > 0.10 across 3 reps (values 10.01, 13.82, 12.04) |
+| `results/xengine/W3/ours-noprefix/rate1_rep3.json` | ours-noprefix | W3 | rate=1 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 61.0, 82.2; valley at 69.4 holds 0.52x the smaller peak; 31% of mass below it; Sarle BC 0.761 (n=63); anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.7, 160.9, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.187 > 0.10 across 3 reps (values 0.75, 1.2, 1.033); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.130 > 0.10 across 3 reps (values 10.01, 13.82, 12.04) |
+| `results/xengine/W3/ours-noprefix/rate2_rep1.json` | ours-noprefix | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 59.4, 83.7; valley at 66.2 holds 0.21x the smaller peak; 5% of mass below it; Sarle BC 0.132 (n=138); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.106 > 0.10 across 3 reps (values 35.51, 30.28, 39.34) |
+| `results/xengine/W3/ours-noprefix/rate2_rep2.json` | ours-noprefix | W3 | rate=2 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 68.2, 84.7; valley at 72.4 holds 0.73x the smaller peak; 11% of mass below it; Sarle BC 0.144 (n=112); anomaly warmup_tpot: tpot_ms: median of first 11 steady requests 11.8 vs 31.5 for the remaining 101 (0.38x); the steady window still contains a ramp; anomaly rep_spread_tpot_p50: tpot_p50 CV 0.106 > 0.10 across 3 reps (values 35.51, 30.28, 39.34) |
+| `results/xengine/W3/ours-noprefix/rate2_rep3.json` | ours-noprefix | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 60.5, 84.8; valley at 70.2 holds 0.37x the smaller peak; 8% of mass below it; Sarle BC 0.148 (n=123); anomaly rep_spread_tpot_p50: tpot_p50 CV 0.106 > 0.10 across 3 reps (values 35.51, 30.28, 39.34) |
+| `results/xengine/W3/ours-noprefix/rate4_rep1.json` | ours-noprefix | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 40.4, 48.6; valley at 42.6 holds 0.02x the smaller peak; 5% of mass below it; Sarle BC 0.853 (n=259); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 5272.6, 6307.1; valley at 5521.0 holds 0.03x the smaller peak; 5% of mass below it; Sarle BC 0.849 (n=259); anomaly rep_spread_goodput_rps: goodput_rps CV 0.743 > 0.10 across 3 reps (values 0, 0.8, 0.55) |
+| `results/xengine/W3/ours-noprefix/rate4_rep2.json` | ours-noprefix | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_goodput_rps: goodput_rps CV 0.743 > 0.10 across 3 reps (values 0, 0.8, 0.55) |
+| `results/xengine/W3/ours-noprefix/rate4_rep3.json` | ours-noprefix | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly rep_spread_goodput_rps: goodput_rps CV 0.743 > 0.10 across 3 reps (values 0, 0.8, 0.55) |
+| `results/xengine/W3/ours-noprefix/rate8_rep1.json` | ours-noprefix | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 52.7, 53.9; valley at 53.3 holds 0.63x the smaller peak; 53% of mass below it; Sarle BC 0.529 (n=455); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 6847.2, 7003.4; valley at 6924.9 holds 0.59x the smaller peak; 54% of mass below it; Sarle BC 0.509 (n=455) |
+| `results/xengine/W3/ours-noprefix/rate8_rep2.json` | ours-noprefix | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/ours-noprefix/rate8_rep3.json` | ours-noprefix | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate16_rep1.json` | sglang | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate16_rep2.json` | sglang | W3 | rate=16 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang/rate16_rep3.json` | sglang | W3 | rate=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly tail_outliers_ttft: ttft_ms: 2/1054 samples > 5x the median (15.5); max 206.3 at positions [666, 667] in send order. p99 may be set by these alone. |
+| `results/xengine/W3/sglang/rate1_rep1.json` | sglang | W3 | rate=1 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang/rate1_rep2.json` | sglang | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang/rate1_rep3.json` | sglang | W3 | rate=1 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly tail_outliers_ttft: ttft_ms: 1/63 samples > 5x the median (15.4); max 337.0 at positions [16] in send order. p99 may be set by these alone.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang/rate2_rep1.json` | sglang | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate2_rep2.json` | sglang | W3 | rate=2 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate2_rep3.json` | sglang | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate4_rep1.json` | sglang | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate4_rep2.json` | sglang | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang/rate4_rep3.json` | sglang | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate8_rep1.json` | sglang | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate8_rep2.json` | sglang | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang/rate8_rep3.json` | sglang | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate16_rep1.json` | sglang-lpm | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate16_rep2.json` | sglang-lpm | W3 | rate=16 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang-lpm/rate16_rep3.json` | sglang-lpm | W3 | rate=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly tail_outliers_ttft: ttft_ms: 5/1054 samples > 5x the median (17.0); max 225.8 at positions [955, 956, 957, 958, 959] in send order. p99 may be set by these alone. |
+| `results/xengine/W3/sglang-lpm/rate1_rep1.json` | sglang-lpm | W3 | rate=1 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-lpm/rate1_rep2.json` | sglang-lpm | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-lpm/rate1_rep3.json` | sglang-lpm | W3 | rate=1 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.166 > 0.10 across 3 reps (values 106.4, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-lpm/rate2_rep1.json` | sglang-lpm | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate2_rep2.json` | sglang-lpm | W3 | rate=2 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate2_rep3.json` | sglang-lpm | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate4_rep1.json` | sglang-lpm | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate4_rep2.json` | sglang-lpm | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang-lpm/rate4_rep3.json` | sglang-lpm | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate8_rep1.json` | sglang-lpm | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate8_rep2.json` | sglang-lpm | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-lpm/rate8_rep3.json` | sglang-lpm | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate16_rep1.json` | sglang-noradix | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate16_rep2.json` | sglang-noradix | W3 | rate=16 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang-noradix/rate16_rep3.json` | sglang-noradix | W3 | rate=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate1_rep1.json` | sglang-noradix | W3 | rate=1 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.4, 160.5, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-noradix/rate1_rep2.json` | sglang-noradix | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.4, 160.5, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-noradix/rate1_rep3.json` | sglang-noradix | W3 | rate=1 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.165 > 0.10 across 3 reps (values 106.4, 160.5, 134.3); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/sglang-noradix/rate2_rep1.json` | sglang-noradix | W3 | rate=2 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly tail_outliers_ttft: ttft_ms: 1/138 samples > 5x the median (16.7); max 793.5 at positions [9] in send order. p99 may be set by these alone.; anomaly tail_outliers_tpot: tpot_ms: 1/138 samples > 5x the median (1.2); max 7.5 at positions [8] in send order. p99 may be set by these alone. |
+| `results/xengine/W3/sglang-noradix/rate2_rep2.json` | sglang-noradix | W3 | rate=2 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate2_rep3.json` | sglang-noradix | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate4_rep1.json` | sglang-noradix | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate4_rep2.json` | sglang-noradix | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/sglang-noradix/rate4_rep3.json` | sglang-noradix | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate8_rep1.json` | sglang-noradix | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate8_rep2.json` | sglang-noradix | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/sglang-noradix/rate8_rep3.json` | sglang-noradix | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate16_rep1.json` | vllm | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate16_rep2.json` | vllm | W3 | rate=16 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/vllm/rate16_rep3.json` | vllm | W3 | rate=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly tail_outliers_ttft: ttft_ms: 5/1054 samples > 5x the median (16.1); max 203.2 at positions [883, 884, 885, 886, 887] in send order. p99 may be set by these alone. |
+| `results/xengine/W3/vllm/rate1_rep1.json` | vllm | W3 | rate=1 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly rep_spread_output_tok_s: output_tok_s CV 0.164 > 0.10 across 3 reps (values 106, 159.6, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/vllm/rate1_rep2.json` | vllm | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.164 > 0.10 across 3 reps (values 106, 159.6, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/vllm/rate1_rep3.json` | vllm | W3 | rate=1 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly rep_spread_output_tok_s: output_tok_s CV 0.164 > 0.10 across 3 reps (values 106, 159.6, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.168 > 0.10 across 3 reps (values 0.8333, 1.267, 1.05) |
+| `results/xengine/W3/vllm/rate2_rep1.json` | vllm | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate2_rep2.json` | vllm | W3 | rate=2 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate2_rep3.json` | vllm | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate4_rep1.json` | vllm | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate4_rep2.json` | vllm | W3 | rate=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate4_rep3.json` | vllm | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate8_rep1.json` | vllm | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate8_rep2.json` | vllm | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm/rate8_rep3.json` | vllm | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate16_rep1.json` | vllm-noprefix | W3 | rate=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate16_rep2.json` | vllm-noprefix | W3 | rate=16 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'. |
+| `results/xengine/W3/vllm-noprefix/rate16_rep3.json` | vllm-noprefix | W3 | rate=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | anomaly tail_outliers_ttft: ttft_ms: 4/1054 samples > 5x the median (17.4); max 201.6 at positions [968, 969, 970, 971] in send order. p99 may be set by these alone. |
+| `results/xengine/W3/vllm-noprefix/rate1_rep1.json` | vllm-noprefix | W3 | rate=1 | 1 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | dispatch_drift: COORDINATED OMISSION RISK (R1): p99 dispatch drift 248.9ms >= threshold 50.0ms. The generator could not issue requests on schedule, so the offered load was not the configured load. Run is INVALID and must not be published.; not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly tail_outliers_ttft: ttft_ms: 2/50 samples > 5x the median (18.4); max 1175.3 at positions [22, 23] in send order. p99 may be set by these alone.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.167 > 0.10 across 3 reps (values 106.3, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.184 > 0.10 across 3 reps (values 0.8, 1.267, 1.05) |
+| `results/xengine/W3/vllm-noprefix/rate1_rep2.json` | vllm-noprefix | W3 | rate=1 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.167 > 0.10 across 3 reps (values 106.3, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.184 > 0.10 across 3 reps (values 0.8, 1.267, 1.05) |
+| `results/xengine/W3/vllm-noprefix/rate1_rep3.json` | vllm-noprefix | W3 | rate=1 | 3 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly rep_spread_output_tok_s: output_tok_s CV 0.167 > 0.10 across 3 reps (values 106.3, 160.9, 134.4); anomaly rep_spread_goodput_rps: goodput_rps CV 0.184 > 0.10 across 3 reps (values 0.8, 1.267, 1.05) |
+| `results/xengine/W3/vllm-noprefix/rate2_rep1.json` | vllm-noprefix | W3 | rate=2 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate2_rep2.json` | vllm-noprefix | W3 | rate=2 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate2_rep3.json` | vllm-noprefix | W3 | rate=2 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate4_rep1.json` | vllm-noprefix | W3 | rate=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate4_rep2.json` | vllm-noprefix | W3 | rate=4 | 2 | **NO** | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | not_steady_state: Steady state NOT verified: In-flight count TRENDS across the window: this is not steady state. Either the run is above the knee (where steady state cannot exist) or the window is too short. Percentiles from it describe a ramp. Numbers from this window are labeled 'unsaturated-window measurement'.; anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 15.5, 22.8; valley at 21.3 holds 0.68x the smaller peak; 95% of mass below it; Sarle BC 0.620 (n=236) |
+| `results/xengine/W3/vllm-noprefix/rate4_rep3.json` | vllm-noprefix | W3 | rate=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate8_rep1.json` | vllm-noprefix | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate8_rep2.json` | vllm-noprefix | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W3/vllm-noprefix/rate8_rep3.json` | vllm-noprefix | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
 <!-- END GENERATED: inventory -->
 
 ## Analysis
@@ -780,7 +883,39 @@ they *account for* the gap is what the arms measure.
 
 ### (b) Prefix cache: our radix trie vs SGLang RadixAttention vs vLLM hash-block caching
 
-**Observation.** TODO — fill from the W3 tables and Figure W3.
+**Observation** (drafted from the W3 tables above, job 13931403; cell means
+over valid repetitions, 2–3 per cell at rates 2–16; rate 1 has 0–2 valid
+repetitions per arm and is not used here).
+
+- **All three caches reach the workload's ceiling.** Prefix hit rate is
+  0.62–0.65 for `ours`, `vllm` and `sglang` at every rate. W3 is built so that
+  80% of requests share a 1,024-token prefix of a ~1,280-token prompt, which
+  caps the reusable fraction near 0.8 × 1024 / 1280 ≈ 0.64. So on this
+  workload the data-structure difference (block trie, block hashes, token
+  radix tree) does not show up in hit rate at all. The units differ (ours
+  counts blocks, the others tokens), which is why the numbers are close but
+  not identical.
+- **The latency payoff of those hits is small for vLLM and SGLang.** TTFT p50
+  at rate 8: `vllm` 15.1 vs `vllm-noprefix` 17.1 ms; `sglang` 14.8 vs
+  `sglang-noradix` 15.7 ms. A 1,280-token prefill of a 1B model on an H200 is
+  already cheap, so skipping most of it saves 1–2 ms.
+- **For ours the cache does not help unloaded latency but does help under
+  load.** TTFT p50 at rate 2: 84.7 (cache on) vs 84.3 ms (off). At rate 16:
+  728 vs 1,160 ms p50 and 1,730 vs 2,390 ms p99. The saving appears only once
+  requests queue, which suggests the cache relieves prefill *work* (capacity)
+  rather than the per-request critical path.
+- **Longest-prefix-match ordering adds nothing here.** `sglang-lpm` matches
+  default `sglang` within noise at every rate (TTFT p50 15.5 vs 14.8 ms at
+  rate 8). With a single shared prefix, FCFS order already groups the sharers.
+- **Ours decodes much slower on W3 than on W1.** TPOT p50 is 35–72 ms on W3
+  (rates 2–16) vs 8.3–11.4 ms on W1, so `ours` goodput is 0 from rate 8 up
+  (the TPOT SLO is 27.8 ms). vLLM/SGLang stay at 1.2–1.5 ms. See (d).
+
+**Reading, not yet a conclusion.** The cache comparison is a tie on hit rate
+and a near-tie on latency for the two production engines; the workload did not
+separate the designs. A workload with many distinct prefixes under memory
+pressure (where eviction policy decides what survives) would be the one that
+could, and W3 does not test that.
 
 **Mechanistic hypothesis.** All three engines reuse a shared prefix's KV cache
 by default, but at different granularity. Ours (a trie with one 16-token block
@@ -833,7 +968,20 @@ source; the cost comparison is not).
 
 ### (d) Scheduler and batching policy effects on latency tails
 
-**Observation.** TODO — fill from the TTFT p99 and TPOT p99 tables for W1 and W2.
+**Observation** (partial: W1 and W3; W2 pending). Our per-token decode time
+depends heavily on concurrent prefill traffic: TPOT p50 is 8.3 ms at W1
+concurrency 1 (no arrivals during a request's decode beyond the closed loop's
+own) but 35 ms at W3 rate 2 and 72 ms at W3 rate 16, where 1,280-token prompts
+keep arriving. vLLM and SGLang move only from ~1.3 to ~1.5 ms over the same
+range.
+
+**Reading, not yet a conclusion.** Our scheduler admits prefill in 512-token
+chunks inside the same step as running decodes (`serving/scheduler/
+scheduler.py:612-694`), so each arriving 1,280-token prompt stretches roughly
+three decode steps by the cost of a 512-token prefill. With unfused per-layer
+ops that prefill chunk is expensive, and every running request pays it in
+TPOT. vLLM mixes prefill and decode in one step too, but its prefill cost is
+small enough not to show; SGLang runs prefill as separate batches by default.
 
 **Mechanistic hypothesis.** **Chunked prefill** splits a long prompt into
 pieces processed alongside ongoing decodes. All three engines use it, with very
