@@ -12,7 +12,7 @@ is that a result recorded here never has to be re-run just to remember it.
 | 0 — decisions (ADR-025, SPEC) | done 2026-10-08 |
 | 1 — harness, renderer, docs, source notes (local, CPU-tested) | done 2026-10-08 (870 CPU tests pass) |
 | 2 — vLLM/SGLang env setup on PACE | done 2026-10-09: envs + pilot job 13918362 passed (H200) |
-| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | submitted 2026-10-09 on inferno: W1 13931401, W2 13931402, W3 13931403, W4 13931404 |
+| 3 — runs (W1–W4, ≥3 reps, + W5 appendix) | W1 done (13931401, 210 valid artifacts); W2–W4 running |
 | 4 — analysis + BENCHMARKS.md | not started |
 
 ## Log
@@ -124,12 +124,33 @@ is that a result recorded here never has to be re-run just to remember it.
 
 ## Measured results
 
-None yet. (Each entry: date, workload, arms, headline number with condition,
-artifact path, job id, GPU.)
+All rows: NVIDIA H200, inferno QOS, Llama-3.2-1B-Instruct fp16, greedy,
+512-token prompts / 128-token outputs (W1, closed loop), 3 reps per cell,
+repo `3a91fd7` clean. Values are cell means from `docs/xengine/BENCHMARKS.md`.
+
+| date | workload | what | value | artifacts | job |
+|---|---|---|---|---|---|
+| 2026-10-10 | W1 c=1 | output tok/s: ours / vLLM / SGLang | 117 / 730 / 757 | `results/xengine/W1/{ours,vllm,sglang}/concurrency1_rep*.json` | 13931401 |
+| 2026-10-10 | W1 c=32 | output tok/s: ours / vLLM / SGLang | 1984 / 10970 / 11957 | `.../concurrency32_rep*.json` | 13931401 |
+| 2026-10-10 | W1 c=1 | TPOT p99 ms: ours / vLLM / SGLang | 8.27 / 1.30 / 1.25 | same | 13931401 |
+| 2026-10-10 | W1 c=1 | vLLM ladder tok/s: default / no-async / no-graph / eager | 730 / 477 / 185 / 154 | `results/xengine/W1/vllm*/concurrency1_rep*.json` | 13931401 |
+| 2026-10-10 | W1 c=1 | SGLang ladder tok/s: default / no-overlap / eager | 757 / 486 / 133 | `results/xengine/W1/sglang*/concurrency1_rep*.json` | 13931401 |
+| 2026-10-10 | W1 c=64 | ours flattens: tok/s 1984→2110 (c32→64), TTFT p99 602→2233 ms | — | `results/xengine/W1/ours/` | 13931401 |
+| 2026-10-10 | W5 on W1 | ours int8 vs fp16 tok/s at c=1 | 82 vs 117 (−30%) | `results/xengine/W1/ours-int8/` | 13931401 |
+
+W2–W4: jobs 13931402–13931404 running.
 
 ## Resume-usable facts
 
-None yet — draft bullets stay as placeholders until the rows above exist.
+Drafts, each tied to the rows above. The condition is part of the claim.
+
+- "Benchmarked my serving layer against vLLM 0.31 and SGLang 0.5.21 on one
+  H200 (Llama-3.2-1B, fp16): 6.2× throughput gap at batch 1; ablations
+  attributed ≈4.7× of it to CUDA graphs + torch.compile, leaving a ≈1.3×
+  residual." — from the W1 c=1 ladder rows.
+- "Measured that disabling CPU/GPU scheduling overlap costs vLLM 35% and SGLang
+  36% of batch-1 throughput." — W1 c=1 ladder rows.
+- Not yet usable: anything about prefix caching (W3) or preemption (W4).
 
 ## Open questions / decisions pending
 
