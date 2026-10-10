@@ -1,0 +1,2 @@
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+Tesla V100-PCIE-16GB, 580.178.04, 7.0, 16384 MiB, 135 MHz, 1380 MHz, 877 MHz, 45, 26.27 W, 250.00 W

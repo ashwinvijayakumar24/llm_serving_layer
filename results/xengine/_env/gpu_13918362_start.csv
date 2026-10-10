@@ -1,0 +1,2 @@
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 345 MHz, 1980 MHz, 3201 MHz, 29, 77.25 W, 700.00 W

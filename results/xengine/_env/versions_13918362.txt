@@ -1,0 +1,4 @@
+job 13918362 node atl1-1-02-012-23-0.pace.gatech.edu
+ours:   torch 2.12.0+cu130 cuda 13.0
+vllm:   vllm 0.31.0 torch 2.13.0+cu130
+sglang: sglang 0.5.21 torch 2.13.0+cu130
