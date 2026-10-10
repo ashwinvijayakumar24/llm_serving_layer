@@ -1,0 +1,32 @@
+W1010 03:08:45.687000 2957041 /storage/project/ps-simpliearn-0/avijayakumar41/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py:24: DeprecationWarning: `vllm.entrypoints.openai.api_server` is deprecated and will likely beunsupported in a future version. Use the corresponding function from `vllm.entrypoints.launchers` instead.
+  warnings.warn(
+IMPORT_OK

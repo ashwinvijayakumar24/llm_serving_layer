@@ -1,0 +1,32 @@
+W1010 03:10:55.849000 2968769 /storage/project/ps-simpliearn-0/avijayakumar41/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+Traceback (most recent call last):
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/vllm", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/cli/main.py", line 109, in main
+    cmd.subparser_init(subparsers).set_defaults(dispatch_function=cmd.cmd)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/cli/serve.py", line 170, in subparser_init
+    serve_parser = make_arg_parser(serve_parser)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/launchers/cli_args.py", line 452, in make_arg_parser
+    parser = AsyncEngineArgs.add_cli_args(parser)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 3139, in add_cli_args
+    parser = EngineArgs.add_cli_args(parser)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 1585, in add_cli_args
+    logging_config_kwargs = get_kwargs(VllmConfig)["logging_config"]
+                            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 446, in get_kwargs
+    return copy.deepcopy(_compute_kwargs(cls))
+                         ^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 343, in _compute_kwargs
+    default = default.default_factory()  # type: ignore[call-arg]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+    s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/config/device.py", line 55, in __post_init__
+    raise RuntimeError(
+RuntimeError: Failed to infer device type, please set the environment variable `VLLM_LOGGING_LEVEL=DEBUG` to turn on verbose logging to help debug the issue.

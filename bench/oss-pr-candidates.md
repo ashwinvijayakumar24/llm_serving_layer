@@ -74,10 +74,10 @@ PACE launch and the status moved to "repro confirmed" only then.
   1. `python -m vllm.entrypoints.openai.api_server --model <path>`
 - **Expected:** a DeprecationWarning pointing at the replacement, `vllm serve`.
 - **Actual:** the warning says "Please use `vllm server` instead." (`vllm/entrypoints/openai/api_server.py:51-55`). The CLI subcommand is named `serve` (`vllm/entrypoints/cli/serve.py:49`); `vllm server` would fail with an invalid-choice error. Elsewhere vLLM's own messages use the correct name (`vllm/entrypoints/grpc_server.py:22`).
-- **Evidence:** source at the pinned commit (lines above); runtime warning to be captured on first PACE launch.
+- **Evidence:** source at the pinned commit (lines above). Runtime, 2026-10-10 on the PACE vLLM 0.31.0 env: `python -W always -m vllm.entrypoints.openai.api_server --help` prints "…may be removed in a future release. Please use `vllm server` instead." — `results/xengine/_env/oss/vllm_dep_main.txt` line 32.
 - **Upstream search done?** no — to do before filing.
 - **Proposed fix:** one-word change, `vllm server` → `vllm serve`.
-- **Status:** candidate
+- **Status:** repro confirmed on pinned version (2026-10-10).
 
 ### OSS-002 — Missing space in the module-level deprecation warning ("will likely beunsupported")
 
@@ -88,10 +88,10 @@ PACE launch and the status moved to "repro confirmed" only then.
   1. `python -W always -c "import vllm.entrypoints.openai.api_server"`
 - **Expected:** "...is deprecated and will likely be unsupported in a future version..."
 - **Actual:** two adjacent string literals concatenate without a space: `"...will likely be"` + `"unsupported in a future version..."` (`vllm/entrypoints/openai/api_server.py:24-30`) → "will likely beunsupported".
-- **Evidence:** source at the pinned commit; runtime warning to be captured on first PACE launch.
+- **Evidence:** source at the pinned commit. Runtime, 2026-10-10: `python -W always -c "import vllm.entrypoints.openai.api_server"` prints "…is deprecated and will likely beunsupported in a future version…" — `results/xengine/_env/oss/vllm_dep.txt` line 30.
 - **Upstream search done?** no — to do before filing.
 - **Proposed fix:** add the trailing space to the first literal. Can ride in the same PR as OSS-001.
-- **Status:** candidate
+- **Status:** repro confirmed on pinned version (2026-10-10).
 
 ### OSS-003 — Auto-derived `max_num_seqs` / `max_num_batched_tokens` are never logged
 
@@ -121,3 +121,17 @@ PACE launch and the status moved to "repro confirmed" only then.
 - **Upstream search done?** no — to do before filing.
 - **Proposed fix:** initialize each labeled child at collector construction (`self.num_retracted_reqs_total.labels(**labels)` with no increment), which exports a 0 series. This is the standard prometheus_client pattern for counters that should read 0 before their first event.
 - **Status:** repro confirmed on pinned version (pilot job 13918362).
+
+### OSS-005 — `vllm serve --help` crashes on a machine without a GPU
+
+- **Engine + version:** vLLM 0.31.0 (pip) — source read at commit `db9527a4`
+- **Category:** confusing error
+- **Found while:** reproducing OSS-001 on the PACE login node (no GPU), where reading `--help` is the natural first step before writing a Slurm script.
+- **Repro steps:**
+  1. On a CPU-only host with vLLM 0.31.0 installed: `vllm serve --help`
+- **Expected:** the help text. Printing CLI help needs no device.
+- **Actual:** exit code 1 with `RuntimeError: Failed to infer device type, please set the environment variable VLLM_LOGGING_LEVEL=DEBUG …`. Building the parser computes each config field's default by calling its `default_factory` (`vllm/engine/arg_utils.py:335-345`, reached from `add_cli_args` at `:1585` / `:3139`), which constructs `DeviceConfig`, whose `__post_init__` auto-detects the platform and raises when none is found (`vllm/config/device.py:47-59`). The message suggests a logging setting rather than saying a GPU or `--device` is required, and it fires for `--help`.
+- **Evidence:** `results/xengine/_env/oss/vllm_serve_help.txt` (full traceback, PACE login node, 2026-10-10); same failure for `python -m vllm.entrypoints.openai.api_server --help` in `vllm_dep_main.txt`.
+- **Upstream search done?** no — to do before filing.
+- **Proposed fix:** compute help-text defaults without running device detection (e.g., skip `__post_init__` side effects when only rendering defaults, or make `device_type` resolution lazy), and reword the error to name the cause ("no supported accelerator found; pass `--device`").
+- **Status:** repro confirmed on pinned version (2026-10-10).

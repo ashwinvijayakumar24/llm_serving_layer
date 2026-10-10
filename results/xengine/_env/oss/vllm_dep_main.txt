@@ -1,0 +1,61 @@
+W1010 03:09:53.016000 412494 /storage/project/ps-simpliearn-0/avijayakumar41/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py:24: DeprecationWarning: `vllm.entrypoints.openai.api_server` is deprecated and will likely beunsupported in a future version. Use the corresponding function from `vllm.entrypoints.launchers` instead.
+  warnings.warn(
+/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py:51: DeprecationWarning: The `python -m vllm.entrypoints.openai.api_server` command is deprecated and may be removed in a future release. Please use `vllm server` instead.
+  warnings.warn(
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 59, in <module>
+    main()
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/launchers/api_server/entry.py", line 217, in main
+    parser = make_arg_parser(parser)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/entrypoints/launchers/cli_args.py", line 452, in make_arg_parser
+    parser = AsyncEngineArgs.add_cli_args(parser)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 3139, in add_cli_args
+    parser = EngineArgs.add_cli_args(parser)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 1585, in add_cli_args
+    logging_config_kwargs = get_kwargs(VllmConfig)["logging_config"]
+                            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 446, in get_kwargs
+    return copy.deepcopy(_compute_kwargs(cls))
+                         ^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 343, in _compute_kwargs
+    default = default.default_factory()  # type: ignore[call-arg]
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+    s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+  File "/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/lib/python3.12/site-packages/vllm/config/device.py", line 55, in __post_init__
+    raise RuntimeError(
+RuntimeError: Failed to infer device type, please set the environment variable `VLLM_LOGGING_LEVEL=DEBUG` to turn on verbose logging to help debug the issue.
