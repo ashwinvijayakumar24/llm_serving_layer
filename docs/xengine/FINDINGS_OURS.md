@@ -42,13 +42,14 @@ Line numbers are as of base commit `e391b50`.
 - **Why it matters:** ADR-018 requires every published claim to resolve to an artifact; a hardware claim contradicting its own artifact is the kind of detail an interviewer checks.
 - **Status:** fixed 2026-10-08 (`H200` → `H100`). The file is gitignored (private), so the fix is local-only and has no commit.
 
-## F-004 — Preemption may fire while evictable prefix-cache blocks are still held (UNREPRODUCED)
+## F-004 — Preemption fires while evictable prefix-cache blocks are still held (reproduced in W4 v2)
 
 - **Where:** found while reading source for `docs/xengine/SOURCE_NOTES.md` (see its "Ours" section for the file:line trail).
 - **What:** the scheduler's preemption check counts only free blocks; radix-cache eviction runs only at admission; and the server builds the cache with no `max_cached_blocks` bound. So a running sequence could be preempted while unreferenced cached blocks that could have been evicted are still resident.
 - **Why it matters:** if real, W4 with the prefix cache on would show more preemptions than necessary, which would be a policy cost to attribute to us rather than to memory pressure.
 - **In-study handling:** W4 records preemption and eviction counters per run; an `ours` vs `ours-noprefix` preemption gap on W4 is the reproduction. Not fixed in-study.
-- **Status:** open, unreproduced.
+- **Reproduced (W4 v2, job 13933751).** At 4 sequences in flight — total demand ≈10k tokens, well inside the 32,768-token pool — `ours` preempted 111, 143 and 141 times in its three repetitions while evicting 5,975–8,016 cached blocks; `ours-noprefix` preempted 0 times in all three. The cache-on run also ended with `blocks_free=0`, `cache_cached_blocks=2048`, `admission_control_alarm=True`, and 108,156 tokens recomputed. With nothing else differing between the two arms, preemption here is caused by cached blocks occupying the pool, which is this finding's hypothesis.
+- **Status:** reproduced 2026-10-10 (controlled by `ours-noprefix`); not fixed in-study.
 
 ## F-005 — No streaming `usage` and no Prometheus eviction counter
 
@@ -66,4 +67,13 @@ Line numbers are as of base commit `e391b50`.
 - **Reproduced at full pool size (W2, job 13931402) — the mechanism is cache occupancy that only grows.** In W2 (unique prompts, default VRAM-sized pool of 277,590 blocks) the `before` scheduler snapshot of successive `ours` cells shows `running=0 waiting=0` every time while `blocks_free` falls: 277,590 → 223,571 → 167,282 → 75,304 → 49,624 → 20,106 → 0. The radix cache keeps every finished prompt's blocks; nothing evicts them until admission needs space (F-004 notes the server builds the cache with no `max_cached_blocks` bound). Once the free pool reaches zero, `ours` collapses: goodput 0.00 at every rate in repetition 3 (including rate 1, where it was 0.90 in repetition 1), 26 of 2,013 requests completed in `rate32_rep2`, and 0 of 1,920 in `rate32_rep3`. vLLM, also with prefix caching on, shows no such drift over the same 18 cells.
 - **Controlled by the cache-off arm (W3, job 13931403).** Over 15 cells, `ours` went from 277,590 to 20,634 free blocks at the start of its last cell; `ours-noprefix` stayed at exactly 277,590 throughout. W1 (`ours`) never dropped below 87,166 (31% free), so W1 results are not in this state.
 - **Consequence for the study:** `ours` results on W2, and the late cells of W3, depend on the order points ran in. The renderer flags every cell whose run began with <5% free blocks and no requests (`pool_held_by_cache_at_start`, read from the artifact's own before-snapshot) instead of dropping it.
-- **Status:** open; mechanism identified (cache occupancy only grows, no bound, eviction only at admission); W4 v2 (fresh server, small pool, `ours-noprefix` control) runs next.
+- **W4 v2 (job 13933751):** a fresh `ours` server reached `blocks_free=0` with every block cached during its first point (concurrency 4, demand ≈10k of 32k tokens), and started its concurrency-16 and -32 points with the pool full of cache (flagged `pool_held_by_cache_at_start`). `ours-noprefix` started every point with all 2,048 blocks free.
+- **Status:** open; mechanism identified (cache occupancy only grows, no bound, eviction only at admission) and reproduced on a fresh server; consequences in F-004 and F-007.
+
+## F-007 — Under KV pressure with the prefix cache on, some requests "complete" with no output
+
+- **Where:** observed, not localized. Evidence: `results/xengine/W4/ours/concurrency4_rep*.json` (job 13933751).
+- **What:** at W4 concurrency 4, `ours` (cache on) had 12, 15 and 18 of its 48 measured requests end `no_content` on the client — the stream closed without a single content chunk — in repetitions 1–3. The server nevertheless counted every request as completed (`requests_completed` 56 of 56 received in repetition 1) while emitting 20,330 output tokens against 28,672 expected (56 × 512); `ours-noprefix` on the identical request stream emitted 28,486 and had 0 `no_content`. `starvation_fallbacks` rose by 13 in the same cache-on run; the fallback itself still preempts rather than terminating a request (`serving/scheduler/preemption.py:185-194`), so it is a correlate, not an established cause.
+- **Why it matters:** a request that returns success with no output is a silent correctness failure, worse than an error; any goodput or throughput number for `ours` under pressure includes it.
+- **In-study handling:** reported, counted (`metrics.outcomes.no_content`), not fixed. The cause needs tracing through the cache-on preemption/resume path after the study.
+- **Status:** open, cause unknown.

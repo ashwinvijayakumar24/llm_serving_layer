@@ -44,7 +44,9 @@ environment rather than the engines (SPEC hard rule 5).
 > share one environment, so cross-arm comparisons may be confounded:
 >
 > - **node differs across artifacts: atl1-1-02-012-9-0, atl1-1-02-012-23-0**
-> - **Slurm job id differs across artifacts: 13931401, 13931402, 13931403**
+> - **Slurm job id differs across artifacts: 13931401, 13931402, 13931403, 13933751**
+> - **repo sha differs across artifacts: 3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2, 557a70def3b757c0a4e68d7fe1c56c826a8e8c5c**
+> - **engine ours version differs across artifacts: git:3a91fd7db4e0+engine:v0.2.1, git:557a70def3b7+engine:v0.2.1**
 
 Values as recorded in the artifacts, invalid runs included (every distinct value is listed).
 
@@ -55,14 +57,14 @@ Values as recorded in the artifacts, invalid runs included (every distinct value
 | driver | 615.71.09 |
 | CUDA | 13.0 |
 | node | atl1-1-02-012-9-0, atl1-1-02-012-23-0 |
-| Slurm job id | 13931401, 13931402, 13931403 |
-| repo sha | 3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2 |
+| Slurm job id | 13931401, 13931402, 13931403, 13933751 |
+| repo sha | 3a91fd7db4e00b4c6f2391a5977bca41b4c2e2a2, 557a70def3b757c0a4e68d7fe1c56c826a8e8c5c |
 | repo dirty | false |
 | harness version | 0.1.0 |
 | SLO TTFT (ms) | 434.0 |
 | SLO TPOT (ms) | 27.8 |
 | SLO source | results/p2/RESULTS.md (job 11608159, H200; TTFT p50 43.4ms x10, TPOT p50 9.3ms x3) |
-| engine `ours` version | git:3a91fd7db4e0+engine:v0.2.1 |
+| engine `ours` version | git:3a91fd7db4e0+engine:v0.2.1, git:557a70def3b7+engine:v0.2.1 |
 | engine `sglang` version | 0.5.21 |
 | engine `vllm` version | 0.31.0 |
 <!-- END GENERATED: metadata -->
@@ -351,71 +353,71 @@ Cells: `mean ± sample stdev (min–max)` across valid repetitions. `TODO` = no 
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO |
+| concurrency=4 | 0.758 ± 0.040 (0.732–0.805) **[anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_ttft; anomaly: pool_held_by_cache_at_start]** | 5.29 ± 0.032 (5.26–5.32) **[anomaly: no_preemption_under_kv_pressure]** | 5.26 ± 0.003 (5.26–5.26) **[anomaly: bimodal_e2e; anomaly: no_preemption_under_kv_pressure]** |
+| concurrency=16 | 0.242 ± 0.027 (0.214–0.267) **[CV 11%; anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: pool_held_by_cache_at_start; anomaly: bimodal_e2e; anomaly: warmup_ttft]** | 9.84 ± 0.886 (8.86–10.6) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** | 7.39 ± 0.879 (6.45–8.19) **[CV 12%; anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_tpot]** |
+| concurrency=32 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: rep_spread_ttft_p50; anomaly: pool_held_by_cache_at_start; anomaly: tail_outliers_ttft]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** |
 
 **W4 — goodput rps — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | 0.826 ± 0.003 (0.824–0.829) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO | 5.33 ± 0.042 (5.29–5.37) **[anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO |
+| concurrency=16 | 0.760 ± 0.074 (0.708–0.845) **[anomaly: bimodal_e2e; anomaly: warmup_ttft]** | TODO | TODO | TODO | TODO | 9.88 ± 0.748 (9.09–10.6) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
+| concurrency=32 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
 
 **W4 — preemptions — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO |
+| concurrency=4 | 132 ± 17.9 (111–143) **[CV 14%; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_ttft; anomaly: pool_held_by_cache_at_start]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: no_preemption_under_kv_pressure]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_e2e; anomaly: no_preemption_under_kv_pressure]** |
+| concurrency=16 | 1849 ± 78.4 (1781–1935) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: pool_held_by_cache_at_start; anomaly: bimodal_e2e; anomaly: warmup_ttft]** | 21.7 ± 0.577 (21.0–22.0) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** | 4.67 ± 0.577 (4.00–5.00) **[CV 12%; anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_tpot]** |
+| concurrency=32 | 3954 ± 167 (3820–4141) **[anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: rep_spread_ttft_p50; anomaly: pool_held_by_cache_at_start; anomaly: tail_outliers_ttft]** | 43.7 ± 0.577 (43.0–44.0) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 9.00 ± 1.00 (8.00–10.0) **[CV 11%; anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** |
 
 **W4 — preemptions — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO | 0.000 ± 0.000 (0.000–0.000) **[anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO |
+| concurrency=16 | 973 ± 106 (890–1092) **[CV 11%; anomaly: bimodal_e2e; anomaly: warmup_ttft]** | TODO | TODO | TODO | TODO | 22.0 ± 1.73 (20.0–23.0) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
+| concurrency=32 | 3701 ± 294 (3467–4031) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO | 44.0 ± 0.000 (44.0–44.0) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
 
 **W4 — TTFT p99 (ms) — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO |
+| concurrency=4 | 293 ± 49.0 (264–349) **[CV 17%; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_ttft; anomaly: pool_held_by_cache_at_start; p99 from n=30<100]** | 54.8 ± 5.88 (50.8–61.5) **[CV 11%; anomaly: no_preemption_under_kv_pressure; p99 from n=48<100]** | 56.5 ± 5.08 (52.8–62.3) **[anomaly: bimodal_e2e; anomaly: no_preemption_under_kv_pressure; p99 from n=48<100]** |
+| concurrency=16 | 6172 ± 68.3 (6118–6249) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: pool_held_by_cache_at_start; anomaly: bimodal_e2e; anomaly: warmup_ttft; p99 from n=60<100]** | 964 ± 12.0 (950–972) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot; p99 from n=64<100]** | 1084 ± 45.3 (1048–1135) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_tpot; p99 from n=64<100]** |
+| concurrency=32 | 7868 ± 5436 (1761–12175) **[CV 69%; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: rep_spread_ttft_p50; anomaly: pool_held_by_cache_at_start; anomaly: tail_outliers_ttft]** | 2015 ± 8.17 (2009–2024) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 2046 ± 10.3 (2035–2055) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** |
 
 **W4 — TTFT p99 (ms) — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | 234 ± 7.01 (226–240) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: no_preemption_under_kv_pressure; p99 from n=48<100]** | TODO | TODO | TODO | TODO | 55.2 ± 5.14 (52.0–61.1) **[anomaly: no_preemption_under_kv_pressure; p99 from n=48<100]** | TODO | TODO | TODO | TODO |
+| concurrency=16 | 1257 ± 201 (1132–1489) **[CV 16%; anomaly: bimodal_e2e; anomaly: warmup_ttft; p99 from n=64<100]** | TODO | TODO | TODO | TODO | 963 ± 8.09 (955–971) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e; p99 from n=64<100]** | TODO | TODO | TODO | TODO |
+| concurrency=32 | 4459 ± 182 (4256–4607) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO | 2012 ± 2.46 (2010–2014) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
 
 **W4 — failed requests — baseline arms**
 
 | point | ours | vllm | sglang |
 |---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO |
+| concurrency=4 | 15.0 ± 3.00 (12.0–18.0) **[CV 20%; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_ttft; anomaly: pool_held_by_cache_at_start]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: no_preemption_under_kv_pressure]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_e2e; anomaly: no_preemption_under_kv_pressure]** |
+| concurrency=16 | 2.67 ± 1.53 (1.00–4.00) **[CV 57%; anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: rep_spread_output_tok_s; anomaly: pool_held_by_cache_at_start; anomaly: bimodal_e2e; anomaly: warmup_ttft]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: bimodal_tpot]** |
+| concurrency=32 | 2.67 ± 1.15 (2.00–4.00) **[CV 43%; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: rep_spread_ttft_p50; anomaly: pool_held_by_cache_at_start; anomaly: tail_outliers_ttft]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: bimodal_tpot]** |
 
 **W4 — failed requests — diagnostic arms** (attribution only; never a competitor baseline)
 
 | point | ours-noprefix | vllm-eager | vllm-nograph | vllm-noasync | vllm-noprefix | vllm-matched | sglang-noradix | sglang-nooverlap | sglang-eager | sglang-lpm |
 |---|---|---|---|---|---|---|---|---|---|---|
-| concurrency=4 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=16 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
-| concurrency=32 | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO | TODO |
+| concurrency=4 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_e2e; anomaly: warmup_ttft; anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO | 0.000 ± 0.000 (0.000–0.000) **[anomaly: no_preemption_under_kv_pressure]** | TODO | TODO | TODO | TODO |
+| concurrency=16 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_e2e; anomaly: warmup_ttft]** | TODO | TODO | TODO | TODO | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
+| concurrency=32 | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: warmup_ttft; anomaly: tail_outliers_ttft; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO | 0.000 ± 0.000 (0.000–0.000) **[anomaly: bimodal_ttft; anomaly: bimodal_tpot; anomaly: bimodal_e2e]** | TODO | TODO | TODO | TODO |
 <!-- END GENERATED: w4_table -->
 
 **Figure W4: goodput and preemption count vs offered load.**
 
 <!-- BEGIN GENERATED: fig_w4_goodput -->
-TODO: figure `w4_goodput_and_preemptions.png` renders once valid artifacts exist.
+![w4_goodput](figures/w4_goodput_and_preemptions.png)
 <!-- END GENERATED: fig_w4_goodput -->
 
 ## Appendix — W5: our engine, int8 vs fp16
@@ -479,7 +481,7 @@ Every artifact the renderer found, including invalid runs. Invalid runs are
 excluded from every aggregate above but are listed here with the reason.
 
 <!-- BEGIN GENERATED: inventory -->
-384 artifacts, 305 valid, 79 invalid.
+429 artifacts, 350 valid, 79 invalid.
 
 | artifact | arm | workload | point | rep | valid? | GPU | node | job id | reasons / anomalies |
 |---|---|---|---|---|---|---|---|---|---|
@@ -867,6 +869,51 @@ excluded from every aggregate above but are listed here with the reason.
 | `results/xengine/W3/vllm-noprefix/rate8_rep1.json` | vllm-noprefix | W3 | rate=8 | 1 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
 | `results/xengine/W3/vllm-noprefix/rate8_rep2.json` | vllm-noprefix | W3 | rate=8 | 2 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
 | `results/xengine/W3/vllm-noprefix/rate8_rep3.json` | vllm-noprefix | W3 | rate=8 | 3 | yes | NVIDIA H200 | atl1-1-02-012-23-0 | 13931403 | — |
+| `results/xengine/W4/ours/concurrency16_rep1.json` | ours | W4 | concurrency=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 648.6, 5942.2; valley at 2666.9 holds 0.29x the smaller peak; 87% of mass below it; Sarle BC 0.931 (n=63); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 10.0, 20.9; valley at 13.7 holds 0.09x the smaller peak; 13% of mass below it; Sarle BC 0.407 (n=63); anomaly rep_spread_output_tok_s: output_tok_s CV 0.105 > 0.10 across 3 reps (values 562.5, 535.8, 679.1) |
+| `results/xengine/W4/ours/concurrency16_rep2.json` | ours | W4 | concurrency=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 673.0, 5959.8; valley at 2696.5 holds 0.16x the smaller peak; 92% of mass below it; Sarle BC 0.928 (n=60); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 9.9, 20.8; valley at 13.7 holds 0.03x the smaller peak; 8% of mass below it; Sarle BC 0.428 (n=60); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 381.0, 11181.6; valley at 1832.5 holds 0.00x the smaller peak; 8% of mass below it; Sarle BC 0.962 (n=64); anomaly rep_spread_output_tok_s: output_tok_s CV 0.105 > 0.10 across 3 reps (values 562.5, 535.8, 679.1) |
+| `results/xengine/W4/ours/concurrency16_rep3.json` | ours | W4 | concurrency=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 666.4, 6003.0; valley at 2677.2 holds 0.18x the smaller peak; 90% of mass below it; Sarle BC 0.932 (n=61); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 10.0, 20.9; valley at 13.7 holds 0.05x the smaller peak; 10% of mass below it; Sarle BC 0.407 (n=61); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 265.5, 11134.5; valley at 1856.4 holds 0.00x the smaller peak; 6% of mass below it; Sarle BC 0.964 (n=64); anomaly warmup_ttft: ttft_ms: median of first 6 steady requests 460.0 vs 695.5 for the remaining 55 (0.66x); the steady window still contains a ramp; anomaly rep_spread_output_tok_s: output_tok_s CV 0.105 > 0.10 across 3 reps (values 562.5, 535.8, 679.1) |
+| `results/xengine/W4/ours/concurrency32_rep1.json` | ours | W4 | concurrency=32 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 30.9, 33.1; valley at 32.0 holds 0.50x the smaller peak; 59% of mass below it; Sarle BC 0.743 (n=126); anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 521.5 vs 1455.0 for the remaining 114 (0.36x); the steady window still contains a ramp; anomaly rep_spread_ttft_p50: ttft_p50 CV 0.179 > 0.10 across 3 reps (values 1431, 1590, 1018) |
+| `results/xengine/W4/ours/concurrency32_rep2.json` | ours | W4 | concurrency=32 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 31.0, 33.3; valley at 32.3 holds 0.70x the smaller peak; 58% of mass below it; Sarle BC 0.652 (n=126); anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 507.7 vs 1620.3 for the remaining 114 (0.31x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 2/126 samples > 5x the median (1594.6); max 12185.7 at positions [0, 1] in send order. p99 may be set by these alone.; anomaly rep_spread_ttft_p50: ttft_p50 CV 0.179 > 0.10 across 3 reps (values 1431, 1590, 1018) |
+| `results/xengine/W4/ours/concurrency32_rep3.json` | ours | W4 | concurrency=32 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 589.6 vs 1062.9 for the remaining 112 (0.55x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 5/124 samples > 5x the median (1019.5); max 12179.6 at positions [0, 1, 2, 3, 96] in send order. p99 may be set by these alone.; anomaly rep_spread_ttft_p50: ttft_p50 CV 0.179 > 0.10 across 3 reps (values 1431, 1590, 1018) |
+| `results/xengine/W4/ours/concurrency4_rep1.json` | ours | W4 | concurrency=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 124.7, 5005.9; valley at 633.8 holds 0.26x the smaller peak; 25% of mass below it; Sarle BC 0.930 (n=48); anomaly warmup_ttft: ttft_ms: median of first 5 steady requests 122.6 vs 224.2 for the remaining 31 (0.55x); the steady window still contains a ramp |
+| `results/xengine/W4/ours/concurrency4_rep2.json` | ours | W4 | concurrency=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 118.1, 229.1; valley at 163.5 holds 0.58x the smaller peak; 9% of mass below it; Sarle BC 0.666 (n=33); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 119.2, 5020.0; valley at 635.9 holds 0.28x the smaller peak; 31% of mass below it; Sarle BC 0.920 (n=48) |
+| `results/xengine/W4/ours/concurrency4_rep3.json` | ours | W4 | concurrency=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 125.8, 227.5; valley at 158.5 holds 0.13x the smaller peak; 7% of mass below it; Sarle BC 0.146 (n=30); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 139.1, 5055.0; valley at 740.3 holds 0.38x the smaller peak; 36% of mass below it; Sarle BC 0.906 (n=48) |
+| `results/xengine/W4/ours-noprefix/concurrency16_rep1.json` | ours-noprefix | W4 | concurrency=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 9362.7, 10024.9; valley at 9744.5 holds 0.27x the smaller peak; 75% of mass below it; Sarle BC 0.833 (n=64); anomaly warmup_ttft: ttft_ms: median of first 6 steady requests 285.0 vs 518.4 for the remaining 58 (0.55x); the steady window still contains a ramp |
+| `results/xengine/W4/ours-noprefix/concurrency16_rep2.json` | ours-noprefix | W4 | concurrency=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 8947.1, 9386.1; valley at 9166.5 holds 0.73x the smaller peak; 49% of mass below it; Sarle BC 0.638 (n=64); anomaly warmup_ttft: ttft_ms: median of first 6 steady requests 299.1 vs 521.2 for the remaining 58 (0.57x); the steady window still contains a ramp |
+| `results/xengine/W4/ours-noprefix/concurrency16_rep3.json` | ours-noprefix | W4 | concurrency=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly warmup_ttft: ttft_ms: median of first 6 steady requests 319.7 vs 530.0 for the remaining 58 (0.60x); the steady window still contains a ramp |
+| `results/xengine/W4/ours-noprefix/concurrency32_rep1.json` | ours-noprefix | W4 | concurrency=32 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 555.1, 2008.2; valley at 1088.6 holds 0.65x the smaller peak; 54% of mass below it; Sarle BC 0.557 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 28.8, 32.1; valley at 30.3 holds 0.35x the smaller peak; 45% of mass below it; Sarle BC 0.642 (n=128); anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 423.8 vs 1087.4 for the remaining 116 (0.39x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 4/128 samples > 5x the median (784.7); max 4766.7 at positions [20, 21, 50, 81] in send order. p99 may be set by these alone. |
+| `results/xengine/W4/ours-noprefix/concurrency32_rep2.json` | ours-noprefix | W4 | concurrency=32 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 29.0, 32.1; valley at 30.3 holds 0.65x the smaller peak; 41% of mass below it; Sarle BC 0.357 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 16896.9, 19389.3; valley at 18542.2 holds 0.40x the smaller peak; 95% of mass below it; Sarle BC 0.363 (n=128); anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 439.0 vs 772.1 for the remaining 116 (0.57x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 4/128 samples > 5x the median (725.8); max 5966.9 at positions [21, 22, 51, 90] in send order. p99 may be set by these alone. |
+| `results/xengine/W4/ours-noprefix/concurrency32_rep3.json` | ours-noprefix | W4 | concurrency=32 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 29.9, 32.2; valley at 31.0 holds 0.71x the smaller peak; 47% of mass below it; Sarle BC 0.308 (n=128); anomaly warmup_ttft: ttft_ms: median of first 12 steady requests 438.9 vs 982.3 for the remaining 116 (0.45x); the steady window still contains a ramp; anomaly tail_outliers_ttft: ttft_ms: 4/128 samples > 5x the median (785.2); max 4675.0 at positions [21, 22, 50, 51] in send order. p99 may be set by these alone. |
+| `results/xengine/W4/ours-noprefix/concurrency4_rep1.json` | ours-noprefix | W4 | concurrency=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 113.3, 211.9; valley at 155.0 holds 0.53x the smaller peak; 48% of mass below it; Sarle BC 0.707 (n=48); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 4845.7, 4868.3; valley at 4859.5 holds 0.74x the smaller peak; 68% of mass below it; Sarle BC 0.609 (n=48); anomaly warmup_ttft: ttft_ms: median of first 5 steady requests 121.3 vs 197.3 for the remaining 43 (0.61x); the steady window still contains a ramp; anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/ours-noprefix/concurrency4_rep2.json` | ours-noprefix | W4 | concurrency=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 112.2, 208.0; valley at 151.6 holds 0.68x the smaller peak; 45% of mass below it; Sarle BC 0.725 (n=48); anomaly warmup_ttft: ttft_ms: median of first 5 steady requests 129.3 vs 194.8 for the remaining 43 (0.66x); the steady window still contains a ramp; anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/ours-noprefix/concurrency4_rep3.json` | ours-noprefix | W4 | concurrency=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 115.3, 212.8; valley at 154.4 holds 0.67x the smaller peak; 43% of mass below it; Sarle BC 0.714 (n=48); anomaly warmup_ttft: ttft_ms: median of first 5 steady requests 128.7 vs 197.5 for the remaining 43 (0.65x); the steady window still contains a ramp; anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/sglang/concurrency16_rep1.json` | sglang | W4 | concurrency=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 91.3, 595.2; valley at 251.4 holds 0.48x the smaller peak; 59% of mass below it; Sarle BC 0.689 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 991.7, 1484.5; valley at 1260.5 holds 0.74x the smaller peak; 59% of mass below it; Sarle BC 0.671 (n=64); anomaly warmup_ttft: ttft_ms: median of first 6 steady requests 98.7 vs 154.0 for the remaining 58 (0.64x); the steady window still contains a ramp |
+| `results/xengine/W4/sglang/concurrency16_rep2.json` | sglang | W4 | concurrency=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.5, 1.8; valley at 1.6 holds 0.48x the smaller peak; 6% of mass below it; Sarle BC 0.247 (n=64) |
+| `results/xengine/W4/sglang/concurrency16_rep3.json` | sglang | W4 | concurrency=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 95.0, 838.1; valley at 326.5 holds 0.44x the smaller peak; 69% of mass below it; Sarle BC 0.854 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 987.3, 1833.9; valley at 1373.1 holds 0.56x the smaller peak; 70% of mass below it; Sarle BC 0.846 (n=64) |
+| `results/xengine/W4/sglang/concurrency32_rep1.json` | sglang | W4 | concurrency=32 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1100.8, 1896.7; valley at 1448.6 holds 0.65x the smaller peak; 55% of mass below it; Sarle BC 0.717 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2002.3, 2812.4; valley at 2393.2 holds 0.64x the smaller peak; 52% of mass below it; Sarle BC 0.514 (n=128) |
+| `results/xengine/W4/sglang/concurrency32_rep2.json` | sglang | W4 | concurrency=32 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1084.6, 1974.1; valley at 1425.3 holds 0.50x the smaller peak; 54% of mass below it; Sarle BC 0.786 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1980.2, 2886.3; valley at 2384.9 holds 0.47x the smaller peak; 53% of mass below it; Sarle BC 0.480 (n=128) |
+| `results/xengine/W4/sglang/concurrency32_rep3.json` | sglang | W4 | concurrency=32 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1072.0, 2001.1; valley at 1334.1 holds 0.51x the smaller peak; 43% of mass below it; Sarle BC 0.755 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.7, 4.1; valley at 2.8 holds 0.00x the smaller peak; 95% of mass below it; Sarle BC 0.972 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1956.0, 2889.0; valley at 2268.9 holds 0.47x the smaller peak; 41% of mass below it; Sarle BC 0.569 (n=128) |
+| `results/xengine/W4/sglang/concurrency4_rep1.json` | sglang | W4 | concurrency=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 755.4, 779.8; valley at 771.2 holds 0.12x the smaller peak; 92% of mass below it; Sarle BC 0.730 (n=48); anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/sglang/concurrency4_rep2.json` | sglang | W4 | concurrency=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/sglang/concurrency4_rep3.json` | sglang | W4 | concurrency=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm/concurrency16_rep1.json` | vllm | W4 | concurrency=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 62.5, 804.7; valley at 279.2 holds 0.38x the smaller peak; 82% of mass below it; Sarle BC 0.903 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1030.1, 1827.8; valley at 1441.2 holds 0.59x the smaller peak; 77% of mass below it; Sarle BC 0.855 (n=64) |
+| `results/xengine/W4/vllm/concurrency16_rep2.json` | vllm | W4 | concurrency=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 55.6, 822.6; valley at 267.7 holds 0.64x the smaller peak; 87% of mass below it; Sarle BC 0.900 (n=64); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.9, 3.2; valley at 2.6 holds 0.43x the smaller peak; 90% of mass below it; Sarle BC 0.875 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1025.3, 1795.5; valley at 1445.2 holds 0.69x the smaller peak; 81% of mass below it; Sarle BC 0.840 (n=64) |
+| `results/xengine/W4/vllm/concurrency16_rep3.json` | vllm | W4 | concurrency=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 54.1, 775.7; valley at 280.1 holds 0.60x the smaller peak; 85% of mass below it; Sarle BC 0.892 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1016.0, 1804.2; valley at 1451.1 holds 0.71x the smaller peak; 82% of mass below it; Sarle BC 0.852 (n=64) |
+| `results/xengine/W4/vllm/concurrency32_rep1.json` | vllm | W4 | concurrency=32 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1095.4, 1971.6; valley at 1511.5 holds 0.24x the smaller peak; 68% of mass below it; Sarle BC 0.911 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.9, 3.3; valley at 2.5 holds 0.52x the smaller peak; 89% of mass below it; Sarle BC 0.892 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2036.2, 2914.1; valley at 2451.5 holds 0.36x the smaller peak; 58% of mass below it; Sarle BC 0.839 (n=128) |
+| `results/xengine/W4/vllm/concurrency32_rep2.json` | vllm | W4 | concurrency=32 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1084.6, 1952.5; valley at 1477.9 holds 0.23x the smaller peak; 66% of mass below it; Sarle BC 0.910 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.8, 3.3; valley at 2.3 holds 0.55x the smaller peak; 89% of mass below it; Sarle BC 0.895 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2020.2, 2885.5; valley at 2418.2 holds 0.37x the smaller peak; 58% of mass below it; Sarle BC 0.835 (n=128) |
+| `results/xengine/W4/vllm/concurrency32_rep3.json` | vllm | W4 | concurrency=32 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1088.4, 1961.5; valley at 1499.4 holds 0.23x the smaller peak; 66% of mass below it; Sarle BC 0.908 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.8, 3.2; valley at 2.5 holds 0.35x the smaller peak; 90% of mass below it; Sarle BC 0.902 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2023.5, 2884.4; valley at 2439.4 holds 0.31x the smaller peak; 57% of mass below it; Sarle BC 0.843 (n=128) |
+| `results/xengine/W4/vllm/concurrency4_rep1.json` | vllm | W4 | concurrency=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm/concurrency4_rep2.json` | vllm | W4 | concurrency=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm/concurrency4_rep3.json` | vllm | W4 | concurrency=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm-matched/concurrency16_rep1.json` | vllm-matched | W4 | concurrency=16 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 57.0, 801.7; valley at 317.1 holds 0.51x the smaller peak; 84% of mass below it; Sarle BC 0.898 (n=64); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.9, 3.3; valley at 2.5 holds 0.43x the smaller peak; 91% of mass below it; Sarle BC 0.897 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1023.9, 1801.6; valley at 1422.4 holds 0.53x the smaller peak; 77% of mass below it; Sarle BC 0.862 (n=64) |
+| `results/xengine/W4/vllm-matched/concurrency16_rep2.json` | vllm-matched | W4 | concurrency=16 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 59.9, 812.1; valley at 227.9 holds 0.66x the smaller peak; 85% of mass below it; Sarle BC 0.895 (n=64); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.9, 3.2; valley at 2.5 holds 0.33x the smaller peak; 89% of mass below it; Sarle BC 0.895 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1021.0, 1797.5; valley at 1436.5 holds 0.67x the smaller peak; 81% of mass below it; Sarle BC 0.849 (n=64) |
+| `results/xengine/W4/vllm-matched/concurrency16_rep3.json` | vllm-matched | W4 | concurrency=16 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 57.5, 794.7; valley at 292.5 holds 0.53x the smaller peak; 86% of mass below it; Sarle BC 0.897 (n=64); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 1018.9, 1809.8; valley at 1460.0 holds 0.69x the smaller peak; 82% of mass below it; Sarle BC 0.855 (n=64) |
+| `results/xengine/W4/vllm-matched/concurrency32_rep1.json` | vllm-matched | W4 | concurrency=32 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1087.2, 1949.2; valley at 1489.9 holds 0.24x the smaller peak; 68% of mass below it; Sarle BC 0.911 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.8, 3.1; valley at 2.5 holds 0.49x the smaller peak; 88% of mass below it; Sarle BC 0.891 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2017.7, 2883.1; valley at 2419.6 holds 0.37x the smaller peak; 58% of mass below it; Sarle BC 0.834 (n=128) |
+| `results/xengine/W4/vllm-matched/concurrency32_rep2.json` | vllm-matched | W4 | concurrency=32 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1087.3, 1962.8; valley at 1510.5 holds 0.24x the smaller peak; 67% of mass below it; Sarle BC 0.911 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.8, 3.1; valley at 2.3 holds 0.48x the smaller peak; 89% of mass below it; Sarle BC 0.902 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2015.4, 2888.8; valley at 2440.0 holds 0.36x the smaller peak; 59% of mass below it; Sarle BC 0.837 (n=128) |
+| `results/xengine/W4/vllm-matched/concurrency32_rep3.json` | vllm-matched | W4 | concurrency=32 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly bimodal_ttft: ttft_ms: 2 KDE modes near 1093.2, 1957.6; valley at 1497.2 holds 0.23x the smaller peak; 66% of mass below it; Sarle BC 0.908 (n=128); anomaly bimodal_tpot: tpot_ms: 2 KDE modes near 1.8, 3.2; valley at 2.5 holds 0.37x the smaller peak; 90% of mass below it; Sarle BC 0.902 (n=128); anomaly bimodal_e2e: e2e_ms: 2 KDE modes near 2028.9, 2891.0; valley at 2437.5 holds 0.32x the smaller peak; 57% of mass below it; Sarle BC 0.843 (n=128) |
+| `results/xengine/W4/vllm-matched/concurrency4_rep1.json` | vllm-matched | W4 | concurrency=4 | 1 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm-matched/concurrency4_rep2.json` | vllm-matched | W4 | concurrency=4 | 2 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
+| `results/xengine/W4/vllm-matched/concurrency4_rep3.json` | vllm-matched | W4 | concurrency=4 | 3 | yes | NVIDIA H200 | atl1-1-02-012-9-0 | 13933751 | anomaly no_preemption_under_kv_pressure: W4 caps the KV pool at 32768 tokens to force preemption, but the engine reported 0 |
 <!-- END GENERATED: inventory -->
 
 ## Analysis
@@ -1014,7 +1061,45 @@ vLLM's counters skip re-lookups by resumed (preempted) requests.
 
 ### (c) Preemption policy and its cost under W4
 
-**Observation.** TODO — fill from the W4 tables and Figure W4.
+**Observation** (drafted from the W4 v2 tables above, job 13933751; all 45
+cells valid, 3/3 repetitions each; every engine had the same 32,768-token pool
+and the same number of ~2.5k-token sequences in flight).
+
+- **Preemption counts differ by two orders of magnitude.** Per run of 64
+  measured requests at concurrency 16: `ours` 1,781–1,935, `ours-noprefix`
+  890–1,092, `vllm` 21–22, `sglang` 4–5. At concurrency 32 (128 measured):
+  `ours` 3,820–4,141, `ours-noprefix` 3,467–4,031, `vllm` 43–44, `sglang` 8–10.
+- **Throughput follows.** Output tok/s at concurrency 16: `vllm` 5,786,
+  `sglang` 5,551, `ours-noprefix` 874, `ours` 592. Going from 16 to 32 in
+  flight, vLLM and SGLang hold their throughput (5,448 and 5,472) and absorb the
+  extra load as queueing (TTFT p50 rises to 1.1–1.4 s); ours recomputes instead
+  (108,156 tokens recomputed in a single concurrency-4 run).
+- **At concurrency 4 the pool is not short, and ours still preempts.** Demand
+  ≈10k of 32k tokens: `vllm`, `sglang` and `ours-noprefix` preempt 0 times;
+  `ours` with its cache on preempts 111–143 times and ends the point with every
+  block held by the cache. This is FINDINGS_OURS F-004, reproduced with the
+  cache-off arm as control.
+- **SGLang evicts cache before it retracts.** Its eviction counter shows
+  114k–532k tokens evicted per run while it retracted ≤10 requests — the
+  opposite balance from ours.
+- **`vllm-matched` (max 32 running) equals default vLLM here** (5,776 vs 5,786
+  tok/s at concurrency 16), so vLLM's advantage on W4 does not come from
+  admitting more sequences than we do.
+- **Goodput is 0 for every engine at concurrency 32**: queueing (vLLM/SGLang)
+  or recomputation (ours) pushes TTFT past the 434 ms SLO. At concurrency 16
+  vLLM and SGLang keep 9.8 and 7.4 rps of goodput; ours keeps 0.24 (cache on)
+  and 0.76 (cache off).
+
+**Reading, not yet a conclusion.** The production engines protect running
+requests: vLLM admits a new sequence only when blocks for it exist and
+preempts only when a *running* decode cannot grow; SGLang additionally evicts
+cached tokens before retracting anything. Ours admits, then resolves the
+shortage by preempting the newest request and recomputing it, so under
+sustained pressure the same requests are preempted and recomputed repeatedly
+(≈30 preemptions per completed request at concurrency 32). The cache makes it
+worse because cached blocks are not counted as reclaimable when the preemption
+decision is made (F-004), and with the cache on some requests even return
+empty (F-007).
 
 **Mechanistic hypothesis.** When the KV pool is full an engine picks a victim
 and discards its KV cache to recompute later (all three default to recompute;
@@ -1033,7 +1118,8 @@ selection (`v1/core/sched/scheduler.py:763-771`) and recompute-only preemption
 `serving/scheduler/preemption.py:130`).
 
 **Status: UNVERIFIED — Ashwin to confirm** (vLLM's victim rule is verified in
-source; the cost comparison is not).
+source; the counts and throughput above are measured; the admission-control
+explanation is a hypothesis from source reading).
 
 ### (d) Scheduler and batching policy effects on latency tails
 
@@ -1157,9 +1243,13 @@ UNVERIFIED until Ashwin signs off.
 3. **How does each engine choose preemption victims, and what does it cost?**
    Where: Analysis (c); W4 tables (`preemptions`, `goodput`); Figure W4;
    `SOURCE_NOTES.md` §2.4/§3.5/§4.2. Short answer (mechanism verified in
-   source; cost pending W4 v2): ours evicts the newest arrival with a
+   source; cost measured in W4 v2): ours evicts the newest arrival with a
    starvation guard, vLLM the last-admitted running request (recompute only,
-   no swap in V1), SGLang the request with the fewest generated tokens.
+   no swap in V1), SGLang the request with the fewest generated tokens. On an
+   equal 32k-token pool at 16 sequences in flight, ours preempted ≈1,850 times
+   per run vs 22 (vLLM) and 5 (SGLang), and delivered 592 vs ≈5,600 tok/s;
+   SGLang evicts cache before retracting, and ours preempts even when the pool
+   is only held by its own cache (F-004).
 4. **How was the comparison kept fair?** Where: Setup metadata block; Run
    inventory; [`SPEC.md`](SPEC.md); ADR-025. Short answer: one H200 per
    workload, every arm in one allocation; same weights, fp16, greedy,

@@ -1,0 +1,173 @@
+---------------------------------------
+Begin Slurm Prolog: Oct-10-2026 03:36:18
+Job ID:    13933751
+User ID:   avijayakumar41
+Account:   paceship-simpliearn
+Job name:  xengine-W4
+Partition: gpu-h200
+QOS:       inferno
+---------------------------------------
+=== node: atl1-1-02-012-9-0.pace.gatech.edu  job: 13933751  qos: inferno ===
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 345 MHz, 1980 MHz, 3201 MHz, 32, 76.48 W, 700.00 W
+job 13933751 node atl1-1-02-012-9-0.pace.gatech.edu
+ours:   torch 2.12.0+cu130 cuda 13.0
+vllm:   vllm 0.31.0 torch 2.13.0+cu130
+sglang: sglang 0.5.21 torch 2.13.0+cu130
+  NVIDIA H200 sm_90  torch 2.12.0+cu130
+=== bench ours W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm ours --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[ours] attention-backend pre-flight: flashinfer
+[ours] healthy after 9.0s at http://127.0.0.1:47155
+[ours] engine version: git:557a70def3b7+engine:v0.2.1
+[ours] W4 concurrency4 rep1: 56 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency4_rep1.json  VALID  out 408.9 tok/s  goodput 0.80  ok 36/48  (40 total)
+[ours] W4 concurrency16 rep1: 96 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency16_rep1.json  VALID  out 562.5 tok/s  goodput 0.27  ok 63/64  (82 total)
+[ours] W4 concurrency32 rep1: 192 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency32_rep1.json  VALID  out 805.6 tok/s  goodput 0.00  ok 126/128  (187 total)
+[ours] W4 concurrency4 rep2: 56 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency4_rep2.json  VALID  out 372.9 tok/s  goodput 0.73  ok 33/48  (36 total)
+[ours] W4 concurrency16 rep2: 96 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency16_rep2.json  VALID  out 535.8 tok/s  goodput 0.21  ok 60/64  (90 total)
+[ours] W4 concurrency32 rep2: 192 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency32_rep2.json  VALID  out 652.0 tok/s  goodput 0.00  ok 126/128  (188 total)
+[ours] W4 concurrency4 rep3: 56 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency4_rep3.json  VALID  out 375.8 tok/s  goodput 0.74  ok 30/48  (34 total)
+[ours] W4 concurrency16 rep3: 96 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency16_rep3.json  VALID  out 679.1 tok/s  goodput 0.24  ok 61/64  (81 total)
+[ours] W4 concurrency32 rep3: 192 requests (closed loop) ...
+[ours] -> results/xengine/W4/ours/concurrency32_rep3.json  VALID  out 662.6 tok/s  goodput 0.00  ok 124/128  (185 total)
+[ours] server stopped (rc=-15)
+=== bench vllm W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm vllm --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[vllm] healthy after 55.0s at http://127.0.0.1:37335
+[vllm] engine version: 0.31.0
+[vllm] W4 concurrency4 rep1: 56 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency4_rep1.json  VALID  out 2669.2 tok/s  goodput 5.26  ok 48/48  (56 total)
+[vllm] W4 concurrency16 rep1: 96 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency16_rep1.json  VALID  out 5438.8 tok/s  goodput 8.86  ok 64/64  (96 total)
+[vllm] W4 concurrency32 rep1: 192 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency32_rep1.json  VALID  out 5417.0 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm] W4 concurrency4 rep2: 56 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency4_rep2.json  VALID  out 2705.8 tok/s  goodput 5.32  ok 48/48  (56 total)
+[vllm] W4 concurrency16 rep2: 96 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency16_rep2.json  VALID  out 5759.7 tok/s  goodput 10.08  ok 64/64  (96 total)
+[vllm] W4 concurrency32 rep2: 192 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency32_rep2.json  VALID  out 5461.0 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm] W4 concurrency4 rep3: 56 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency4_rep3.json  VALID  out 2695.7 tok/s  goodput 5.30  ok 48/48  (56 total)
+[vllm] W4 concurrency16 rep3: 96 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency16_rep3.json  VALID  out 6159.3 tok/s  goodput 10.59  ok 64/64  (96 total)
+[vllm] W4 concurrency32 rep3: 192 requests (closed loop) ...
+[vllm] -> results/xengine/W4/vllm/concurrency32_rep3.json  VALID  out 5464.5 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm] server stopped (rc=0)
+=== bench sglang W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-sglang/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm sglang --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[sglang] healthy after 60.0s at http://127.0.0.1:54051
+[sglang] engine version: 0.5.21
+[sglang] W4 concurrency4 rep1: 56 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency4_rep1.json  VALID  out 2675.5 tok/s  goodput 5.26  ok 48/48  (56 total)
+[sglang] W4 concurrency16 rep1: 96 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency16_rep1.json  VALID  out 5520.6 tok/s  goodput 6.45  ok 64/64  (96 total)
+[sglang] W4 concurrency32 rep1: 192 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency32_rep1.json  VALID  out 5557.2 tok/s  goodput 0.00  ok 128/128  (192 total)
+[sglang] W4 concurrency4 rep2: 56 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency4_rep2.json  VALID  out 2678.6 tok/s  goodput 5.26  ok 48/48  (56 total)
+[sglang] W4 concurrency16 rep2: 96 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency16_rep2.json  VALID  out 5555.2 tok/s  goodput 8.19  ok 64/64  (96 total)
+[sglang] W4 concurrency32 rep2: 192 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency32_rep2.json  VALID  out 5528.7 tok/s  goodput 0.00  ok 128/128  (192 total)
+[sglang] W4 concurrency4 rep3: 56 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency4_rep3.json  VALID  out 2677.1 tok/s  goodput 5.26  ok 48/48  (56 total)
+[sglang] W4 concurrency16 rep3: 96 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency16_rep3.json  VALID  out 5576.9 tok/s  goodput 7.53  ok 64/64  (96 total)
+[sglang] W4 concurrency32 rep3: 192 requests (closed loop) ...
+[sglang] -> results/xengine/W4/sglang/concurrency32_rep3.json  VALID  out 5329.8 tok/s  goodput 0.00  ok 128/128  (192 total)
+[sglang] server stopped (rc=0)
+=== bench ours-noprefix W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm ours-noprefix --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[ours-noprefix] attention-backend pre-flight: flashinfer
+[ours-noprefix] healthy after 9.0s at http://127.0.0.1:46863
+[ours-noprefix] engine version: git:557a70def3b7+engine:v0.2.1
+[ours-noprefix] W4 concurrency4 rep1: 56 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency4_rep1.json  VALID  out 419.0 tok/s  goodput 0.82  ok 48/48  (56 total)
+[ours-noprefix] W4 concurrency16 rep1: 96 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency16_rep1.json  VALID  out 852.9 tok/s  goodput 0.71  ok 64/64  (96 total)
+[ours-noprefix] W4 concurrency32 rep1: 192 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency32_rep1.json  VALID  out 850.1 tok/s  goodput 0.00  ok 128/128  (192 total)
+[ours-noprefix] W4 concurrency4 rep2: 56 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency4_rep2.json  VALID  out 422.3 tok/s  goodput 0.83  ok 48/48  (56 total)
+[ours-noprefix] W4 concurrency16 rep2: 96 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency16_rep2.json  VALID  out 888.4 tok/s  goodput 0.84  ok 64/64  (96 total)
+[ours-noprefix] W4 concurrency32 rep2: 192 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency32_rep2.json  VALID  out 856.7 tok/s  goodput 0.00  ok 128/128  (192 total)
+[ours-noprefix] W4 concurrency4 rep3: 56 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency4_rep3.json  VALID  out 420.0 tok/s  goodput 0.82  ok 48/48  (56 total)
+[ours-noprefix] W4 concurrency16 rep3: 96 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency16_rep3.json  VALID  out 880.3 tok/s  goodput 0.73  ok 64/64  (96 total)
+[ours-noprefix] W4 concurrency32 rep3: 192 requests (closed loop) ...
+[ours-noprefix] -> results/xengine/W4/ours-noprefix/concurrency32_rep3.json  VALID  out 840.7 tok/s  goodput 0.00  ok 128/128  (192 total)
+[ours-noprefix] server stopped (rc=-15)
+=== bench vllm-matched W4 ===
+XENGINE_SERVER_PY="/storage/home/hcoda1/6/avijayakumar41/ps-simpliearn-0/xengine_envs/xengine-vllm/bin/python" \
+	/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.run --arm vllm-matched --workload W4 \
+	--reps 3 --out results/xengine 
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[vllm-matched] healthy after 52.1s at http://127.0.0.1:52601
+[vllm-matched] engine version: 0.31.0
+[vllm-matched] W4 concurrency4 rep1: 56 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency4_rep1.json  VALID  out 2711.7 tok/s  goodput 5.34  ok 48/48  (56 total)
+[vllm-matched] W4 concurrency16 rep1: 96 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency16_rep1.json  VALID  out 5477.3 tok/s  goodput 9.09  ok 64/64  (96 total)
+[vllm-matched] W4 concurrency32 rep1: 192 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency32_rep1.json  VALID  out 5459.3 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm-matched] W4 concurrency4 rep2: 56 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency4_rep2.json  VALID  out 2731.0 tok/s  goodput 5.37  ok 48/48  (56 total)
+[vllm-matched] W4 concurrency16 rep2: 96 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency16_rep2.json  VALID  out 5704.1 tok/s  goodput 9.99  ok 64/64  (96 total)
+[vllm-matched] W4 concurrency32 rep2: 192 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency32_rep2.json  VALID  out 5446.9 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm-matched] W4 concurrency4 rep3: 56 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency4_rep3.json  VALID  out 2689.9 tok/s  goodput 5.29  ok 48/48  (56 total)
+[vllm-matched] W4 concurrency16 rep3: 96 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency16_rep3.json  VALID  out 6147.9 tok/s  goodput 10.57  ok 64/64  (96 total)
+[vllm-matched] W4 concurrency32 rep3: 192 requests (closed loop) ...
+[vllm-matched] -> results/xengine/W4/vllm-matched/concurrency32_rep3.json  VALID  out 5464.5 tok/s  goodput 0.00  ok 128/128  (192 total)
+[vllm-matched] server stopped (rc=0)
+name, driver_version, compute_cap, memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz], clocks.current.memory [MHz], temperature.gpu, power.draw [W], power.limit [W]
+NVIDIA H200, 615.71.09, 9.0, 143771 MiB, 1980 MHz, 1980 MHz, 3201 MHz, 45, 128.80 W, 700.00 W
+mkdir -p results/xengine/_render
+cp docs/xengine/BENCHMARKS.md results/xengine/_render/BENCHMARKS_13933751.md
+/storage/home/hcoda1/6/avijayakumar41/.conda/envs/llm/bin/python3 -m bench.xengine.render --results results/xengine \
+	--doc results/xengine/_render/BENCHMARKS_13933751.md --figures results/xengine/_render/figures_13933751
+WARNING: matplotlib not installed; figures not redrawn
+rendered 429 artifacts into results/xengine/_render/BENCHMARKS_13933751.md
+
+=== artifacts ===
+429
+=== done (bench rc=0) ===
+---------------------------------------
+Begin Slurm Epilog: Oct-10-2026 04:08:44
+Job ID:        13933751
+User ID:       avijayakumar41
+Account:       paceship-simpliearn
+Job name:      xengine-W4
+Resources:     cpu=8,gres/gpu:h200=1,mem=32G,node=1
+Rsrc Used:     cput=04:19:36,vmem=0,walltime=00:32:27,mem=4608932K,energy_used=0
+Partition:     gpu-h200
+QOS:           inferno
+Nodes:         atl1-1-02-012-9-0
+---------------------------------------
