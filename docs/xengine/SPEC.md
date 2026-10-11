@@ -120,4 +120,3 @@ Path: `results/xengine/<workload>/<arm>/<point>_rep<k>.json`
   vLLM/SGLang source citations (`docs/xengine/SOURCE_NOTES.md`); unverified hypotheses
   marked **UNVERIFIED — Ashwin to confirm**.
 - `bench/oss-pr-candidates.md`: ≥3 friction entries from setting up vLLM/SGLang.
-- Final section of `BENCHMARKS.md`: 5 interview questions with pointers into results.

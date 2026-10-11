@@ -1,8 +1,8 @@
 # Verification of BENCHMARKS.md observations (2026-10-10)
 
-Independent recomputation of every quantitative claim in the Analysis, the W5 paragraph, the interview answers and FINDINGS_OURS F-004/F-006/F-007, from the raw artifacts, with a loader written separately from `bench/xengine/render.py`. Result: 143 claims, 134 match, 8 mismatched (all corrected in commit following this file), 1 not checkable from xengine artifacts (P2 prompt length; resolved from `results/p2/` — it is 128 tokens, and the doc now says so).
+Independent recomputation of every quantitative claim in the Analysis, the W5 paragraph and FINDINGS_OURS F-004/F-006/F-007, from the raw artifacts, with a loader written separately from `bench/xengine/render.py`. Result: 143 claims, 134 match, 8 mismatched (all corrected in commit following this file), 1 not checkable from xengine artifacts (P2 prompt length; resolved from `results/p2/` — it is 128 tokens, and the doc now says so).
 
-# Independent verification of BENCHMARKS.md Analysis / W5 / Interview answers and FINDINGS_OURS F-004, F-006, F-007
+# Independent verification of BENCHMARKS.md Analysis / W5 and FINDINGS_OURS F-004, F-006, F-007
 
 Method: own loader (python3, json/glob only) over `results/xengine/W1..W4/<arm>/*_rep*.json` (and `results/xengine_w4_v1/W4/` for F-006's v1 claims). A run counts only if `validity.valid` is true; `ours*` runs also need `validity.attention_backend == "flashinfer"`. Cell value = mean over valid reps. Ratios recomputed from unrounded cell means. Job IDs checked from `hardware.slurm_job_id` (W1 13931401 x210 runs, W2 13931402 x69, W3 13931403 x105, W4 13933751 x45: all MATCH the jobs cited).
 
@@ -136,22 +136,6 @@ Verdicts: MATCH / MISMATCH / NOT-CHECKABLE.
 | 97 | TTFT p99 350 → 448 ms | (e) | 350.3 → 447.5 | MATCH |
 | 98 | cap costs vLLM ≈8% | (e) | 8.29% | MATCH |
 
-## Five interview questions
-
-| # | Claim | Location | Recomputed | Verdict |
-|---|---|---|---|---|
-| 99 | gap ≈6.2× at batch 1 | Q1 | 6.247 | MATCH |
-| 100 | graphs+compile off removes ≈4.7× (730 → 154) | Q1 | 4.730 | MATCH |
-| 101 | leaves ≈1.3× to ours (117) | Q1 | 1.321 | MATCH |
-| 102 | overlap worth ≈35% in both | Q1 | −34.6% / −35.8% | MATCH |
-| 103 | graphs ≈1.6× at c64 | Q1 | 1.555 | MATCH |
-| 104 | ceiling ≈0.63 hit rate | Q2 | cells 0.618–0.651, oracle 0.639 | MATCH |
-| 105 | latency payoff 1–2 ms vLLM/SGLang | Q2 | 2.06 / 0.95 | MATCH |
-| 106 | ours preempted ≈1,850 per run at 16 in flight | Q3 | mean 1,849 | MATCH |
-| 107 | vs 22 (vLLM) and 5 (SGLang) | Q3 | 21.7 / 4.7 | MATCH |
-| 108 | 592 vs ≈5,600 tok/s | Q3 | ours 592.4; vllm 5,786, sglang 5,551 (mean of the two 5,668 → ≈5,700) | MISMATCH (minor; say "≈5,550–5,790" or "≈5,700") |
-| 109 | 32k-token pool | Q3 | 32,768 for all arms | MATCH |
-
 ## FINDINGS_OURS F-004
 
 | # | Claim | Recomputed | Verdict |
@@ -203,4 +187,5 @@ Verdicts: MATCH / MISMATCH / NOT-CHECKABLE.
 
 ## Totals
 
-143 claims: 134 MATCH, 8 MISMATCH (rows 16, 25, 40, 43, 48, 74, 86, 108), 1 NOT-CHECKABLE (row 84).
+143 claims: 134 MATCH, 8 MISMATCH (rows 16, 25, 40, 43, 48, 74, 86, 108), 1 NOT-CHECKABLE (row 84). Rows 99–109 checked a Q&A section that has since been
+moved out of BENCHMARKS.md into a private note; they are omitted here (10 MATCH, 1 MISMATCH, row 108, corrected).

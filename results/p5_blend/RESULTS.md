@@ -123,7 +123,7 @@ might.
 
 ## 5. Effect on the claims
 
-**No claim changes.** Bullet 5 continues to rest on job `11653158` (−23% at
+**No claim changes.** The P5 blend claim continues to rest on job `11653158` (−23% at
 `blend=0.7`, matched valid pair, n=946), which this run neither confirms nor
 contradicts — its `blend=0.7` arm was invalid at every load, so there is no
 within-allocation comparison to make, and comparing across allocations is

@@ -443,7 +443,7 @@ cell at `blend=0.25` that came out above B5 — a single invalid cell,
 contradicted by the valid 0.25 cell at low load, and recorded as a place for a
 future run to look rather than as evidence.
 
-No claim changed. Bullet 5 still rests on `11653158`, whose `blend=0.7` arm this
+No claim changed. The P5 blend claim still rests on `11653158`, whose `blend=0.7` arm this
 run could not re-measure validly — and comparing across allocations is forbidden
 by R12 for exactly this reason.
 

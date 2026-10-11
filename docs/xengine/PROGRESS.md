@@ -1,6 +1,6 @@
 # Cross-engine study — running notes
 
-Living log of what was done, what was measured, and what is resume-usable.
+Living log of what was done and what was measured.
 Rules: every number here links to an artifact under `results/xengine/` (or is
 marked TODO); entries are dated; nothing is estimated. The point of this file
 is that a result recorded here never has to be re-run just to remember it.
@@ -160,26 +160,6 @@ were cut by the time limit.
   48 requests "complete" with no output.
 - OSS candidates: 5 entries, all reproduced on the pinned versions (OSS-005:
   `vllm serve --help` crashes on a GPU-less host).
-
-## Resume-usable facts
-
-Drafts, each tied to rows above. The condition is part of the claim.
-
-- "Benchmarked my serving layer against vLLM 0.31 and SGLang 0.5.21 on one
-  H200 (Llama-3.2-1B, fp16) across 4 workloads; ablations attributed ≈4.7× of
-  a 6.2× batch-1 throughput gap to CUDA graphs + torch.compile." — W1 rows.
-- "Measured that CPU/GPU scheduling overlap is worth ≈35% of batch-1
-  throughput in both vLLM and SGLang." — W1 ladder rows.
-- "Found, with a cache-off control arm, that my radix prefix cache never
-  released memory proactively, triggering ~85× more preemptions than vLLM
-  under an equal 32k-token KV pool." — W4 v2 rows + W2 drift row. (Say
-  "found and documented", not "fixed": it is not fixed yet.)
-- "Filed 5 reproduced open-source candidates against vLLM/SGLang (e.g.
-  `vllm serve --help` crashes without a GPU)." — only once any are filed;
-  until then: "identified 5 reproduced issues".
-- Prefix caching: the honest headline is a tie — all three caches hit the
-  workload's ≈0.64 ceiling on a shared system prompt. Usable as an interview
-  answer, not as a resume win.
 
 ## Open questions / decisions pending
 

@@ -35,12 +35,12 @@ Line numbers are as of base commit `e391b50`.
 - **In-study handling:** SPEC requires the `ours` arm to record the active attention backend and treats a PagedTorch fallback as invalid. Since the server does not expose it, the harness establishes it independently — a pre-flight that imports and constructs `FlashInferBackend` in the same environment and on the same GPU — and records the result in `validity.attention_backend`. If it cannot be established, the field is recorded as unknown and the run is not published as valid.
 - **Status:** open. Post-study fix: log the caught exception; add `attention_backend` to the startup `config:` line and to `/health`.
 
-## F-003 — `docs/RESUME_BULLETS.md` said P1 ran on H200; the artifact says H100
+## F-003 — a private working note said P1 ran on H200; the artifact says H100
 
-- **Where:** `docs/RESUME_BULLETS.md:99` ("Artifact: `results/p1/`, job `11598444`, H200.").
+- **Where:** a gitignored working note (not in the repo), which cited `results/p1/`, job `11598444`, as H200.
 - **What:** every JSON under `results/p1/` carries `"gpu_name": "NVIDIA H100 80GB HBM3"` (e.g. `results/p1/20260801T030324_atl1-1-01-006-19-0_capacity_s1.json:191`); `results/p1/RESULTS.md:20` and `README.md:49` both say H100. P2/P4/P5 did run on H200, the likely source of the slip.
-- **Why it matters:** ADR-018 requires every published claim to resolve to an artifact; a hardware claim contradicting its own artifact is the kind of detail an interviewer checks.
-- **Status:** fixed 2026-10-08 (`H200` → `H100`). The file is gitignored (private), so the fix is local-only and has no commit.
+- **Why it matters:** ADR-018 requires every published claim to resolve to an artifact; a hardware claim contradicting its own artifact is the kind of detail a careful reader checks.
+- **Status:** fixed 2026-10-08 (`H200` → `H100`). The note is gitignored, so the fix is local-only and has no commit.
 
 ## F-004 — Preemption fires while evictable prefix-cache blocks are still held (reproduced in W4 v2)
 

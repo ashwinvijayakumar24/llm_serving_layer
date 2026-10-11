@@ -269,7 +269,7 @@ What changed once the cells were independent:
 - Many cells failed the steady-state check at 45 s windows.
 - The correctness gate does **not** pass (`FINDING_batch_shape_numerics.md`).
 
-**Phase 4 is reported incomplete on all three counts.** It earns no resume
+**Phase 4 is reported incomplete on all three counts.** It earns no published
 claim.
 
 ---
