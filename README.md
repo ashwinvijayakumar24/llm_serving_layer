@@ -14,6 +14,8 @@ Benchmarked on NVIDIA H100 80GB and H200 (Georgia Tech PACE Phoenix). Every numb
 | **S4** | radix prefix cache | **−23%** TTFT p99 at 27% block reuse; ≤1.3 ms cost at zero sharing |
 | **S5** | prefix-aware routing | **NOT EARNED** — but measured: affinity routing costs **23% goodput** at 8× the saturation knee |
 
+**Then it was measured against vLLM 0.31 and SGLang 0.5.21** on one H200, same model, byte-identical request streams. It is slower, and the point of the study is *why*: ablation arms that switch off one feature at a time in vLLM and SGLang attribute the gap to specific mechanisms, and the study found three bugs in this system's own cache and preemption code. See [Cross-engine study](#cross-engine-study--vs-vllm-and-sglang).
+
 ---
 
 ## Why this exists
@@ -132,6 +134,46 @@ A follow-up sweep across `blend` ∈ {0, 0.25, 0.5, 0.7, 1.0} (job `11653158`'s 
 
 *Artifacts: [`results/p5_knee/`](results/p5_knee/) job `11653158` · [`results/p5/`](results/p5/) job `11610306` · 4 × H200.*
 
+### Cross-engine study — vs vLLM and SGLang
+
+Same H200, same model (Llama-3.2-1B-Instruct, fp16, greedy), byte-identical request streams, one frozen SLO, 3 repetitions per cell, all engines in one Slurm allocation per workload. 14 arms over 4 workloads; 429 runs, of which 350 passed every validity check — the other 79 are kept and flagged in the tables, not dropped. **The headline is not a ratio** (ADR-025): it is which mechanism accounts for how much of the gap, with each claim checked against the vLLM/SGLang source it cites.
+
+**Where the batch-1 gap comes from.** At concurrency 1 this system produces 117 output tok/s; vLLM 730, SGLang 757. Turning features off in vLLM one at a time:
+
+| vLLM arm (concurrency 1) | output tok/s |
+|---|---|
+| default | 730 |
+| no CUDA graphs | 185 |
+| no graphs, no torch.compile (`--enforce-eager`) | 154 |
+| **this system** | **117** |
+
+CUDA graphs and compiled fusions account for most of the gap; what remains between eager vLLM and this system is ≈1.3×, unsplit between fused kernels, a per-layer Python loop and a blocking per-step `.tolist()` — no arm separates them, so it is not claimed. SGLang shows the same shape (757 → 133 with graphs off). CPU/GPU overlap, which this system lacks, is worth ≈35% in both engines (`vllm-noasync` 477, `sglang-nooverlap` 486). For a 1B model at small batch, a decode step is mostly launch and CPU overhead, not math.
+
+**Prefix caching is a tie.** All three caches hit 0.62–0.65 of prompt tokens on a shared 1,024-token system prompt, against a workload ceiling of ≈0.64. The workload did not separate the three designs (block trie, block hashes, token radix tree), and that is reported rather than a winner picked. SGLang's longest-prefix-match scheduling, off by default, was 5–9% *slower* in TTFT p50 here.
+
+**Preemption is where this system breaks, and the study found out why.** Equal 32,768-token KV pool, 16 sequences of ~2.5k tokens in flight:
+
+| arm | preemptions per run | output tok/s |
+|---|---|---|
+| vLLM | 21–22 | 5,786 |
+| SGLang | 4–5 | 5,551 |
+| this system, prefix cache off | 890–1,092 | 874 |
+| this system, prefix cache on | 1,781–1,935 | 592 |
+
+The cache-off arm is the control that located three bugs, each now traced to code and reproduced on CPU against the unmodified scheduler ([`FINDINGS_OURS.md`](docs/xengine/FINDINGS_OURS.md), [`repro/`](docs/xengine/repro/)):
+
+- **F-004** — the preemption check counts only free blocks, so it preempts running requests while evictable cached blocks sit idle. At 4 in flight, where demand is ≈10k of 32k tokens, vLLM, SGLang and the cache-off arm preempt 0 times; cache-on preempts 111–143.
+- **F-006** — the server builds the radix cache with no size bound, so cache occupancy only grows. On W2 the free pool went from 277,590 blocks to 0.
+- **F-007** — the preemption loop ends by failing a request with a false "outgrew the KV pool" error, which the streaming path counts as completed with no output.
+
+SGLang, by contrast, evicted 114k–532k cached tokens per run while retracting ≤10 requests: cache yields to running work. Not fixed in-study — the serving code was frozen so the measurement stays honest.
+
+**Five reproduced upstream issues** in vLLM and SGLang came out of setting them up, including `vllm serve --help` crashing on a GPU-less host ([`bench/oss-pr-candidates.md`](bench/oss-pr-candidates.md)).
+
+Every analysis claim (143) was independently recomputed from the raw artifacts with a separate loader; 8 were wrong and corrected ([`VERIFICATION.md`](docs/xengine/VERIFICATION.md)).
+
+*Full write-up with all tables, flags and source citations: [`docs/xengine/BENCHMARKS.md`](docs/xengine/BENCHMARKS.md) · artifacts: [`results/xengine/`](results/xengine/) · jobs `13931401`–`13931403`, `13933751`, H200 · reproduce with `make bench-all`.*
+
 ---
 
 ## Design
@@ -142,7 +184,7 @@ A follow-up sweep across `blend` ∈ {0, 0.25, 0.5, 0.7, 1.0} (job `11653158`'s 
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, the engine↔serving interface, state ownership, concurrency, failure domains, sequence walkthroughs |
 | [`docs/BENCHMARK_METHODOLOGY.md`](docs/BENCHMARK_METHODOLOGY.md) | Open-loop load generation, goodput under SLO, baselines, **and where prefix-aware routing is predicted to lose** |
 | [`docs/RISK_REGISTER.md`](docs/RISK_REGISTER.md) | 41 risks ordered by **detectability**, because a silent wrong number is worse than a crash |
-| [`docs/ADR.md`](docs/ADR.md) | 24 decision records with alternatives and revisit triggers |
+| [`docs/ADR.md`](docs/ADR.md) | 25 decision records with alternatives and revisit triggers |
 | [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) | How it was built in the order it happened, including what went wrong and what it cost to find out |
 
 Three decisions worth arguing with:
